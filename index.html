@@ -160,11 +160,11 @@
           <div class="content-card setting-card template-setting-card">
             <div class="setting-icon">W</div>
             <h3>Word templates</h3>
-            <p>Import each approved BU template once. The files are saved in this browser's IndexedDB and are never uploaded to GitHub.</p>
-            <div class="template-import-row"><label>Letter 16<input id="letter16TemplateInput" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" /></label><span id="letter16TemplateStatus" class="template-status">Not configured</span></div>
-            <div class="template-import-row"><label>Letter 76<input id="letter76TemplateInput" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" /></label><span id="letter76TemplateStatus" class="template-status">Not configured</span></div>
-            <div class="template-import-row"><label>Student list<input id="studentListTemplateInput" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" /></label><span id="studentListTemplateStatus" class="template-status">Not configured</span></div>
-            <div class="rule-summary">Template files remain only on this browser profile. Include them in Backup data if you want to move the workspace to another computer.</div>
+            <p>The approved Letter 16, Letter 76 and Student List templates are already built in. Import a DOCX only if you want to override the built-in version on this browser.</p>
+            <div class="template-import-row"><label>Letter 16 — optional override<input id="letter16TemplateInput" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" /></label><span id="letter16TemplateStatus" class="template-status">Not configured</span></div>
+            <div class="template-import-row"><label>Letter 76 — optional override<input id="letter76TemplateInput" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" /></label><span id="letter76TemplateStatus" class="template-status">Not configured</span></div>
+            <div class="template-import-row"><label>Student list — optional override<input id="studentListTemplateInput" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" /></label><span id="studentListTemplateStatus" class="template-status">Not configured</span></div>
+            <div class="rule-summary">Built-in templates are available automatically. Any optional override remains only on this browser profile and is included in Backup data.</div>
           </div>
           <div class="content-card setting-card">
             <div class="setting-icon">⇄</div>
@@ -249,10 +249,10 @@
   <input id="restoreFileInput" type="file" accept=".visabackup,.json,application/json" hidden />
   <div class="toast-stack" id="toastStack" aria-live="polite"></div>
 
-  <script src="db.js"></script>
+  <script src="reference-data.js"></script>\n  <script src="db.js"></script>
   <script src="zip.js"></script>
-  <script src="docx-engine.js"></script>
-  <script src="app.js"></script>
+  <script src="builtin-templates.js"></script>\n  <script src="docx-engine.js"></script>
+  <script src="app.js"></script>\n  <script src="ui-enhancements.js"></script>
   <script>
     if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(console.warn));
   </script>
