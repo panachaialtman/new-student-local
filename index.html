@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="New Student Visa Preparation Workspace — local browser data, client-side Word generation" />
+  <meta name="theme-color" content="#101d35" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <title>New Student Visa Workspace</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand-block">
+        <div class="brand-mark">BU</div>
+        <div>
+          <div class="brand-title">International Center</div>
+          <div class="brand-subtitle">Visa Operations</div>
+        </div>
+      </div>
+
+      <nav class="nav-list" aria-label="Primary">
+        <button class="nav-item active" data-view="workspace">
+          <span class="nav-icon">▦</span><span>New student cases</span>
+        </button>
+        <button class="nav-item" data-view="batches">
+          <span class="nav-icon">▤</span><span>Generation history</span>
+        </button>
+        <button class="nav-item" data-view="programs">
+          <span class="nav-icon">⌘</span><span>Academic programs</span>
+        </button>
+        <button class="nav-item" data-view="settings">
+          <span class="nav-icon">⚙</span><span>Workspace settings</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-foot">
+        <div class="privacy-card">
+          <div class="privacy-dot"></div>
+          <div>
+            <strong>Local browser workspace</strong>
+            <span>Student data and imported Word templates stay in this browser. GitHub hosts only the app code.</span>
+          </div>
+        </div>
+        <div class="version-row"><span>Visa Workspace</span><span>v0.2 Web</span></div>
+      </div>
+    </aside>
+
+    <main class="main-area">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="icon-btn mobile-only" id="menuToggle" aria-label="Open menu">☰</button>
+          <div>
+            <div class="eyebrow" id="pageEyebrow">NEW STUDENT VISA PREPARATION</div>
+            <h1 id="pageTitle">Case workspace</h1>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn subtle" id="restoreBtn">Restore</button>
+          <button class="btn subtle" id="backupBtn">Backup data</button>
+          <button class="btn primary" id="addStudentBtn">＋ Add student</button>
+        </div>
+      </header>
+
+      <section class="view active" id="workspaceView">
+        <div class="workspace-intro">
+          <div>
+            <h2>Semester 1/2026</h2>
+            <p>Prepare, validate and batch visa-extension letters without working row-by-row in Excel.</p>
+          </div>
+          <div class="sync-status"><span class="status-dot good"></span>Autosaved locally</div>
+        </div>
+
+        <div class="stats-grid" id="statsGrid"></div>
+
+        <div class="content-card cases-card">
+          <div class="cases-toolbar">
+            <div class="status-tabs" id="statusTabs"></div>
+            <div class="toolbar-right">
+              <label class="search-box">
+                <span>⌕</span>
+                <input id="searchInput" type="search" placeholder="Search name, ID or document no." autocomplete="off" />
+              </label>
+              <button class="btn icon-text" id="moreFiltersBtn">☷ Filters</button>
+            </div>
+          </div>
+
+          <div class="filter-panel hidden" id="filterPanel">
+            <label>Program type
+              <select id="programTypeFilter">
+                <option value="all">All types</option>
+                <option value="international">International program</option>
+                <option value="chinese_international">Chinese International program</option>
+                <option value="thai">Thai program</option>
+                <option value="graduate">Graduate program</option>
+              </select>
+            </label>
+            <button class="btn subtle" id="clearFiltersBtn">Clear filters</button>
+          </div>
+
+          <div class="list-header desktop-table">
+            <div><input type="checkbox" id="selectAll" aria-label="Select all visible students" /></div>
+            <div>Student</div>
+            <div>Program / rule</div>
+            <div>Visa request</div>
+            <div>Status</div>
+            <div></div>
+          </div>
+          <div class="case-list" id="caseList"></div>
+          <div class="empty-state hidden" id="emptyState">
+            <div class="empty-icon">⌕</div>
+            <h3>No cases match this view</h3>
+            <p>Change the filter or add a new student case.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="batchesView">
+        <div class="section-head">
+          <div><h2>Generation history</h2><p>Each prepared batch is retained as a local audit record in this prototype.</p></div>
+        </div>
+        <div class="content-card"><div id="batchHistory"></div></div>
+      </section>
+
+      <section class="view" id="programsView">
+        <div class="section-head">
+          <div><h2>Academic programs</h2><p>Faculty, major and 2026 credit data imported from the supplied Reference_Data workbook.</p></div>
+          <div class="pill" id="programCountPill">Reference data</div>
+        </div>
+        <div class="content-card program-browser">
+          <div class="program-toolbar">
+            <label class="search-box"><span>⌕</span><input id="programSearch" placeholder="Search program or faculty" /></label>
+            <div class="pill">Source: Faculty_Major</div>
+          </div>
+          <div id="programTable"></div>
+        </div>
+      </section>
+
+      <section class="view" id="settingsView">
+        <div class="section-head">
+          <div><h2>Workspace settings</h2><p>Batch-level information should live here instead of being hard-coded inside Word templates.</p></div>
+        </div>
+        <div class="settings-grid">
+          <div class="content-card setting-card">
+            <div class="setting-icon">✦</div>
+            <h3>Signatories</h3>
+            <p>Choose the active signer for new batches. This will replace the static signer currently embedded in the DOCX templates.</p>
+            <label>Default signatory
+              <select id="signatoryInput"></select>
+            </label>
+            <div id="settingsSignaturePreview"></div>
+          </div>
+          <div class="content-card setting-card">
+            <div class="setting-icon">⌁</div>
+            <h3>Request date rules</h3>
+            <p>Choose the extension period per student. Manual request date appears only when Manual Date is selected.</p>
+            <div class="rule-summary">+6 months → current stay + 6 months<br/>+1 year → current stay + 12 months<br/>Manual Date → use the entered request-until date</div>
+          </div>
+          <div class="content-card setting-card template-setting-card">
+            <div class="setting-icon">W</div>
+            <h3>Word templates</h3>
+            <p>Import each approved BU template once. The files are saved in this browser's IndexedDB and are never uploaded to GitHub.</p>
+            <div class="template-import-row"><label>Letter 16<input id="letter16TemplateInput" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" /></label><span id="letter16TemplateStatus" class="template-status">Not configured</span></div>
+            <div class="template-import-row"><label>Letter 76<input id="letter76TemplateInput" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" /></label><span id="letter76TemplateStatus" class="template-status">Not configured</span></div>
+            <div class="template-import-row"><label>Student list<input id="studentListTemplateInput" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" /></label><span id="studentListTemplateStatus" class="template-status">Not configured</span></div>
+            <div class="rule-summary">Template files remain only on this browser profile. Include them in Backup data if you want to move the workspace to another computer.</div>
+          </div>
+          <div class="content-card setting-card">
+            <div class="setting-icon">⇄</div>
+            <h3>Browser data</h3>
+            <p>Use Backup data before clearing browser data or moving to another computer. Restore accepts both the new .visabackup file and older JSON backups from the portable version.</p>
+            <button class="btn subtle" id="settingsRestoreBtn">Restore backup</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="selection-bar hidden" id="selectionBar">
+    <div><strong id="selectedCount">0 selected</strong><span>Ready for batch actions</span></div>
+    <div class="selection-actions">
+      <button class="btn subtle-on-dark" id="clearSelectionBtn">Clear</button>
+      <button class="btn danger-on-dark" id="deleteSelectedBtn">Delete selected</button>
+      <button class="btn white" id="prepareBatchBtn">Export Word →</button>
+    </div>
+  </div>
+
+  <div class="drawer-backdrop hidden" id="drawerBackdrop"></div>
+  <aside class="detail-drawer" id="detailDrawer" aria-label="Student case details">
+    <div class="drawer-head">
+      <div>
+        <div class="eyebrow">STUDENT CASE</div>
+        <h2 id="drawerName">Student</h2>
+        <div class="drawer-id" id="drawerId"></div>
+      </div>
+      <button class="icon-btn" id="closeDrawerBtn" aria-label="Close">×</button>
+    </div>
+    <div id="drawerContent" class="drawer-content"></div>
+    <div class="drawer-footer">
+      <button class="btn danger-ghost" id="deleteStudentBtn">Delete case</button>
+      <div class="drawer-footer-right">
+        <button class="btn subtle" id="printIndividualBtn">Print individual</button>
+        <button class="btn subtle" id="editStudentBtn">Edit</button>
+        <button class="btn primary hidden" id="saveStudentBtn">Save changes</button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="modal-backdrop hidden" id="modalBackdrop"></div>
+  <section class="modal hidden" id="studentModal" role="dialog" aria-modal="true" aria-labelledby="studentModalTitle">
+    <div class="modal-head">
+      <div><div class="eyebrow">NEW CASE</div><h2 id="studentModalTitle">Add student</h2></div>
+      <button class="icon-btn modal-close" data-close="studentModal">×</button>
+    </div>
+    <form id="studentForm" class="modal-body form-grid"></form>
+    <div class="modal-footer">
+      <button class="btn subtle modal-close" data-close="studentModal">Cancel</button>
+      <button class="btn primary" type="submit" form="studentForm">Add student</button>
+    </div>
+  </section>
+
+  <section class="modal batch-modal hidden" id="batchModal" role="dialog" aria-modal="true" aria-labelledby="batchModalTitle">
+    <div class="modal-head">
+      <div><div class="eyebrow">DOCUMENT GENERATION</div><h2 id="batchModalTitle">Generate selected cases</h2></div>
+      <button class="icon-btn modal-close" data-close="batchModal">×</button>
+    </div>
+    <div class="modal-body" id="batchModalBody"></div>
+    <div class="modal-footer">
+      <button class="btn subtle modal-close" data-close="batchModal">Cancel</button>
+      <button class="btn subtle" id="generateListBtn">Generate list</button>
+      <button class="btn primary" id="generateBatchBtn">Generate letters</button>
+    </div>
+  </section>
+
+  <section class="modal individual-modal hidden" id="individualModal" role="dialog" aria-modal="true" aria-labelledby="individualModalTitle">
+    <div class="modal-head">
+      <div><div class="eyebrow">INDIVIDUAL LETTER</div><h2 id="individualModalTitle">Print individual</h2></div>
+      <button class="icon-btn modal-close" data-close="individualModal">×</button>
+    </div>
+    <div class="modal-body" id="individualModalBody"></div>
+    <div class="modal-footer">
+      <button class="btn subtle modal-close" data-close="individualModal">Cancel</button>
+      <button class="btn primary" id="generateIndividualBtn">Download Word letter</button>
+    </div>
+  </section>
+
+  <datalist id="nationalitySuggestions"></datalist>
+  <input id="restoreFileInput" type="file" accept=".visabackup,.json,application/json" hidden />
+  <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+
+  <script src="db.js"></script>
+  <script src="zip.js"></script>
+  <script src="docx-engine.js"></script>
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(console.warn));
+  </script>
+</body>
+</html>

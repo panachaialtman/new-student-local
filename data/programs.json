@@ -1,0 +1,1000 @@
+[
+  {
+    "recordId": "FM001",
+    "key": "Business Administration [BUI]",
+    "facultyEnglish": "BU International",
+    "facultyThai": "วิทยาลัยนานาชาติ",
+    "facultyCode": "BUI",
+    "programEnglish": "Business Administration",
+    "programThai": "สาขาวิชาบริหารธุรกิจ",
+    "additionalNotes": "",
+    "credits": {
+      "2026": 129
+    },
+    "programType": "international",
+    "sourceProgramType": "International",
+    "degreeLevel": "bachelor",
+    "source": "สาขา 20260121.xlsx"
+  },
+  {
+    "recordId": "FM002",
+    "key": "Business English [BUI]",
+    "facultyEnglish": "BU International",
+    "facultyThai": "วิทยาลัยนานาชาติ",
+    "facultyCode": "BUI",
+    "programEnglish": "Business English",
+    "programThai": "สาขาวิชาภาษาอังกฤษธุรกิจ",
+    "additionalNotes": "",
+    "credits": {
+      "2026": 126
+    },
+    "programType": "international",
+    "sourceProgramType": "International",
+    "degreeLevel": "bachelor",
+    "source": "สาขา 20260121.xlsx"
+  },
+  {
+    "recordId": "FM003",
+    "key": "Communication Arts [BUI]",
+    "facultyEnglish": "BU International",
+    "facultyThai": "วิทยาลัยนานาชาติ",
+    "facultyCode": "BUI",
+    "programEnglish": "Communication Arts",
+    "programThai": "สาขาวิชานิเทศศาสตร์",
+    "additionalNotes": "",
+    "credits": {
+      "2026": null
+    },
+    "programType": "international",
+    "sourceProgramType": "International",
+    "degreeLevel": "bachelor",
+    "source": "สาขา 20260121.xlsx"
+  },
+  {
+    "recordId": "FM004",
+    "key": "Media and Communication [BUI]",
+    "facultyEnglish": "BU International",
+    "facultyThai": "วิทยาลัยนานาชาติ",
+    "facultyCode": "BUI",
+    "programEnglish": "Media and Communication",
+    "programThai": "สาขาวิชาสื่อและการสื่อสาร",
+    "additionalNotes": "(CSI – สาขาวิชากลยุทธ์การสื่อสารและการคิดค้นสิ่งใหม่)",
+    "credits": {
+      "2026": 132
+    },
+    "programType": "international",
+    "sourceProgramType": "International",
+    "degreeLevel": "bachelor",
+    "source": "สาขา 20260121.xlsx"
+  },
+  {
+    "recordId": "FM005",
+    "key": "Creative Communication Design [BUI]",
+    "facultyEnglish": "BU International",
+    "facultyThai": "วิทยาลัยนานาชาติ",
+    "facultyCode": "BUI",
+    "programEnglish": "Creative Communication Design",
+    "programThai": "สาขาวิชาการออกแบบนิเทศศิลป์เชิงสร้างสรรค์",
+    "additionalNotes": "(Digital Media and Design สาขาวิชาสื่อดิจิทัลและการออกแบบ)",
+    "credits": {
+      "2026": 129
+    },
+    "programType": "international",
+    "sourceProgramType": "International",
+    "degreeLevel": "bachelor",
+    "source": "สาขา 20260121.xlsx"
+  },
+  {
+    "recordId": "FM006",
+    "key": "International Tourism and Hospitality Management [BUI]",
+    "facultyEnglish": "BU International",
+    "facultyThai": "วิทยาลัยนานาชาติ",
+    "facultyCode": "BUI",
+    "programEnglish": "International Tourism and Hospitality Management",
+    "programThai": "สาขาวิชาการจัดการท่องเที่ยวและการบริการนานาชาติ",
+    "additionalNotes": "",
+    "credits": {
+      "2026": 123
+    },
+    "programType": "international",
+    "sourceProgramType": "International",
+    "degreeLevel": "bachelor",
+    "source": "สาขา 20260121.xlsx"
+  },
+  {
+    "recordId": "FM007",
+    "key": "Marketing [BUI]",
+    "facultyEnglish": "BU International",
+    "facultyThai": "วิทยาลัยนานาชาติ",
+    "facultyCode": "BUI",
+    "programEnglish": "Marketing",
+    "programThai": "สาขาวิชาการตลาด",
+    "additionalNotes": "",
+    "credits": {
+      "2026": 129
+    },
+    "programType": "international",
+    "sourceProgramType": "International",
+    "degreeLevel": "bachelor",
+    "source": "สาขา 20260121.xlsx"
+  },
+  {
+    "recordId": "FM008",
+    "key": "Entrepreneurship [BUSEM]",
+    "facultyEnglish": "School of Entrepreneurship and Management",
+    "facultyThai": "คณะการสร้างเจ้าของธุรกิจและการบริหารกิจการ",
+    "facultyCode": "BUSEM",
+    "programEnglish": "Entrepreneurship",
+    "programThai": "สาขาวิชาการเป็นเจ้าของธุรกิจ (หลักสูตรนานาชาติ)",
+    "additionalNotes": "",
+    "credits": {
+      "2026": 132
+    },
+    "programType": "international",
+    "sourceProgramType": "International",
+    "degreeLevel": "bachelor",
+    "source": "สาขา 20260121.xlsx"
+  },
+  {
+    "recordId": "FM009",
+    "key": "Innovative Media Production [CA]",
+    "facultyEnglish": "School of Communication Arts",
+    "facultyThai": "คณะนิเทศศาสตร์",
+    "facultyCode": "CA",
+    "programEnglish": "Innovative Media Production",
+    "programThai": "สาขาวิชาการผลิตสื่อนวัตกรรม (หลักสูตรนานาชาติ)",
+    "additionalNotes": "",
+    "credits": {
+      "2026": 126
+    },
+    "programType": "international",
+    "sourceProgramType": "International",
+    "degreeLevel": "bachelor",
+    "source": "สาขา 20260121.xlsx"
+  },
+  {
+    "recordId": "FM010",
+    "key": "Culinary Arts and Design [HTM]",
+    "facultyEnglish": "School of Humanities and Tourism Management",
+    "facultyThai": "คณะมนุษยศาสตร์และการจัดการการท่องเที่ยว",
+    "facultyCode": "HTM",
+    "programEnglish": "Culinary Arts and Design",
+    "programThai": "สาขาวิชาศิลปะการประกอบและออกแบบอาหาร (หลักสูตรนานาชาติ)",
+    "additionalNotes": "",
+    "credits": {
+      "2026": 129
+    },
+    "programType": "international",
+    "sourceProgramType": "International",
+    "degreeLevel": "bachelor",
+    "source": "สาขา 20260121.xlsx"
+  },
+  {
+    "recordId": "FM011",
+    "key": "Film, Series and Global Content Production and Business [DMC]",
+    "facultyEnglish": "School of Digital Media and Cinematic Arts",
+    "facultyThai": "คณะดิจิทัลมีเดียและศิลปะภาพยนตร์",
+    "facultyCode": "DMC",
+    "programEnglish": "Film, Series and Global Content Production and Business",
+    "programThai": "สาขาวิชาการผลิตและธุรกิจภาพยนตร์ ซีรีส์ และเนื้อหาสากล (หลักสูตรนานาชาติ)",
+    "additionalNotes": "",
+    "credits": {
+      "2026": 132
+    },
+    "programType": "international",
+    "sourceProgramType": "International",
+    "degreeLevel": "bachelor",
+    "source": "สาขา 20260121.xlsx"
+  },
+  {
+    "recordId": "FM012",
+    "key": "Accounting Program [คณะบัญชี]",
+    "facultyEnglish": "School of Accounting",
+    "facultyThai": "คณะบัญชี",
+    "facultyCode": "",
+    "programEnglish": "Accounting Program",
+    "programThai": "หลักสูตรบัญชีบัณฑิต",
+    "additionalNotes": "",
+    "credits": {
+      "2026": 135
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "สาขา 20260121.xlsx"
+  },
+  {
+    "recordId": "FM013",
+    "key": "Marketing [คณะบริหารธุรกิจ]",
+    "facultyEnglish": "School of Business Administration",
+    "facultyThai": "คณะบริหารธุรกิจ",
+    "facultyCode": "",
+    "programEnglish": "Marketing",
+    "programThai": "สาขาวิชาการตลาด",
+    "additionalNotes": "",
+    "credits": {
+      "2026": 129
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "สาขา 20260121.xlsx"
+  },
+  {
+    "recordId": "FM014",
+    "key": "Finance [คณะบริหารธุรกิจ]",
+    "facultyEnglish": "School of Business Administration",
+    "facultyThai": "คณะบริหารธุรกิจ",
+    "facultyCode": "",
+    "programEnglish": "Finance",
+    "programThai": "สาขาวิชาการเงิน",
+    "additionalNotes": "",
+    "credits": {
+      "2026": 129
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "สาขา 20260121.xlsx"
+  },
+  {
+    "recordId": "FM015",
+    "key": "Management [คณะบริหารธุรกิจ]",
+    "facultyEnglish": "School of Business Administration",
+    "facultyThai": "คณะบริหารธุรกิจ",
+    "facultyCode": "",
+    "programEnglish": "Management",
+    "programThai": "สาขาวิชาการจัดการ",
+    "additionalNotes": "",
+    "credits": {
+      "2026": 129
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "สาขา 20260121.xlsx"
+  },
+  {
+    "recordId": "FM016",
+    "key": "International Business Management [คณะบริหารธุรกิจ]",
+    "facultyEnglish": "School of Business Administration",
+    "facultyThai": "คณะบริหารธุรกิจ",
+    "facultyCode": "",
+    "programEnglish": "International Business Management",
+    "programThai": "สาขาวิชาการจัดการธุรกิจระหว่างประเทศ",
+    "additionalNotes": "",
+    "credits": {
+      "2026": 135
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "สาขา 20260121.xlsx"
+  },
+  {
+    "recordId": "FM017",
+    "key": "Logistics and Supply Chain Management [คณะบริหารธุรกิจ]",
+    "facultyEnglish": "School of Business Administration",
+    "facultyThai": "คณะบริหารธุรกิจ",
+    "facultyCode": "",
+    "programEnglish": "Logistics and Supply Chain Management",
+    "programThai": "สาขาวิชาการจัดการโลจิสติกส์และโซ่อุปทาน",
+    "additionalNotes": "",
+    "credits": {
+      "2026": 135
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "สาขา 20260121.xlsx"
+  },
+  {
+    "recordId": "FM018",
+    "key": "Financial and Investment Planning [คณะบริหารธุรกิจ]",
+    "facultyEnglish": "School of Business Administration",
+    "facultyThai": "คณะบริหารธุรกิจ",
+    "facultyCode": "",
+    "programEnglish": "Financial and Investment Planning",
+    "programThai": "สาขาวิชาการวางแผนการเงินและการลงทุน",
+    "additionalNotes": "",
+    "credits": {
+      "2026": 121
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "สาขา 20260121.xlsx"
+  },
+  {
+    "recordId": "FM019",
+    "key": "Digital Marketing [คณะบริหารธุรกิจ]",
+    "facultyEnglish": "School of Business Administration",
+    "facultyThai": "คณะบริหารธุรกิจ",
+    "facultyCode": "",
+    "programEnglish": "Digital Marketing",
+    "programThai": "สาขาวิชาการตลาดดิจิทัล",
+    "additionalNotes": "",
+    "credits": {
+      "2026": 129
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "สาขา 20260121.xlsx"
+  },
+  {
+    "recordId": "FM020",
+    "key": "Broadcasting and Streaming Media Production [CA]",
+    "facultyEnglish": "School of Communication Arts",
+    "facultyThai": "คณะนิเทศศาสตร์",
+    "facultyCode": "CA",
+    "programEnglish": "Broadcasting and Streaming Media Production",
+    "programThai": "สาขาวิชาวิทยุกระจายเสียง วิทยุโทรทัศน์ และการผลิตสื่อสตรีมมิ่ง",
+    "additionalNotes": "",
+    "credits": {
+      "2026": 129
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "สาขา 20260121.xlsx"
+  },
+  {
+    "recordId": "FM021",
+    "key": "Communications and New Media [CA]",
+    "facultyEnglish": "School of Communication Arts",
+    "facultyThai": "คณะนิเทศศาสตร์",
+    "facultyCode": "CA",
+    "programEnglish": "Communications and New Media",
+    "programThai": "สาขาวิชาการสื่อสารและสื่อใหม่",
+    "additionalNotes": "",
+    "credits": {
+      "2026": 129
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "สาขา 20260121.xlsx"
+  },
+  {
+    "recordId": "FM022",
+    "key": "Creative Content Production and Digital Experience [CA]",
+    "facultyEnglish": "School of Communication Arts",
+    "facultyThai": "คณะนิเทศศาสตร์",
+    "facultyCode": "CA",
+    "programEnglish": "Creative Content Production and Digital Experience",
+    "programThai": "สาขาวิชาการผลิตเนื้อหาสร้างสรรค์และประสบการณ์ดิจิทัล",
+    "additionalNotes": "",
+    "credits": {
+      "2026": 126
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "สาขา 20260121.xlsx"
+  },
+  {
+    "recordId": "FM023",
+    "key": "Performing Arts [CA]",
+    "facultyEnglish": "School of Communication Arts",
+    "facultyThai": "คณะนิเทศศาสตร์",
+    "facultyCode": "CA",
+    "programEnglish": "Performing Arts",
+    "programThai": "สาขาวิชาศิลปะการแสดง",
+    "additionalNotes": "",
+    "credits": {
+      "2026": 133
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "สาขา 20260121.xlsx"
+  },
+  {
+    "recordId": "FM024",
+    "key": "Event Production and MICE Management [CA]",
+    "facultyEnglish": "School of Communication Arts",
+    "facultyThai": "คณะนิเทศศาสตร์",
+    "facultyCode": "CA",
+    "programEnglish": "Event Production and MICE Management",
+    "programThai": "สาขาวิชาการผลิตอีเว้นท์ และการจัดการนิทรรศการและการประชุม",
+    "additionalNotes": "",
+    "credits": {
+      "2026": 129
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "สาขา 20260121.xlsx"
+  },
+  {
+    "recordId": "FM025",
+    "key": "English [HTM]",
+    "facultyEnglish": "School of Humanities and Tourism Management",
+    "facultyThai": "คณะมนุษยศาสตร์และการจัดการการท่องเที่ยว",
+    "facultyCode": "HTM",
+    "programEnglish": "English",
+    "programThai": "สาขาวิชาภาษาอังกฤษ",
+    "additionalNotes": "",
+    "credits": {
+      "2026": 135
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "สาขา 20260121.xlsx"
+  },
+  {
+    "recordId": "FM026",
+    "key": "Hotel Management [HTM]",
+    "facultyEnglish": "School of Humanities and Tourism Management",
+    "facultyThai": "คณะมนุษยศาสตร์และการจัดการการท่องเที่ยว",
+    "facultyCode": "HTM",
+    "programEnglish": "Hotel Management",
+    "programThai": "สาขาวิชาการจัดการการโรงแรม",
+    "additionalNotes": "",
+    "credits": {
+      "2026": 126
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "สาขา 20260121.xlsx"
+  },
+  {
+    "recordId": "FM027",
+    "key": "Tourism and Cruise Management [HTM]",
+    "facultyEnglish": "School of Humanities and Tourism Management",
+    "facultyThai": "คณะมนุษยศาสตร์และการจัดการการท่องเที่ยว",
+    "facultyCode": "HTM",
+    "programEnglish": "Tourism and Cruise Management",
+    "programThai": "สาขาวิชาการจัดการการท่องเที่ยวและเรือสำราญ",
+    "additionalNotes": "",
+    "credits": {
+      "2026": 129
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "สาขา 20260121.xlsx"
+  },
+  {
+    "recordId": "FM028",
+    "key": "Airline Business Management [HTM]",
+    "facultyEnglish": "School of Humanities and Tourism Management",
+    "facultyThai": "คณะมนุษยศาสตร์และการจัดการการท่องเที่ยว",
+    "facultyCode": "HTM",
+    "programEnglish": "Airline Business Management",
+    "programThai": "สาขาวิชาการจัดการธุรกิจสายการบิน",
+    "additionalNotes": "",
+    "credits": {
+      "2026": 123
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "สาขา 20260121.xlsx"
+  },
+  {
+    "recordId": "FM029",
+    "key": "Culinary Arts and Restaurant Service Management [HTM]",
+    "facultyEnglish": "School of Humanities and Tourism Management",
+    "facultyThai": "คณะมนุษยศาสตร์และการจัดการการท่องเที่ยว",
+    "facultyCode": "HTM",
+    "programEnglish": "Culinary Arts and Restaurant Service Management",
+    "programThai": "สาขาวิชาศิลปะการประกอบอาหารและการจัดการการบริการธุรกิจร้านอาหาร",
+    "additionalNotes": "",
+    "credits": {
+      "2026": 123
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "สาขา 20260121.xlsx"
+  },
+  {
+    "recordId": "FM030",
+    "key": "Law Program [คณะนิติศาสตร์]",
+    "facultyEnglish": "School of Law",
+    "facultyThai": "คณะนิติศาสตร์",
+    "facultyCode": "",
+    "programEnglish": "Law Program",
+    "programThai": "หลักสูตรนิติศาสตรบัณฑิต",
+    "additionalNotes": "",
+    "credits": {
+      "2026": 141
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "สาขา 20260121.xlsx"
+  },
+  {
+    "recordId": "FM031",
+    "key": "Economics [คณะเศรษฐศาสตร์และการลงทุน]",
+    "facultyEnglish": "School of Economics and Investment",
+    "facultyThai": "คณะเศรษฐศาสตร์และการลงทุน",
+    "facultyCode": "",
+    "programEnglish": "Economics",
+    "programThai": "หลักสูตรเศรษฐศาสตรบัณฑิต",
+    "additionalNotes": "",
+    "credits": {
+      "2026": 120
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "สาขา 20260121.xlsx"
+  },
+  {
+    "recordId": "FM033",
+    "key": "Business Administration (Bilingual Program) [BUI]",
+    "facultyEnglish": "BU International",
+    "facultyThai": "วิทยาลัยนานาชาติ",
+    "facultyCode": "BUI",
+    "programEnglish": "Business Administration (Bilingual Program)",
+    "programThai": "บริหารธุรกิจ (หลักสูตรสองภาษา)",
+    "additionalNotes": "",
+    "credits": {
+      "2026": null
+    },
+    "programType": "international",
+    "sourceProgramType": "Bilingual",
+    "degreeLevel": "bachelor",
+    "source": "Bangkok University Official Website"
+  },
+  {
+    "recordId": "FM034",
+    "key": "AI Engineering and Entrepreneurship [BUI]",
+    "facultyEnglish": "BU International",
+    "facultyThai": "วิทยาลัยนานาชาติ",
+    "facultyCode": "BUI",
+    "programEnglish": "AI Engineering and Entrepreneurship",
+    "programThai": "วิศวกรรมปัญญาประดิษฐ์และการเป็นผู้ประกอบการ",
+    "additionalNotes": "",
+    "credits": {
+      "2026": null
+    },
+    "programType": "international",
+    "sourceProgramType": "International",
+    "degreeLevel": "bachelor",
+    "source": "Bangkok University Official Website"
+  },
+  {
+    "recordId": "FM035",
+    "key": "Computer Science [BUI]",
+    "facultyEnglish": "BU International",
+    "facultyThai": "วิทยาลัยนานาชาติ",
+    "facultyCode": "BUI",
+    "programEnglish": "Computer Science",
+    "programThai": "วิทยาการคอมพิวเตอร์",
+    "additionalNotes": "",
+    "credits": {
+      "2026": null
+    },
+    "programType": "international",
+    "sourceProgramType": "International",
+    "degreeLevel": "bachelor",
+    "source": "Bangkok University Official Website"
+  },
+  {
+    "recordId": "FM036",
+    "key": "Business Chinese [BUCI]",
+    "facultyEnglish": "Bangkok University Chinese International",
+    "facultyThai": "หลักสูตรนานาชาติจีน",
+    "facultyCode": "BUCI",
+    "programEnglish": "Business Chinese",
+    "programThai": "สาขาวิชาภาษาจีนธุรกิจ",
+    "additionalNotes": "",
+    "credits": {
+      "2026": null
+    },
+    "programType": "chinese_international",
+    "sourceProgramType": "International",
+    "degreeLevel": "bachelor",
+    "source": "Bangkok University Official Website"
+  },
+  {
+    "recordId": "FM037",
+    "key": "Business Administration (Bilingual Program) [BUCI]",
+    "facultyEnglish": "Bangkok University Chinese International",
+    "facultyThai": "หลักสูตรนานาชาติจีน",
+    "facultyCode": "BUCI",
+    "programEnglish": "Business Administration (Bilingual Program)",
+    "programThai": "บริหารธุรกิจ (หลักสูตรสองภาษา จีน-อังกฤษ)",
+    "additionalNotes": "",
+    "credits": {
+      "2026": null
+    },
+    "programType": "chinese_international",
+    "sourceProgramType": "Bilingual",
+    "degreeLevel": "bachelor",
+    "source": "Bangkok University Official Website"
+  },
+  {
+    "recordId": "FM038",
+    "key": "International Business Management (Chinese Business) [คณะบริหารธุรกิจ]",
+    "facultyEnglish": "School of Business Administration",
+    "facultyThai": "คณะบริหารธุรกิจ",
+    "facultyCode": "",
+    "programEnglish": "International Business Management (Chinese Business)",
+    "programThai": "สาขาวิชาการจัดการธุรกิจระหว่างประเทศ (มุ่งเน้นธุรกิจจีน)",
+    "additionalNotes": "",
+    "credits": {
+      "2026": null
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "Bangkok University Official Website"
+  },
+  {
+    "recordId": "FM039",
+    "key": "Digital Marketing (Digital Entrepreneur & Brand Influencer) [คณะบริหารธุรกิจ]",
+    "facultyEnglish": "School of Business Administration",
+    "facultyThai": "คณะบริหารธุรกิจ",
+    "facultyCode": "",
+    "programEnglish": "Digital Marketing (Digital Entrepreneur & Brand Influencer)",
+    "programThai": "สาขาวิชาการตลาดดิจิทัล มุ่งเน้นเจ้าของธุรกิจดิจิทัลและแบรนด์อินฟลูเอนเซอร์",
+    "additionalNotes": "",
+    "credits": {
+      "2026": null
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "Bangkok University Official Website"
+  },
+  {
+    "recordId": "FM040",
+    "key": "Logistics and Supply Chain Management (Digital Commerce Logistics) [คณะบริหารธุรกิจ]",
+    "facultyEnglish": "School of Business Administration",
+    "facultyThai": "คณะบริหารธุรกิจ",
+    "facultyCode": "",
+    "programEnglish": "Logistics and Supply Chain Management (Digital Commerce Logistics)",
+    "programThai": "สาขาวิชาการจัดการโลจิสติกส์และโซ่อุปทาน มุ่งเน้นดิจิทัลคอมเมิร์ซโลจิสติกส์",
+    "additionalNotes": "",
+    "credits": {
+      "2026": null
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "Bangkok University Official Website"
+  },
+  {
+    "recordId": "FM041",
+    "key": "Communications and New Media (Creative Branding) [CA]",
+    "facultyEnglish": "School of Communication Arts",
+    "facultyThai": "คณะนิเทศศาสตร์",
+    "facultyCode": "CA",
+    "programEnglish": "Communications and New Media (Creative Branding)",
+    "programThai": "สาขาวิชาการสื่อสารและสื่อใหม่ (มุ่งเน้นการสร้างแบรนด์สร้างสรรค์)",
+    "additionalNotes": "",
+    "credits": {
+      "2026": null
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "Bangkok University Official Website"
+  },
+  {
+    "recordId": "FM042",
+    "key": "Communications and New Media (Digital Public Relations) [CA]",
+    "facultyEnglish": "School of Communication Arts",
+    "facultyThai": "คณะนิเทศศาสตร์",
+    "facultyCode": "CA",
+    "programEnglish": "Communications and New Media (Digital Public Relations)",
+    "programThai": "สาขาวิชาการสื่อสารและสื่อใหม่ (มุ่งเน้นการประชาสัมพันธ์ดิจิทัล)",
+    "additionalNotes": "",
+    "credits": {
+      "2026": null
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "Bangkok University Official Website"
+  },
+  {
+    "recordId": "FM043",
+    "key": "Communications and New Media (Digital Advertising) [CA]",
+    "facultyEnglish": "School of Communication Arts",
+    "facultyThai": "คณะนิเทศศาสตร์",
+    "facultyCode": "CA",
+    "programEnglish": "Communications and New Media (Digital Advertising)",
+    "programThai": "สาขาวิชาการสื่อสารและสื่อใหม่ (มุ่งเน้นการโฆษณาดิจิทัล)",
+    "additionalNotes": "",
+    "credits": {
+      "2026": null
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "Bangkok University Official Website"
+  },
+  {
+    "recordId": "FM044",
+    "key": "Communications and New Media (Influencer Branding) [CA]",
+    "facultyEnglish": "School of Communication Arts",
+    "facultyThai": "คณะนิเทศศาสตร์",
+    "facultyCode": "CA",
+    "programEnglish": "Communications and New Media (Influencer Branding)",
+    "programThai": "สาขาวิชาการสื่อสารและสื่อใหม่ (มุ่งเน้นการสร้างแบรนด์อินฟลูเอนเซอร์)",
+    "additionalNotes": "",
+    "credits": {
+      "2026": null
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "Bangkok University Official Website"
+  },
+  {
+    "recordId": "FM045",
+    "key": "Communications and New Media (Digital Communication and Media) [CA]",
+    "facultyEnglish": "School of Communication Arts",
+    "facultyThai": "คณะนิเทศศาสตร์",
+    "facultyCode": "CA",
+    "programEnglish": "Communications and New Media (Digital Communication and Media)",
+    "programThai": "สาขาวิชาการสื่อสารและสื่อใหม่ (มุ่งเน้นการสื่อสารดิจิทัลและอุตสาหกรรมสื่อ)",
+    "additionalNotes": "",
+    "credits": {
+      "2026": null
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "Bangkok University Official Website"
+  },
+  {
+    "recordId": "FM046",
+    "key": "Global Creator and Influencer Branding [CA]",
+    "facultyEnglish": "School of Communication Arts",
+    "facultyThai": "คณะนิเทศศาสตร์",
+    "facultyCode": "CA",
+    "programEnglish": "Global Creator and Influencer Branding",
+    "programThai": "สาขาวิชาการสร้างสรรค์และการสร้างแบรนด์อินฟลูเอนเซอร์ระดับสากล",
+    "additionalNotes": "",
+    "credits": {
+      "2026": null
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "Bangkok University Official Website"
+  },
+  {
+    "recordId": "FM047",
+    "key": "Film [DMC]",
+    "facultyEnglish": "School of Digital Media and Cinematic Arts",
+    "facultyThai": "คณะดิจิทัลมีเดียและศิลปะภาพยนตร์",
+    "facultyCode": "DMC",
+    "programEnglish": "Film",
+    "programThai": "สาขาวิชาภาพยนตร์",
+    "additionalNotes": "",
+    "credits": {
+      "2026": null
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "Bangkok University Official Website"
+  },
+  {
+    "recordId": "FM048",
+    "key": "Digital Media [DMC]",
+    "facultyEnglish": "School of Digital Media and Cinematic Arts",
+    "facultyThai": "คณะดิจิทัลมีเดียและศิลปะภาพยนตร์",
+    "facultyCode": "DMC",
+    "programEnglish": "Digital Media",
+    "programThai": "สาขาวิชาสื่อดิจิทัล",
+    "additionalNotes": "",
+    "credits": {
+      "2026": null
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "Bangkok University Official Website"
+  },
+  {
+    "recordId": "FM049",
+    "key": "Virtual Production and Immersive Experience Design [DMC]",
+    "facultyEnglish": "School of Digital Media and Cinematic Arts",
+    "facultyThai": "คณะดิจิทัลมีเดียและศิลปะภาพยนตร์",
+    "facultyCode": "DMC",
+    "programEnglish": "Virtual Production and Immersive Experience Design",
+    "programThai": "สาขาวิชาการผลิตเสมือนและการออกแบบประสบการณ์โลกเสมือนจริง",
+    "additionalNotes": "",
+    "credits": {
+      "2026": null
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "Bangkok University Official Website"
+  },
+  {
+    "recordId": "FM050",
+    "key": "International Tourism and Hospitality Management [HTM]",
+    "facultyEnglish": "School of Humanities and Tourism Management",
+    "facultyThai": "คณะมนุษยศาสตร์และการจัดการการท่องเที่ยว",
+    "facultyCode": "HTM",
+    "programEnglish": "International Tourism and Hospitality Management",
+    "programThai": "สาขาวิชาการจัดการท่องเที่ยวและการบริการนานาชาติ",
+    "additionalNotes": "",
+    "credits": {
+      "2026": null
+    },
+    "programType": "international",
+    "sourceProgramType": "International",
+    "degreeLevel": "bachelor",
+    "source": "Bangkok University Official Website"
+  },
+  {
+    "recordId": "FM051",
+    "key": "Computer Science [คณะเทคโนโลยีสารสนเทศและนวัตกรรม]",
+    "facultyEnglish": "School of Information Technology and Innovation",
+    "facultyThai": "คณะเทคโนโลยีสารสนเทศและนวัตกรรม",
+    "facultyCode": "",
+    "programEnglish": "Computer Science",
+    "programThai": "สาขาวิชาวิทยาการคอมพิวเตอร์",
+    "additionalNotes": "",
+    "credits": {
+      "2026": null
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "Bangkok University Official Website"
+  },
+  {
+    "recordId": "FM052",
+    "key": "Information Technology [คณะเทคโนโลยีสารสนเทศและนวัตกรรม]",
+    "facultyEnglish": "School of Information Technology and Innovation",
+    "facultyThai": "คณะเทคโนโลยีสารสนเทศและนวัตกรรม",
+    "facultyCode": "",
+    "programEnglish": "Information Technology",
+    "programThai": "สาขาวิชาเทคโนโลยีสารสนเทศ",
+    "additionalNotes": "",
+    "credits": {
+      "2026": null
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "Bangkok University Official Website"
+  },
+  {
+    "recordId": "FM053",
+    "key": "Games and Interactive Media [คณะเทคโนโลยีสารสนเทศและนวัตกรรม]",
+    "facultyEnglish": "School of Information Technology and Innovation",
+    "facultyThai": "คณะเทคโนโลยีสารสนเทศและนวัตกรรม",
+    "facultyCode": "",
+    "programEnglish": "Games and Interactive Media",
+    "programThai": "สาขาวิชาเกมและสื่อเชิงโต้ตอบ",
+    "additionalNotes": "",
+    "credits": {
+      "2026": null
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "Bangkok University Official Website"
+  },
+  {
+    "recordId": "FM054",
+    "key": "Computer Science - Data Science and Cybersecurity [คณะเทคโนโลยีสารสนเทศและนวัตกรรม]",
+    "facultyEnglish": "School of Information Technology and Innovation",
+    "facultyThai": "คณะเทคโนโลยีสารสนเทศและนวัตกรรม",
+    "facultyCode": "",
+    "programEnglish": "Computer Science - Data Science and Cybersecurity",
+    "programThai": "สาขาวิชาวิทยาการคอมพิวเตอร์ มุ่งเน้นวิทยาการข้อมูลและความมั่นคงปลอดภัยไซเบอร์",
+    "additionalNotes": "",
+    "credits": {
+      "2026": null
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "Bangkok University Official Website"
+  },
+  {
+    "recordId": "FM055",
+    "key": "Intelligent Information Technology and Applied Artificial Intelligence [คณะเทคโนโลยีสารสนเทศและนวัตกรรม]",
+    "facultyEnglish": "School of Information Technology and Innovation",
+    "facultyThai": "คณะเทคโนโลยีสารสนเทศและนวัตกรรม",
+    "facultyCode": "",
+    "programEnglish": "Intelligent Information Technology and Applied Artificial Intelligence",
+    "programThai": "สาขาวิชาเทคโนโลยีสารสนเทศอัจฉริยะและปัญญาประดิษฐ์ประยุกต์",
+    "additionalNotes": "",
+    "credits": {
+      "2026": null
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "Bangkok University Official Website"
+  },
+  {
+    "recordId": "FM056",
+    "key": "Games and Intelligent Interactive Technology [คณะเทคโนโลยีสารสนเทศและนวัตกรรม]",
+    "facultyEnglish": "School of Information Technology and Innovation",
+    "facultyThai": "คณะเทคโนโลยีสารสนเทศและนวัตกรรม",
+    "facultyCode": "",
+    "programEnglish": "Games and Intelligent Interactive Technology",
+    "programThai": "สาขาวิชาเกมและเทคโนโลยีเชิงโต้ตอบอัจฉริยะ",
+    "additionalNotes": "",
+    "credits": {
+      "2026": null
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "Bangkok University Official Website"
+  },
+  {
+    "recordId": "FM057",
+    "key": "Electrical Engineering [คณะวิศวกรรมศาสตร์]",
+    "facultyEnglish": "School of Engineering",
+    "facultyThai": "คณะวิศวกรรมศาสตร์",
+    "facultyCode": "",
+    "programEnglish": "Electrical Engineering",
+    "programThai": "สาขาวิชาวิศวกรรมไฟฟ้า",
+    "additionalNotes": "",
+    "credits": {
+      "2026": null
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "Bangkok University Official Website"
+  },
+  {
+    "recordId": "FM058",
+    "key": "Artificial Intelligence Engineering and Data Science [คณะวิศวกรรมศาสตร์]",
+    "facultyEnglish": "School of Engineering",
+    "facultyThai": "คณะวิศวกรรมศาสตร์",
+    "facultyCode": "",
+    "programEnglish": "Artificial Intelligence Engineering and Data Science",
+    "programThai": "สาขาวิชาวิศวกรรมปัญญาประดิษฐ์และวิทยาการข้อมูล",
+    "additionalNotes": "",
+    "credits": {
+      "2026": null
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "Bangkok University Official Website"
+  },
+  {
+    "recordId": "FM059",
+    "key": "Unmanned Aircraft System and Technology Engineering [คณะวิศวกรรมศาสตร์]",
+    "facultyEnglish": "School of Engineering",
+    "facultyThai": "คณะวิศวกรรมศาสตร์",
+    "facultyCode": "",
+    "programEnglish": "Unmanned Aircraft System and Technology Engineering",
+    "programThai": "สาขาวิศวกรรมระบบและเทคโนโลยีอากาศยานไร้คนขับ",
+    "additionalNotes": "",
+    "credits": {
+      "2026": null
+    },
+    "programType": "thai",
+    "sourceProgramType": "Thai",
+    "degreeLevel": "bachelor",
+    "source": "Bangkok University Official Website"
+  },
+  {
+    "recordId": "FM060",
+    "key": "Computer and Robotics Engineering [คณะวิศวกรรมศาสตร์]",
+    "facultyEnglish": "School of Engineering",
+    "facultyThai": "คณะวิศวกรรมศาสตร์",
+    "facultyCode": "",
+    "programEnglish": "Computer and Robotics Engineering",
+    "programThai": "สาขาวิชาวิศวกรรมคอมพิวเตอร์และหุ่นยนต์",
+    "additionalNotes": "",
+    "credits": {
+      "2026": null
+    },
+    "programType": "thai",
