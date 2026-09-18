@@ -998,3 +998,178 @@
   }
 
   function historyStudents(batch) {
+    if (Array.isArray(batch.students) && batch.students.length) return batch.students;
+    const docs = Array.isArray(batch.documentNumbers) ? batch.documentNumbers : [];
+    if (!docs.length) return [];
+    return docs.map((docNo) => {
+      const match = state.cases.find((item) => String(item.documentNo || '').trim() === String(docNo || '').trim());
+      return match ? {
+        documentNo: String(match.documentNo || '').trim(),
+        studentId: String(match.studentId || '').trim(),
+        fullName: String(match.fullName || '').trim(),
+      } : {
+        documentNo: String(docNo || '').trim(),
+        studentId: '',
+        fullName: '',
+      };
+    });
+  }
+
+  function renderBatchHistory() {
+    if (!state.batches.length) {
+      el('batchHistory').innerHTML = `<div class="history-empty"><strong>No generated documents yet</strong><span>Generate letters or a student list from selected cases to create the first history record.</span></div>`;
+      return;
+    }
+    el('batchHistory').innerHTML = state.batches.map((batch) => {
+      const students = historyStudents(batch);
+      const type = batch.outputType === 'student_list' ? 'student_list' : 'letters';
+      const title = type === 'student_list'
+        ? `Student list · ${batch.count} student${batch.count === 1 ? '' : 's'}`
+        : `${batch.count} Word letter${batch.count === 1 ? '' : 's'}`;
+      const outputLabel = type === 'student_list' ? 'Student list exported' : 'Word letters exported';
+      const signer = type === 'student_list' ? '' : ` · ${escapeHtml(signatoryProfile(batch.signatory).name)}`;
+      const details = students.length
+        ? `<div class="history-student-table"><div class="history-student-head"><span>Document</span><span>Student name</span><span>Student ID</span></div>${students.map((student) => `<div class="history-student-row"><span>${escapeHtml(student.documentNo || '—')}</span><strong>${escapeHtml(student.fullName || 'Student details unavailable')}</strong><span>${escapeHtml(student.studentId || '—')}</span></div>`).join('')}</div>`
+        : `<div class="history-legacy-note">Student names and IDs were not stored in this older history record.</div>`;
+      return `<details class="history-entry">
+        <summary class="history-row">
+          <div><div class="history-title">${title}</div><div class="history-meta">${formatDate(batch.issueDate)} · Documents: ${escapeHtml((batch.documentNumbers || []).join(', ') || 'legacy batch')}${signer}</div></div>
+          <div class="history-files">${outputLabel}<br>${new Date(batch.createdAt).toLocaleString()}<span class="history-chevron">⌄</span></div>
+        </summary>
+        <div class="history-details">${details}</div>
+      </details>`;
+    }).join('');
+  }
+
+  function switchView(view) {
+    const map = {
+      workspace: ['workspaceView', 'Case workspace', 'NEW STUDENT VISA PREPARATION'],
+      batches: ['batchesView', 'Generation history', 'DOCUMENT OUTPUT'],
+      programs: ['programsView', 'Academic programs', 'REFERENCE DATA'],
+      settings: ['settingsView', 'Workspace settings', 'CONFIGURATION'],
+    };
+    document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach((n) => n.classList.remove('active'));
+    const [id, title, eyebrow] = map[view] || map.workspace;
+    el(id).classList.add('active');
+    document.querySelector(`.nav-item[data-view="${view}"]`)?.classList.add('active');
+    el('pageTitle').textContent = title;
+    el('pageEyebrow').textContent = eyebrow;
+    if (view === 'programs') renderProgramTable();
+    if (view === 'batches') renderBatchHistory();
+    if (view === 'settings') refreshTemplateStatus().catch(console.error);
+    if (window.innerWidth <= 880) el('sidebar').classList.remove('open');
+  }
+
+  function toast(title, message, isError = false) {
+    const node = document.createElement('div');
+    node.className = 'toast';
+    node.innerHTML = `<div><strong>${escapeHtml(title)}</strong><span>${escapeHtml(message)}</span></div><button aria-label="Close">×</button>`;
+    if (isError) node.style.background = '#552828';
+    node.querySelector('button').addEventListener('click', () => node.remove());
+    el('toastStack').appendChild(node);
+    setTimeout(() => node.remove(), 5000);
+  }
+
+  function bindEvents() {
+    document.querySelectorAll('.nav-item').forEach((item) => item.addEventListener('click', () => switchView(item.dataset.view)));
+    el('menuToggle')?.addEventListener('click', () => el('sidebar').classList.toggle('open'));
+    el('addStudentBtn').addEventListener('click', () => { renderStudentForm(); openModal('studentModal'); });
+
+    el('backupBtn').addEventListener('click', () => exportBackup().catch((err) => toast('Backup failed', err.message || String(err), true)));
+    el('restoreBtn').addEventListener('click', () => el('restoreFileInput').click());
+    el('restoreFileInput').addEventListener('change', (event) => restoreBackupFile(event.target.files?.[0]));
+
+    el('letter16TemplateInput').addEventListener('change', (event) => {
+      importTemplate('letter16', event.target.files?.[0]).finally(() => { event.target.value = ''; });
+    });
+    el('letter76TemplateInput').addEventListener('change', (event) => {
+      importTemplate('letter76', event.target.files?.[0]).finally(() => { event.target.value = ''; });
+    });
+    el('studentListTemplateInput').addEventListener('change', (event) => {
+      importTemplate('studentList', event.target.files?.[0]).finally(() => { event.target.value = ''; });
+    });
+
+    el('searchInput').addEventListener('input', (e) => { state.search = e.target.value; renderCaseList(); });
+    el('moreFiltersBtn').addEventListener('click', () => el('filterPanel').classList.toggle('hidden'));
+    el('programTypeFilter').addEventListener('change', (e) => { state.programTypeFilter = e.target.value; renderCaseList(); });
+    el('clearFiltersBtn').addEventListener('click', () => {
+      state.programTypeFilter = 'all';
+      el('programTypeFilter').value = 'all';
+      renderCaseList();
+    });
+    el('selectAll').addEventListener('change', (e) => {
+      filteredCases().forEach((item) => e.target.checked ? state.selected.add(item.id) : state.selected.delete(item.id));
+      renderCaseList();
+      renderSelectionBar();
+    });
+    el('clearSelectionBtn').addEventListener('click', () => { state.selected.clear(); renderCaseList(); renderSelectionBar(); });
+    el('deleteSelectedBtn').addEventListener('click', deleteSelectedCases);
+    el('prepareBatchBtn').addEventListener('click', () => { renderBatchModal(); openModal('batchModal'); });
+    el('generateBatchBtn').addEventListener('click', generateBatch);
+    el('generateListBtn').addEventListener('click', generateStudentList);
+    el('generateIndividualBtn').addEventListener('click', generateIndividual);
+
+    el('drawerBackdrop').addEventListener('click', closeDrawer);
+    el('closeDrawerBtn').addEventListener('click', closeDrawer);
+    el('editStudentBtn').addEventListener('click', () => { state.editing = true; renderDrawer(); });
+    el('saveStudentBtn').addEventListener('click', saveDrawerChanges);
+    el('printIndividualBtn').addEventListener('click', () => { renderIndividualModal(); openModal('individualModal'); });
+    el('deleteStudentBtn').addEventListener('click', () => {
+      const item = getActiveCase();
+      if (!item) return;
+      if (!confirm(`Delete ${item.fullName || 'this case'} from the local workspace?`)) return;
+      state.cases = state.cases.filter((c) => c.id !== item.id);
+      state.selected.delete(item.id);
+      persist();
+      closeDrawer();
+      renderWorkspace();
+      toast('Case deleted', 'The local case was removed.');
+    });
+
+    document.querySelectorAll('.modal-close').forEach((btn) => btn.addEventListener('click', () => closeModal(btn.dataset.close)));
+    el('modalBackdrop').addEventListener('click', () => {
+      closeModal('studentModal');
+      closeModal('batchModal');
+      closeModal('individualModal');
+    });
+    el('studentForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      addStudentFromForm(e.currentTarget);
+    });
+    el('programSearch').addEventListener('input', renderProgramTable);
+    el('signatoryInput').addEventListener('change', (e) => {
+      state.settings.signatory = normalizeSignatoryKey(e.target.value);
+      el('settingsSignaturePreview').innerHTML = signatoryPreview(state.settings.signatory);
+      persist();
+      toast('Setting saved', 'Default signatory updated.');
+    });
+  }
+
+  async function boot() {
+    try {
+      await loadReferenceData();
+      await loadLocalState();
+      await refreshTemplateStatus();
+      ensureNationalityDatalist();
+
+      el('signatoryInput').innerHTML = signatoryOptions(state.settings.signatory);
+      el('signatoryInput').value = state.settings.signatory;
+      el('settingsSignaturePreview').innerHTML = signatoryPreview(state.settings.signatory);
+
+      bindEvents();
+      renderWorkspace();
+      renderProgramTable();
+      renderBatchHistory();
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js').catch((err) => console.warn('Service worker registration failed', err));
+      }
+    } catch (err) {
+      console.error(err);
+      document.body.innerHTML = `<div style="padding:40px;font-family:system-ui"><h2>Workspace could not start</h2><p>${escapeHtml(err.message || String(err))}</p><p>Please refresh the page. If the problem continues, send a screenshot of this message.</p></div>`;
+    }
+  }
+
+  boot();
+})();

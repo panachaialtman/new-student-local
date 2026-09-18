@@ -1,4 +1,4 @@
-const CACHE = 'new-student-local-v02-1';
+const CACHE = 'new-student-local-v02-2';
 const SHELL = [
   './', './index.html', './styles.css', './db.js', './zip.js', './docx-engine.js', './app.js',
   './manifest.webmanifest', './icon.svg', './data/programs.json', './data/nationalities.json'
