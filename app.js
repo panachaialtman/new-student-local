@@ -35,7 +35,7 @@
     ['international', 'International program'],
     ['chinese_international', 'Chinese International program'],
     ['thai', 'Thai program'],
-    ['graduate', 'Graduate program'],
+    ['graduate', 'Graduate School'],
   ];
 
   const state = {
@@ -212,7 +212,8 @@
       item.programEnglish = program.programEnglish || item.programEnglish || '';
       item.programThai = program.programThai || item.programThai || '';
       const referenceCredits = program.credits?.['2026'];
-      if (referenceCredits !== null && referenceCredits !== undefined && referenceCredits !== '-') item.totalCredits = referenceCredits;
+      const creditsBlank = item.totalCredits === undefined || item.totalCredits === null || String(item.totalCredits).trim() === '';
+      if (creditsBlank && referenceCredits !== null && referenceCredits !== undefined && referenceCredits !== '-') item.totalCredits = referenceCredits;
     }
     if (!PROGRAM_TYPE_OPTIONS.some(([value]) => value === item.programType)) item.programType = 'international';
     if (!['six_months', 'one_year', 'manual'].includes(item.requestRuleOverride)) item.requestRuleOverride = 'six_months';
@@ -257,7 +258,7 @@
       international: 'International',
       chinese_international: 'Chinese International',
       thai: 'Thai',
-      graduate: 'Graduate',
+      graduate: 'Graduate School',
     })[type] || 'Program';
   }
 
@@ -412,9 +413,6 @@
   function filteredCases() {
     const q = state.search.trim().toLowerCase();
     return state.cases.filter((item) => {
-      const status = deriveStatus(item);
-      if (state.activeStatus !== 'all' && status !== state.activeStatus) return false;
-      if (state.programTypeFilter !== 'all' && item.programType !== state.programTypeFilter) return false;
       if (!q) return true;
       return [item.fullName, item.studentId, item.documentNo, item.passportNo, item.programKey]
         .some((v) => String(v || '').toLowerCase().includes(q));
@@ -462,7 +460,6 @@
   }
 
   function renderCaseRow(item) {
-    const status = deriveStatus(item);
     const selected = state.selected.has(item.id);
     const requestUntil = calculateRequestUntil(item);
     const program = programByKey(item.programKey);
@@ -482,7 +479,6 @@
           <div class="visa-primary">${requestUntil ? formatDate(requestUntil) : 'Not available yet'}</div>
           <div class="visa-secondary">Stay: ${formatDate(item.currentStayUntil)}</div>
         </div>
-        <div class="case-click">${statusChip(status)}</div>
         <div class="case-click row-chevron">›</div>
       </div>`;
   }
@@ -507,8 +503,6 @@
 
   function renderWorkspace() {
     state.cases = sortCasesOldestFirst(state.cases.map(normalizeCase));
-    renderStats();
-    renderTabs();
     renderCaseList();
     renderSelectionBar();
     persist();
@@ -576,7 +570,7 @@
       const facultyOptions = facultyOptionsForType(item.programType);
       const majorOptions = programsForFaculty(item.programType, currentFacultyKey);
       el('drawerContent').innerHTML = `
-        <div class="drawer-section"><div class="drawer-section-head"><h3>Personal information</h3>${statusChip(status)}</div>
+        <div class="drawer-section"><div class="drawer-section-head"><h3>Personal information</h3></div>
           <div class="field-grid">
             ${editableField('Document no.', 'documentNo', item.documentNo)}
             ${editableSelect('Title', 'title', item.title, [['MISS','MISS'],['MR','MR'],['MS','MS'],['MRS','MRS']])}
@@ -613,14 +607,11 @@
         facultySelector: '#drawerFacultySelect',
         programSelector: '#drawerProgramSelect',
         totalCreditsSelector: '[data-edit-field="totalCredits"]',
+        studentIdSelector: '[data-edit-field="studentId"]',
       });
     } else {
       const facultyDisplay = program ? facultyLabelForType(item.programType, program) : (item.facultyThai || item.facultyEnglish);
       el('drawerContent').innerHTML = `
-        <div class="drawer-section"><div class="drawer-section-head"><h3>Case status</h3>${statusChip(status)}</div>
-          <div class="rule-box"><strong>${escapeHtml(ruleLabel(item))}</strong><br>${ruleExplanation(item)}</div>
-          ${validation.valid ? '' : `<div class="validation-summary bad"><strong>Needs attention:</strong> ${escapeHtml(validation.missing.join(', '))}</div>`}
-        </div>
         <div class="drawer-section"><div class="drawer-section-head"><h3>Personal information</h3></div>
           <div class="field-grid">
             ${fieldItem('Title', item.title)}${fieldItem('Nationality', item.nationalityThai)}${fieldItem('Passport', item.passportNo, true)}${fieldItem('Passport expiry', formatDate(item.passportExpiry))}
@@ -655,11 +646,12 @@
     return '';
   }
 
-  function bindAcademicSelectors({ root, typeSelector, facultySelector, programSelector, totalCreditsSelector }) {
+  function bindAcademicSelectors({ root, typeSelector, facultySelector, programSelector, totalCreditsSelector, studentIdSelector = '' }) {
     const typeSelect = root.querySelector(typeSelector);
     const facultySelect = root.querySelector(facultySelector);
     const programSelect = root.querySelector(programSelector);
     const creditsInput = totalCreditsSelector ? root.querySelector(totalCreditsSelector) : null;
+    const studentIdInput = studentIdSelector ? root.querySelector(studentIdSelector) : null;
     if (!typeSelect || !facultySelect || !programSelect) return;
 
     const refreshPrograms = (preferredProgramKey = '') => {
@@ -686,6 +678,12 @@
 
     typeSelect.addEventListener('change', () => refreshFaculties());
     facultySelect.addEventListener('change', () => refreshPrograms());
+    studentIdInput?.addEventListener('input', () => {
+      if (String(studentIdInput.value || '').trim().startsWith('7') && typeSelect.value !== 'graduate') {
+        typeSelect.value = 'graduate';
+        refreshFaculties();
+      }
+    });
     programSelect.addEventListener('change', () => {
       const selected = programByKey(programSelect.value);
       if (creditsInput) creditsInput.value = selected?.credits?.['2026'] ?? '';
@@ -707,7 +705,6 @@
       item.facultyThai = program.facultyThai;
       item.programEnglish = program.programEnglish;
       item.programThai = program.programThai;
-      if (program.credits?.['2026'] !== null && program.credits?.['2026'] !== undefined) item.totalCredits = program.credits['2026'];
     }
     if (item.requestRuleOverride !== 'manual') item.manualRequestUntil = '';
     Object.assign(item, normalizeCase(item));
@@ -748,6 +745,7 @@
       facultySelector: '[data-academic-faculty="new"]',
       programSelector: '[data-academic-program="new"]',
       totalCreditsSelector: '[data-total-credits="new"]',
+      studentIdSelector: '[name="studentId"]',
     });
     const ruleSelect = form.querySelector('[data-request-rule="new"]');
     ruleSelect?.addEventListener('change', () => {
@@ -1249,13 +1247,6 @@
     });
 
     el('searchInput').addEventListener('input', (e) => { state.search = e.target.value; renderCaseList(); });
-    el('moreFiltersBtn').addEventListener('click', () => el('filterPanel').classList.toggle('hidden'));
-    el('programTypeFilter').addEventListener('change', (e) => { state.programTypeFilter = e.target.value; renderCaseList(); });
-    el('clearFiltersBtn').addEventListener('click', () => {
-      state.programTypeFilter = 'all';
-      el('programTypeFilter').value = 'all';
-      renderCaseList();
-    });
     el('selectAll').addEventListener('change', (e) => {
       filteredCases().forEach((item) => e.target.checked ? state.selected.add(item.id) : state.selected.delete(item.id));
       renderCaseList();

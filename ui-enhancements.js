@@ -80,8 +80,8 @@
 
     totalCredits.querySelector('label').textContent = 'Total credits (Auto)';
     const creditInput = totalCredits.querySelector('input');
-    creditInput.readOnly = true;
-    creditInput.tabIndex = -1;
+    creditInput.readOnly = false;
+    creditInput.removeAttribute('tabindex');
 
     const academicRow = document.createElement('div');
     academicRow.className = 'form-row-three';

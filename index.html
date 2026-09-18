@@ -43,7 +43,7 @@
             <span>Student data and imported Word templates stay in this browser. GitHub hosts only the app code.</span>
           </div>
         </div>
-        <div class="version-row"><span>Visa Workspace</span><span>v0.2.2 Web</span></div>
+        <div class="version-row"><span>Visa Workspace</span><span>v0.2.3 Web</span></div>
       </div>
     </aside>
 
@@ -64,39 +64,14 @@
       </header>
 
       <section class="view active" id="workspaceView">
-        <div class="workspace-intro">
-          <div>
-            <h2>Semester 1/2026</h2>
-            <p>Prepare, validate and batch visa-extension letters without working row-by-row in Excel.</p>
-          </div>
-          <div class="sync-status"><span class="status-dot good"></span>Autosaved locally</div>
-        </div>
-
-        <div class="stats-grid" id="statsGrid"></div>
-
         <div class="content-card cases-card">
-          <div class="cases-toolbar">
-            <div class="status-tabs" id="statusTabs"></div>
+          <div class="cases-toolbar search-only-toolbar">
             <div class="toolbar-right">
               <label class="search-box">
                 <span>⌕</span>
                 <input id="searchInput" type="search" placeholder="Search name, ID or document no." autocomplete="off" />
               </label>
-              <button class="btn icon-text" id="moreFiltersBtn">☷ Filters</button>
             </div>
-          </div>
-
-          <div class="filter-panel hidden" id="filterPanel">
-            <label>Program type
-              <select id="programTypeFilter">
-                <option value="all">All types</option>
-                <option value="international">International program</option>
-                <option value="chinese_international">Chinese International program</option>
-                <option value="thai">Thai program</option>
-                <option value="graduate">Graduate program</option>
-              </select>
-            </label>
-            <button class="btn subtle" id="clearFiltersBtn">Clear filters</button>
           </div>
 
           <div class="list-header desktop-table">
@@ -104,7 +79,6 @@
             <div>Student</div>
             <div>Program / rule</div>
             <div>Visa request</div>
-            <div>Status</div>
             <div></div>
           </div>
           <div class="case-list" id="caseList"></div>
