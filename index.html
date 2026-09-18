@@ -43,7 +43,7 @@
             <span>Student data and imported Word templates stay in this browser. GitHub hosts only the app code.</span>
           </div>
         </div>
-        <div class="version-row"><span>Visa Workspace</span><span>v0.2.1 Web</span></div>
+        <div class="version-row"><span>Visa Workspace</span><span>v0.2.2 Web</span></div>
       </div>
     </aside>
 
@@ -182,6 +182,7 @@
     <div class="selection-actions">
       <button class="btn subtle-on-dark" id="clearSelectionBtn">Clear</button>
       <button class="btn danger-on-dark" id="deleteSelectedBtn">Delete selected</button>
+      <button class="btn selection-secondary" id="departmentTableBtn">Department table</button>
       <button class="btn white" id="prepareBatchBtn">Export Word →</button>
     </div>
   </div>
@@ -233,6 +234,19 @@
     </div>
   </section>
 
+  <section class="modal department-modal hidden" id="departmentModal" role="dialog" aria-modal="true" aria-labelledby="departmentModalTitle">
+    <div class="modal-head">
+      <div><div class="eyebrow">DEPARTMENT SPREADSHEET</div><h2 id="departmentModalTitle">Selected student table</h2></div>
+      <button class="icon-btn modal-close" data-close="departmentModal">×</button>
+    </div>
+    <div class="modal-body" id="departmentModalBody"></div>
+    <div class="modal-footer">
+      <button class="btn subtle modal-close" data-close="departmentModal">Cancel</button>
+      <button class="btn subtle" id="copyDepartmentBtn">Copy table</button>
+      <button class="btn primary" id="downloadDepartmentBtn">Download Excel (.xlsx)</button>
+    </div>
+  </section>
+
   <section class="modal individual-modal hidden" id="individualModal" role="dialog" aria-modal="true" aria-labelledby="individualModalTitle">
     <div class="modal-head">
       <div><div class="eyebrow">INDIVIDUAL LETTER</div><h2 id="individualModalTitle">Print individual</h2></div>
@@ -254,6 +268,7 @@
   <script src="zip.js"></script>
   <script src="builtin-templates.js"></script>
   <script src="docx-engine.js"></script>
+  <script src="excel-export.js"></script>
   <script src="app.js"></script>
   <script src="ui-enhancements.js"></script>
   <script>

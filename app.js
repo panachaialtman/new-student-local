@@ -111,6 +111,52 @@
     }).format(d);
   }
 
+  function formatDepartmentDate(value) {
+    const d = parseIsoDate(value);
+    if (!d) return '';
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short', day: '2-digit', year: 'numeric',
+    }).format(d);
+  }
+
+  function caseCreatedTime(item) {
+    const value = Date.parse(item?.createdAt || '');
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  function sortCasesOldestFirst(items) {
+    return [...items].sort((a, b) => {
+      const diff = caseCreatedTime(a) - caseCreatedTime(b);
+      if (diff) return diff;
+      return String(a.id || '').localeCompare(String(b.id || ''));
+    });
+  }
+
+  function migrateCaseOrder(items) {
+    const list = Array.isArray(items) ? items.map(normalizeCase) : [];
+    if (!list.length) return list;
+
+    const missing = list.filter((item) => !item.createdAt);
+    if (missing.length === list.length) {
+      // Legacy builds inserted every new case at the top, so the stored order is
+      // newest -> oldest. Assign timestamps that preserve that history, then sort.
+      const base = Date.now();
+      list.forEach((item, index) => {
+        item.createdAt = new Date(base - index * 1000).toISOString();
+      });
+    } else if (missing.length) {
+      const existing = list.map(caseCreatedTime).filter(Boolean);
+      let cursor = (existing.length ? Math.min(...existing) : Date.now()) - missing.length * 1000;
+      list.forEach((item) => {
+        if (!item.createdAt) {
+          item.createdAt = new Date(cursor).toISOString();
+          cursor += 1000;
+        }
+      });
+    }
+    return sortCasesOldestFirst(list);
+  }
+
   function inferRule(caseItem) {
     const rule = caseItem.requestRuleOverride;
     return ['six_months', 'one_year', 'manual'].includes(rule) ? rule : 'six_months';
@@ -290,7 +336,7 @@
     try {
       const stored = await VisaDB.getState('workspace_v02');
       if (stored && typeof stored === 'object') {
-        state.cases = Array.isArray(stored.cases) ? stored.cases.map(normalizeCase) : [];
+        state.cases = migrateCaseOrder(stored.cases);
         state.batches = Array.isArray(stored.batches) ? stored.batches : [];
         state.settings = { ...state.settings, ...(stored.settings || {}) };
       } else {
@@ -299,7 +345,7 @@
         const legacyCases = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
         const legacyBatches = JSON.parse(localStorage.getItem(BATCH_KEY) || '[]');
         const legacySettings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
-        state.cases = Array.isArray(legacyCases) ? legacyCases.map(normalizeCase) : [];
+        state.cases = migrateCaseOrder(legacyCases);
         state.batches = Array.isArray(legacyBatches) ? legacyBatches : [];
         if (legacySettings) state.settings = { ...state.settings, ...legacySettings };
         if (state.cases.length || state.batches.length || legacySettings) persist();
@@ -460,7 +506,7 @@
   }
 
   function renderWorkspace() {
-    state.cases = state.cases.map(normalizeCase);
+    state.cases = sortCasesOldestFirst(state.cases.map(normalizeCase));
     renderStats();
     renderTabs();
     renderCaseList();
@@ -715,7 +761,7 @@
     const program = programByKey(obj.programKey);
     if (obj.requestRuleOverride !== 'manual') obj.manualRequestUntil = '';
     const item = normalizeCase({
-      id: uid(), ...obj,
+      id: uid(), createdAt: new Date().toISOString(), ...obj,
       totalCredits: obj.totalCredits ? Number(obj.totalCredits) : (program?.credits?.['2026'] ?? ''),
       registeredCredits: obj.registeredCredits ? Number(obj.registeredCredits) : '',
       programType: program?.programType || obj.programType || 'international',
@@ -725,7 +771,8 @@
       programThai: program?.programThai || '',
     });
     delete item.facultyKey;
-    state.cases.unshift(item);
+    state.cases.push(item);
+    state.cases = sortCasesOldestFirst(state.cases);
     persist();
     closeModal('studentModal');
     renderWorkspace();
@@ -740,12 +787,94 @@
 
   function closeModal(id) {
     el(id).classList.add('hidden');
-    const anyOpen = ['studentModal', 'batchModal', 'individualModal'].some((modalId) => !el(modalId).classList.contains('hidden'));
+    const anyOpen = ['studentModal', 'batchModal', 'individualModal', 'departmentModal'].some((modalId) => !el(modalId).classList.contains('hidden'));
     if (!anyOpen) el('modalBackdrop').classList.add('hidden');
   }
 
   function selectedCases() {
-    return state.cases.filter((item) => state.selected.has(item.id));
+    return sortCasesOldestFirst(state.cases.filter((item) => state.selected.has(item.id)));
+  }
+
+  function departmentRows(items = selectedCases()) {
+    return items.map((item) => ({
+      documentNo: String(item.documentNo || '').trim(),
+      studentId: String(item.studentId || '').trim(),
+      fullName: String(item.fullName || '').trim(),
+      passportNo: String(item.passportNo || '').trim(),
+      passportExpiry: formatDepartmentDate(item.passportExpiry),
+      visaExpiry: formatDepartmentDate(item.currentStayUntil),
+      extendUntil: formatDepartmentDate(calculateRequestUntil(item)),
+    }));
+  }
+
+  function departmentTsv(rows) {
+    const header = ['Doc no.', 'Student id', 'Name', 'Passport no.', 'Passport expiry', 'Visa expiry', 'Extend until'];
+    const clean = (value) => String(value ?? '').replace(/[\t\r\n]+/g, ' ').trim();
+    return [header, ...rows.map((row) => [
+      row.documentNo, row.studentId, row.fullName, row.passportNo,
+      row.passportExpiry, row.visaExpiry, row.extendUntil,
+    ])].map((row) => row.map(clean).join('\t')).join('\n');
+  }
+
+  function renderDepartmentModal() {
+    const rows = departmentRows();
+    el('departmentModalBody').innerHTML = `
+      <div class="department-summary">
+        <strong>${rows.length} selected case${rows.length === 1 ? '' : 's'}</strong>
+        <span>Oldest case first — the same order used by Generate letters and Generate list.</span>
+      </div>
+      <div class="department-table-wrap">
+        <table class="department-table">
+          <thead><tr>
+            <th>Doc no.</th><th>Student id</th><th>Name</th><th>Passport no.</th>
+            <th>Passport expiry</th><th>Visa expiry</th><th>Extend until</th>
+          </tr></thead>
+          <tbody>
+            ${rows.map((row) => `<tr>
+              <td>${escapeHtml(row.documentNo)}</td>
+              <td>${escapeHtml(row.studentId)}</td>
+              <td><strong>${escapeHtml(row.fullName)}</strong></td>
+              <td>${escapeHtml(row.passportNo)}</td>
+              <td>${escapeHtml(row.passportExpiry)}</td>
+              <td>${escapeHtml(row.visaExpiry)}</td>
+              <td>${escapeHtml(row.extendUntil)}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+    el('copyDepartmentBtn').disabled = !rows.length;
+    el('downloadDepartmentBtn').disabled = !rows.length;
+  }
+
+  async function copyDepartmentTable() {
+    const rows = departmentRows();
+    if (!rows.length) return;
+    const text = departmentTsv(rows);
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const area = document.createElement('textarea');
+      area.value = text;
+      area.style.position = 'fixed';
+      area.style.opacity = '0';
+      document.body.appendChild(area);
+      area.select();
+      document.execCommand('copy');
+      area.remove();
+    }
+    toast('Table copied', 'Paste directly into your department spreadsheet; columns will stay separated.');
+  }
+
+  async function downloadDepartmentExcel() {
+    const rows = departmentRows();
+    if (!rows.length) return;
+    try {
+      const blob = await ExcelExport.createDepartmentWorkbook(rows);
+      downloadBlob(blob, `New_Student_Visa_Table_${todayIso()}.xlsx`);
+      toast('Excel downloaded', `${rows.length} rows exported oldest to newest.`);
+    } catch (err) {
+      toast('Excel export failed', err.message || String(err), true);
+    }
   }
 
   function listValidationFor(caseItem) {
@@ -968,7 +1097,7 @@
     try {
       const payload = JSON.parse(await file.text());
       if (!payload || typeof payload !== 'object') throw new Error('Backup file is not valid JSON');
-      state.cases = Array.isArray(payload.cases) ? payload.cases.map(normalizeCase) : [];
+      state.cases = migrateCaseOrder(payload.cases);
       state.batches = Array.isArray(payload.batches) ? payload.batches : [];
       state.settings = { ...state.settings, ...(payload.settings || {}) };
       state.settings.signatory = normalizeSignatoryKey(state.settings.signatory);
@@ -1134,6 +1263,9 @@
     });
     el('clearSelectionBtn').addEventListener('click', () => { state.selected.clear(); renderCaseList(); renderSelectionBar(); });
     el('deleteSelectedBtn').addEventListener('click', deleteSelectedCases);
+    el('departmentTableBtn').addEventListener('click', () => { renderDepartmentModal(); openModal('departmentModal'); });
+    el('copyDepartmentBtn').addEventListener('click', copyDepartmentTable);
+    el('downloadDepartmentBtn').addEventListener('click', downloadDepartmentExcel);
     el('prepareBatchBtn').addEventListener('click', () => { renderBatchModal(); openModal('batchModal'); });
     el('generateBatchBtn').addEventListener('click', generateBatch);
     el('generateListBtn').addEventListener('click', generateStudentList);
@@ -1161,6 +1293,7 @@
       closeModal('studentModal');
       closeModal('batchModal');
       closeModal('individualModal');
+      closeModal('departmentModal');
     });
     el('studentForm').addEventListener('submit', (e) => {
       e.preventDefault();
