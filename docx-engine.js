@@ -282,8 +282,9 @@
 
   async function requireTemplate(key) {
     const record = await VisaDB.getTemplate(key);
-    if (!record?.buffer) throw new Error(`Template not configured: ${key}. Open Workspace settings and import the Word template once.`);
-    return record.buffer;
+    if (record?.buffer) return record.buffer;
+    if (!window.BuiltinTemplates?.getTemplate) throw new Error('Built-in Word template loader is unavailable.');
+    return await window.BuiltinTemplates.getTemplate(key);
   }
 
   async function generateIndividual(st, issueDate, signatory) {
