@@ -317,14 +317,32 @@
   }
 
   async function loadReferenceData() {
-    const [programResponse, nationalityResponse] = await Promise.all([
-      fetch('data/programs.json', { cache: 'no-store' }),
-      fetch('data/nationalities.json', { cache: 'no-store' }),
+    const programFiles = [
+      'data/programs-1.json',
+      'data/programs-2.json',
+      'data/programs-3.json',
+      'data/programs-4.json',
+      'data/programs-5.json',
+    ];
+    const nationalityFiles = [
+      'data/nationalities-1.json',
+      'data/nationalities-2.json',
+      'data/nationalities-3.json',
+      'data/nationalities-4.json',
+    ];
+    const loadChunks = async (files, label) => {
+      const responses = await Promise.all(files.map((path) => fetch(path, { cache: 'no-store' })));
+      const failed = responses.findIndex((response) => !response.ok);
+      if (failed !== -1) throw new Error(`Could not load ${label} reference data (${files[failed]})`);
+      const chunks = await Promise.all(responses.map((response) => response.json()));
+      return chunks.flat();
+    };
+    [state.programs, state.nationalities] = await Promise.all([
+      loadChunks(programFiles, 'program'),
+      loadChunks(nationalityFiles, 'nationality'),
     ]);
-    if (!programResponse.ok) throw new Error('Could not load program data');
-    if (!nationalityResponse.ok) throw new Error('Could not load nationality data');
-    state.programs = await programResponse.json();
-    state.nationalities = await nationalityResponse.json();
+    if (state.programs.length !== 82) throw new Error(`Program reference data incomplete: ${state.programs.length}/82 records loaded`);
+    if (state.nationalities.length !== 199) throw new Error(`Nationality reference data incomplete: ${state.nationalities.length}/199 records loaded`);
   }
 
   function ensureNationalityDatalist() {

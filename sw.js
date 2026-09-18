@@ -1,7 +1,7 @@
-const CACHE = 'new-student-local-v02-2';
+const CACHE = 'new-student-local-v02-4';
 const SHELL = [
   './', './index.html', './styles.css', './db.js', './zip.js', './docx-engine.js', './app.js',
-  './manifest.webmanifest', './icon.svg', './data/programs.json', './data/nationalities.json'
+  './manifest.webmanifest', './icon.svg', './data/programs-1.json', './data/programs-2.json', './data/programs-3.json', './data/programs-4.json', './data/programs-5.json', './data/nationalities-1.json', './data/nationalities-2.json', './data/nationalities-3.json', './data/nationalities-4.json'
 ];
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting()));
