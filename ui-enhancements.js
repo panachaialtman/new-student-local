@@ -44,8 +44,7 @@
 
   function enhanceStudentForm() {
     const form = document.getElementById('studentForm');
-    if (!form || !form.children.length || form.dataset.workflowEnhanced === 'true') return;
-    form.dataset.workflowEnhanced = 'true';
+    if (!form || !form.children.length || form.querySelector('.form-separator')) return;
 
     const documentNo = field(form, 'documentNo');
     const titleField = field(form, 'title');
