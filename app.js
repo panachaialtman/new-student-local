@@ -25,6 +25,12 @@
     },
   };
 
+  const BUILTIN_TEMPLATE_NAMES = {
+    letter16: 'Visa Extension Letter 16',
+    letter76: 'Visa Extension Letter 76',
+    studentList: 'Student List',
+  };
+
   const PROGRAM_TYPE_OPTIONS = [
     ['international', 'International program'],
     ['chinese_international', 'Chinese International program'],
@@ -341,8 +347,8 @@
       loadChunks(programFiles, 'program'),
       loadChunks(nationalityFiles, 'nationality'),
     ]);
-    if (state.programs.length !== 82) throw new Error(`Program reference data incomplete: ${state.programs.length}/82 records loaded`);
-    if (state.nationalities.length !== 199) throw new Error(`Nationality reference data incomplete: ${state.nationalities.length}/199 records loaded`);
+    if (state.programs.length !== 86) throw new Error(`Program reference data incomplete: ${state.programs.length}/86 records loaded`);
+    if (state.nationalities.length !== 250) throw new Error(`Nationality reference data incomplete: ${state.nationalities.length}/250 records loaded`);
   }
 
   function ensureNationalityDatalist() {
@@ -983,17 +989,22 @@
   }
 
   async function refreshTemplateStatus() {
-    state.templates = await VisaDB.listTemplates();
+    const overrides = await VisaDB.listTemplates();
+    state.templates = {};
     const mapping = [
       ['letter16', 'letter16TemplateStatus'],
       ['letter76', 'letter76TemplateStatus'],
       ['studentList', 'studentListTemplateStatus'],
     ];
     mapping.forEach(([key, id]) => {
-      const node = el(id); if (!node) return;
-      const item = state.templates[key];
-      node.textContent = item ? `Ready · ${item.name}` : 'Not configured';
-      node.classList.toggle('ready', Boolean(item));
+      const node = el(id);
+      const override = overrides[key];
+      state.templates[key] = override || { name: BUILTIN_TEMPLATE_NAMES[key], builtin: true };
+      if (!node) return;
+      node.textContent = override
+        ? `Ready · Browser override · ${override.name}`
+        : `Ready · Built-in · ${BUILTIN_TEMPLATE_NAMES[key]}`;
+      node.classList.add('ready');
     });
   }
 
