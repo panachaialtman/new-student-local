@@ -1,0 +1,5 @@
+# Approved university Word templates are intentionally NOT committed.
+*.docx
+*.visabackup
+.DS_Store
+Thumbs.db
