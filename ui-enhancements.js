@@ -65,6 +65,8 @@
     if (![documentNo, titleField, fullName, nationality, passportNo, passportExpiry, currentStay, studentId, programType, faculty, major, totalCredits, registeredCredits, requestOption].every(Boolean)) return;
 
     documentNo.classList.add('full');
+    fullName.classList.remove('full');
+    major.classList.remove('full');
 
     const titleSelect = titleField.querySelector('select');
     const fullInput = fullName.querySelector('input');
