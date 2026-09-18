@@ -198,14 +198,51 @@
     return `<div class="signature-preview"><strong>(${escapeHtml(profile.name)})</strong><span>${escapeHtml(profile.role)}</span><span>อธิการบดี</span></div>`;
   }
 
+  function normalizedProgramSearch(value) {
+    return String(value || '')
+      .toLowerCase()
+      .replace(/\[[^\]]*\]\s*$/g, '')
+      .replace(/\((?:international|bilingual|thai|english) program\)/g, '')
+      .replace(/\b(?:program|programme)\b/g, '')
+      .replace(/[^a-z0-9ก-๙]+/g, ' ')
+      .trim()
+      .replace(/\s+/g, ' ');
+  }
+
   function programByKey(key) {
-    return state.programs.find((p) => p.key === key);
+    const exact = state.programs.find((p) => p.key === key);
+    if (exact) return exact;
+
+    const raw = String(key || '').trim();
+    if (!raw) return undefined;
+    const suffixMatch = raw.match(/\[([^\]]+)\]\s*$/);
+    const suffix = suffixMatch ? suffixMatch[1].trim() : '';
+    const majorPart = raw.replace(/\s*\[[^\]]+\]\s*$/, '');
+    const wantedMajor = normalizedProgramSearch(majorPart);
+    const wantedFaculty = normalizedProgramSearch(suffix);
+
+    const candidates = state.programs.filter((p) => normalizedProgramSearch(p.programEnglish) === wantedMajor);
+    if (candidates.length === 1) return candidates[0];
+
+    if (wantedFaculty) {
+      const matched = candidates.find((p) =>
+        normalizedProgramSearch(p.facultyCode) === wantedFaculty ||
+        normalizedProgramSearch(p.facultyEnglish) === wantedFaculty ||
+        normalizedProgramSearch(p.facultyThai) === wantedFaculty
+      );
+      if (matched) return matched;
+    }
+
+    return candidates[0] || state.programs.find((p) =>
+      normalizedProgramSearch(p.programThai) === wantedMajor
+    );
   }
 
   function normalizeCase(caseItem) {
     const item = { ...caseItem };
     const program = programByKey(item.programKey);
     if (program) {
+      item.programKey = program.key;
       item.programType = program.programType || item.programType;
       item.facultyEnglish = program.facultyEnglish || item.facultyEnglish || '';
       item.facultyThai = program.facultyThai || item.facultyThai || '';
