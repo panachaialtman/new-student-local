@@ -1079,6 +1079,20 @@
     el('studentModalTitle').textContent = 'Add ' + (categoryLabels[category] || 'student');
     el('studentForm').innerHTML = `
       <div class="entry-case-notice">${category === 'exchange' ? 'Exchange details appear immediately below the passport dates. Complete all fields before saving the case.' : category === 'non_o' ? 'Non-O transfer details appear immediately below the passport dates. Complete all fields before saving the case.' : 'Both new and current students belong here. The Student ID automatically suggests the Current student checkbox; you can change it.'}</div>
+      ${category === 'exchange' ? `
+        <div class="entry-section-title entry-priority">Exchange student information · complete before adding</div>
+        <div class="form-field full"><label>Partner university (English)</label><input name="exchangeUniversity" list="partnerUniversitySuggestions" autocomplete="off" required placeholder="Enter a university name; previous entries will be suggested" /></div>
+        <div class="form-field full"><label>Partner country (Thai)</label><input name="exchangeCountryThai" list="partnerCountrySuggestions" autocomplete="off" required placeholder="พิมพ์ชื่อประเทศภาษาไทยเพื่อค้นหา" /></div>
+        <div class="form-field"><label>Exchange semester</label><select name="exchangeTerm" required><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option></select></div>
+        <div class="form-field"><label>Academic year (B.E.)</label><input type="number" name="exchangeAcademicYear" min="2500" max="2700" value="${rememberedAcademicYear()}" required /></div>
+        <div class="form-field"><label>Exchange duration (semesters)</label><input type="number" name="exchangeDurationSemesters" min="1" max="12" value="1" required /></div>
+      ` : ''}
+      ${category === 'non_o' ? `
+        <div class="entry-section-title entry-priority">Non-O transfer information · complete before adding</div>
+        ${lockedField('Current Non-O visa purpose (Thai)', 'nonOVisaPurpose', 'ติดตามธุรกิจ', 'text', false, 'required', false)}
+        ${lockedField('Program duration (years)', 'programDurationYears', 4, 'number', false, 'min="1" max="10" required', false)}
+      ` : ''}
+
       <div class="entry-section-title first">Student and passport information</div>
       <div class="form-field"><label>Document no.</label><input name="documentNo" value="" required /></div>
       <div class="form-field"><label>Title</label><select name="title"><option>MISS</option><option>MR</option><option>MS</option><option>MRS</option></select></div>
@@ -1093,19 +1107,6 @@
       <div class="form-field"><label>Passport no.</label><input name="passportNo" /></div>
       <div class="form-field"><label>Passport expiry</label><input type="date" name="passportExpiry" /></div>
       <div class="form-field"><label>Current stay until</label><input type="date" name="currentStayUntil" required /></div>
-      ${category === 'exchange' ? `
-        <div class="entry-section-title">Exchange student information · complete before adding</div>
-        <div class="form-field full"><label>Partner university (full English name)</label><input name="exchangeUniversity" required placeholder="Partner university" /></div>
-        <div class="form-field full"><label>Partner country (full Thai name)</label><input name="exchangeCountryThai" required placeholder="ชื่อประเทศเต็ม" /></div>
-        <div class="form-field"><label>Exchange semester</label><input type="number" name="exchangeTerm" min="1" max="3" value="2" required /></div>
-        <div class="form-field"><label>Academic year (B.E.)</label><input type="number" name="exchangeAcademicYear" min="2500" max="2700" value="${2500 + Number(String(state.settings.newStudentPrefixes).match(/[0-9]([0-9]{2})/)?.[1] || 69)}" required /></div>
-        <div class="form-field"><label>Exchange duration (semesters)</label><input type="number" name="exchangeDurationSemesters" min="1" max="12" value="1" required /></div>
-      ` : ''}
-      ${category === 'non_o' ? `
-        <div class="entry-section-title">Non-O transfer information · complete before adding</div>
-        <div class="form-field full"><label>Current Non-O visa purpose (Thai)</label><input name="nonOVisaPurpose" value="ติดตามธุรกิจ" required /></div>
-        <div class="form-field"><label>Program duration (years)</label><input type="number" name="programDurationYears" min="1" max="10" value="4" required /></div>
-      ` : ''}
       <div class="entry-section-title">Academic information and visa request</div>
 
       <div class="form-field"><label>Program type</label><select name="programType" data-academic-type="new">${PROGRAM_TYPE_OPTIONS.map(([v,l]) => `<option value="${v}">${escapeHtml(l)}</option>`).join('')}</select></div>
@@ -1113,11 +1114,19 @@
       <div class="form-field full"><label>Major</label><select name="programKey" data-academic-program="new" required></select></div>
       <div class="form-field"><label>Total credits</label><input type="number" min="0" name="totalCredits" data-total-credits="new" /></div>
       <div class="form-field"><label>Registered credits</label><input type="number" min="0" name="registeredCredits" /></div>
-      <div class="form-field"><label>Study year override (optional)</label><input type="number" min="1" max="20" name="studyYearOverride" placeholder="Auto from Student ID" /></div>
-      <div class="form-field"><label>Graduation year B.E. override (optional)</label><input type="number" min="2500" max="2700" name="graduationYearOverride" placeholder="Auto from Student ID" /></div>
+      ${lockedField('Study year override (optional)', 'studyYearOverride', '', 'number', false, 'min="1" max="20" placeholder="Automatic from Student ID"', false)}
+      ${lockedField('Graduation year B.E. override (optional)', 'graduationYearOverride', '', 'number', false, 'min="2500" max="2700" placeholder="Automatic from Student ID"', false)}
       <div class="form-field"><label>Request option</label><select name="requestRuleOverride" data-request-rule="new"><option value="six_months">+6 months</option><option value="one_year">+1 year</option><option value="manual">Manual Date</option></select></div>
       <div class="form-field manual-request-field hidden"><label>Manual request until</label><input type="date" name="manualRequestUntil" /></div>`;
     const form = el('studentForm');
+    bindLockedFields(form);
+    updateAutomaticStudyFields(form);
+    form.elements.studentId.addEventListener('input', () => updateAutomaticStudyFields(form));
+    form.elements.programType.addEventListener('change', () => {
+      updateAutomaticStudyFields(form);
+      const duration = form.elements.programDurationYears;
+      if (duration && duration.readOnly) duration.value = form.elements.programType.value === 'graduate' ? 2 : 4;
+    });
     // New/current classification is determined by the editable checkbox and
     // ID-prefix rules within Normal cases; it is not a separate sidebar category.
     const typeSelect = form.querySelector('[data-academic-type="new"]');
@@ -1146,6 +1155,13 @@
     const fd = new FormData(form);
     const obj = Object.fromEntries(fd.entries());
     obj.currentStudent = Boolean(form.elements.currentStudent?.checked);
+    // Locked study/graduation values are previews; only checked overrides
+    // may replace the student-ID calculations in official Word letters.
+    for (const field of ['studyYearOverride', 'graduationYearOverride']) {
+      const control = form.elements[field];
+      const checkbox = form.querySelector('[data-unlock-target="new_' + field + '"]');
+      if (control && checkbox && !checkbox.checked) obj[field] = '';
+    }
     const program = programByKey(obj.programKey);
     if (obj.requestRuleOverride !== 'manual') obj.manualRequestUntil = '';
     const item = normalizeCase({
@@ -1161,6 +1177,7 @@
     delete item.facultyKey;
     state.cases.push(item);
     state.cases = sortCasesOldestFirst(state.cases);
+    rememberExchangeDetails(item);
     if (item.caseCategory !== state.activeCategory) {
       state.activeCategory = item.caseCategory;
       switchView('workspace', item.caseCategory);
