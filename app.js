@@ -847,6 +847,74 @@
     return `<div class="field-item"><label>${label}</label><div class="field-value ${strong ? 'strong' : ''}">${escapeHtml(value || '—')}</div></div>`;
   }
 
+
+  function arrangeCaseFields(root, isDrawer) {
+    const attribute = isDrawer ? 'data-edit-field' : 'name';
+    const fieldFor = name => root.querySelector('[' + attribute + '="' + name + '"]')?.closest('.drawer-field, .form-field');
+    const move = (grid, specs) => {
+      if (!grid) return;
+      grid.classList.add('ordered-case-grid');
+      for (const [name, width] of specs) {
+        const field = fieldFor(name);
+        if (!field) continue;
+        field.classList.remove('full');
+        field.classList.add('case-col-' + width);
+        grid.appendChild(field);
+      }
+    };
+    const personal = root.querySelector('.drawer-section:first-child .field-grid');
+    const academic = root.querySelector('.drawer-section:nth-child(2) .field-grid');
+    let personalGrid = personal;
+    let academicGrid = academic;
+    if (!isDrawer) {
+      const form = root;
+      const header = [...form.querySelectorAll('.entry-section-title')].find(x => x.textContent.includes('Student and passport'));
+      const academicHeader = [...form.querySelectorAll('.entry-section-title')].find(x => x.textContent.includes('Academic information'));
+      if (!header || !academicHeader) return;
+      personalGrid = document.createElement('div');
+      personalGrid.className = 'ordered-case-grid entry-order-grid';
+      academicGrid = document.createElement('div');
+      academicGrid.className = 'ordered-case-grid entry-order-grid';
+      header.after(personalGrid);
+      academicHeader.after(academicGrid);
+    }
+    move(personalGrid, [
+      ['documentNo', 12],
+      ['nationalityThai', 6], ['passportNo', 6],
+      ['title', 2], ['fullName', 5], ['studentId', 5],
+      ['passportExpiry', 6], ['currentStayUntil', 6],
+    ]);
+    move(academicGrid, [
+      ['programType', 12],
+      ['facultyKey', 6], ['programKey', 6],
+      ['totalCredits', 6], ['registeredCredits', 6],
+      ['studyYearOverride', 6], ['graduationYearOverride', 6],
+    ]);
+    // Faculty has no data-edit-field because its key is a UI-only selector.
+    if (isDrawer && academicGrid) {
+      const faculty = root.querySelector('#drawerFacultySelect')?.closest('.drawer-field');
+      if (faculty) {
+        faculty.classList.add('case-col-6');
+        const major = fieldFor('programKey');
+        academicGrid.insertBefore(faculty, major || null);
+      }
+    }
+    const idField = fieldFor('studentId');
+    if (idField) {
+      const input = idField.querySelector('[' + attribute + '="studentId"]');
+      const checkbox = idField.querySelector('.current-student-check');
+      const label = idField.querySelector('label:not(.current-student-check)');
+      if (input && checkbox && label) {
+        const line = document.createElement('div');
+        line.className = 'case-inline-label';
+        label.before(line);
+        line.append(label, checkbox);
+        // Keep the student ID input in the same field, beside its label row.
+        input.parentNode === idField ? null : idField.append(input);
+      }
+    }
+  }
+
   function editableField(label, field, value, type = 'text', extra = '') {
     return `<div class="drawer-field"><label>${label}</label><input data-edit-field="${field}" type="${type}" value="${escapeHtml(value || '')}" ${extra}/></div>`;
   }
@@ -867,6 +935,7 @@
     el('editStudentBtn').classList.toggle('hidden', state.editing);
     el('saveStudentBtn').classList.toggle('hidden', !state.editing);
     el('printIndividualBtn').classList.toggle('hidden', state.editing);
+    el('detailDrawer').classList.toggle('editing', state.editing);
 
     if (state.editing) {
       const rule = inferRule(item);
@@ -926,6 +995,7 @@
       ruleSelect?.addEventListener('change', () => {
         el('drawerContent').querySelector('.manual-request-field')?.classList.toggle('hidden', ruleSelect.value !== 'manual');
       });
+      arrangeCaseFields(el('drawerContent'), true);
       bindLockedFields(el('drawerContent'));
       updateAutomaticStudyFields(el('drawerContent'));
       const editRoot = el('drawerContent');
@@ -1083,11 +1153,23 @@
     toast('Case updated', 'Visa calculations and academic reference data were refreshed automatically.');
   }
 
-  function renderStudentForm() {
-    const category = state.activeCategory;
+  function renderStudentForm(category = state.activeCategory) {
+    if (!['normal', 'exchange', 'non_o'].includes(category)) category = 'normal';
     const categoryLabels = {normal:'Normal student',exchange:'Exchange student',non_o:'Non-O transfer'};
     el('studentModalTitle').textContent = 'Add ' + (categoryLabels[category] || 'student');
     el('studentForm').innerHTML = `
+      <div class="entry-case-picker">
+        <label for="newCaseCategory">Case type</label>
+        <select id="newCaseCategory" name="caseCategory" aria-label="Choose case type">
+          <option value="normal" ${category === 'normal' ? 'selected' : ''}>Normal student (new or current)</option>
+          <option value="exchange" ${category === 'exchange' ? 'selected' : ''}>Exchange student</option>
+          <option value="non_o" ${category === 'non_o' ? 'selected' : ''}>Non-O → ED transfer</option>
+        </select>
+        <p>${category === 'normal'
+          ? 'Select Exchange student above to show exchange-specific information without leaving this dialog.'
+          : category === 'exchange' ? 'Fill in the partner university, country and exchange details in the highlighted section below.'
+            : 'Fill in Non-O transfer details in the highlighted section below.'}</p>
+      </div>
       <div class="entry-case-notice">${category === 'exchange' ? 'Exchange details appear at the top of this form. Complete the required fields before saving the case.' : category === 'non_o' ? 'Non-O transfer details appear at the top of this form. Enable editing only when a default needs to be changed.' : 'Both new and current students belong here. The Student ID automatically suggests the Current student checkbox; you can change it.'}</div>
       ${category === 'exchange' ? `
         <div class="entry-section-title entry-priority">Exchange student information · complete before adding</div>
@@ -1129,6 +1211,19 @@
       <div class="form-field"><label>Request option</label><select name="requestRuleOverride" data-request-rule="new"><option value="six_months">+6 months</option><option value="one_year">+1 year</option><option value="manual">Manual Date</option></select></div>
       <div class="form-field manual-request-field hidden"><label>Manual request until</label><input type="date" name="manualRequestUntil" /></div>`;
     const form = el('studentForm');
+    form.querySelector('#newCaseCategory').addEventListener('change', event => {
+      const target = event.target.value;
+      const hasData = [...form.querySelectorAll('input')].some(input =>
+        ['documentNo', 'nationalityThai', 'passportNo', 'fullName', 'studentId',
+          'passportExpiry', 'currentStayUntil', 'registeredCredits'].includes(input.name)
+        && Boolean(input.value.trim()));
+      if (hasData && !confirm('Switching case type clears the current form. Continue?')) {
+        event.target.value = category;
+        return;
+      }
+      renderStudentForm(target);
+    });
+    arrangeCaseFields(form, false);
     bindLockedFields(form);
     updateAutomaticStudyFields(form);
     form.elements.studentId.addEventListener('input', () => updateAutomaticStudyFields(form));
@@ -1175,7 +1270,7 @@
     const program = programByKey(obj.programKey);
     if (obj.requestRuleOverride !== 'manual') obj.manualRequestUntil = '';
     const item = normalizeCase({
-      id: uid(), createdAt: new Date().toISOString(), caseCategory: state.activeCategory, ...obj,
+      id: uid(), createdAt: new Date().toISOString(), ...obj, caseCategory: obj.caseCategory || state.activeCategory,
       totalCredits: obj.totalCredits ? Number(obj.totalCredits) : (program?.credits?.['2026'] ?? ''),
       registeredCredits: obj.registeredCredits ? Number(obj.registeredCredits) : '',
       programType: program?.programType || obj.programType || 'international',
@@ -1188,10 +1283,7 @@
     state.cases.push(item);
     state.cases = sortCasesOldestFirst(state.cases);
     rememberExchangeDetails(item);
-    if (item.caseCategory !== state.activeCategory) {
-      state.activeCategory = item.caseCategory;
-      switchView('workspace', item.caseCategory);
-    }
+    if (item.caseCategory !== state.activeCategory) switchView('workspace', item.caseCategory);
     persist();
     closeModal('studentModal');
     renderWorkspace();
