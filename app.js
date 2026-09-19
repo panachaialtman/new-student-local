@@ -976,30 +976,47 @@
             ${lockedField('Graduation year B.E. override (optional)', 'graduationYearOverride', item.graduationYearOverride || '', 'number', true, 'min="2500" max="2700" placeholder="Automatic from Student ID"', Boolean(item.graduationYearOverride))}
           </div>
         </div>
-        ${item.caseCategory === 'exchange' ? `
-        <div class="drawer-section"><div class="drawer-section-head"><h3>Exchange details</h3></div><div class="field-grid">
-          ${editableField('Partner university (English)', 'exchangeUniversity', item.exchangeUniversity, 'text', 'list="partnerUniversitySuggestions" autocomplete="off"')}
-          ${editableField('Partner country (Thai)', 'exchangeCountryThai', item.exchangeCountryThai, 'text', 'list="partnerCountrySuggestions" autocomplete="off"')}
-          ${editableSelect('Exchange semester', 'exchangeTerm', String(item.exchangeTerm || 2), [['1','1'],['2','2'],['3','3']])}
-          ${editableField('Academic year (B.E.)', 'exchangeAcademicYear', item.exchangeAcademicYear || rememberedAcademicYear(), 'number', 'min="2500" max="2700"')}
-          ${editableField('Duration (semesters)', 'exchangeDurationSemesters', item.exchangeDurationSemesters || 1, 'number')}
-        </div></div>` : ''}
-        ${item.caseCategory === 'non_o' ? `
-        <div class="drawer-section"><div class="drawer-section-head"><h3>Non-O transfer details</h3></div><div class="field-grid">
-          ${lockedField('Current Non-O visa purpose (Thai)', 'nonOVisaPurpose', item.nonOVisaPurpose || 'ติดตามธุรกิจ', 'text', true, '', false)}
-          ${lockedField('Program duration (years)', 'programDurationYears', item.programDurationYears || (item.programType === 'graduate' ? 2 : 4), 'number', true, 'min="1" max="10"', false)}
-        </div></div>` : ''}
         <div class="drawer-section"><div class="drawer-section-head"><h3>Visa request</h3></div>
           <div class="field-grid">
             ${editableSelect('Request option', 'requestRuleOverride', rule, [['six_months','+6 months'],['one_year','+1 year'],['manual','Manual Date']], 'data-request-rule="drawer"')}
             <div class="drawer-field manual-request-field ${rule === 'manual' ? '' : 'hidden'}"><label>Manual request until</label><input data-edit-field="manualRequestUntil" type="date" value="${escapeHtml(item.manualRequestUntil || '')}" /></div>
+            ${editableSelect('Case type · move to another section', 'caseCategory', item.caseCategory, [['normal','Normal cases'],['exchange','Exchange students'],['non_o','Non-O → ED transfer']], 'id="editCaseCategory"')}
+            <div class="case-move-hint">Change the case type and save to move this student. The new letter template will be used.</div>
           </div>
-        </div>`;
+        </div>
+        <div class="drawer-section case-special-section ${item.caseCategory === 'exchange' ? '' : 'hidden'}" data-case-specific="exchange">
+          <div class="drawer-section-head"><h3>Exchange details</h3></div><div class="field-grid">
+            ${editableField('Partner university (English)', 'exchangeUniversity', item.exchangeUniversity, 'text', 'list="partnerUniversitySuggestions" autocomplete="off"')}
+            ${editableField('Partner country (Thai)', 'exchangeCountryThai', item.exchangeCountryThai, 'text', 'list="partnerCountrySuggestions" autocomplete="off"')}
+            <div class="exchange-trio">
+              ${editableSelect('Exchange semester', 'exchangeTerm', String(item.exchangeTerm || 2), [['1','1'],['2','2'],['3','3']])}
+              ${editableField('Academic year (B.E.)', 'exchangeAcademicYear', item.exchangeAcademicYear || rememberedAcademicYear(), 'number', 'min="2500" max="2700"')}
+              ${editableField('Duration (semesters)', 'exchangeDurationSemesters', item.exchangeDurationSemesters || 1, 'number', 'min="1" max="12"')}
+            </div>
+          </div>
+        </div>
+        <div class="drawer-section case-special-section ${item.caseCategory === 'non_o' ? '' : 'hidden'}" data-case-specific="non_o">
+          <div class="drawer-section-head"><h3>Non-O transfer details</h3></div><div class="field-grid">
+            ${lockedField('Current Non-O visa purpose (Thai)', 'nonOVisaPurpose', item.nonOVisaPurpose || 'ติดตามธุรกิจ', 'text', true, '', false)}
+            ${lockedField('Program duration (years)', 'programDurationYears', item.programDurationYears || (item.programType === 'graduate' ? 2 : 4), 'number', true, 'min="1" max="10"', false)}
+          </div>
+        </div>
+`;
       const ruleSelect = el('drawerContent').querySelector('[data-request-rule="drawer"]');
       ruleSelect?.addEventListener('change', () => {
         el('drawerContent').querySelector('.manual-request-field')?.classList.toggle('hidden', ruleSelect.value !== 'manual');
       });
       arrangeCaseFields(el('drawerContent'), true);
+      const caseSelector = el('drawerContent').querySelector('#editCaseCategory');
+      const updateCaseFields = () => {
+        el('drawerContent').querySelectorAll('[data-case-specific]').forEach(section => {
+          const active = section.dataset.caseSpecific === caseSelector.value;
+          section.classList.toggle('hidden', !active);
+          section.querySelectorAll('[data-edit-field]').forEach(input => { input.disabled = !active; });
+        });
+      };
+      caseSelector.addEventListener('change', updateCaseFields);
+      updateCaseFields();
       bindLockedFields(el('drawerContent'));
       updateAutomaticStudyFields(el('drawerContent'));
       const editRoot = el('drawerContent');
@@ -1053,10 +1070,18 @@
           <div class="field-grid">
             ${fieldItem('Current stay', formatDate(item.currentStayUntil))}
             ${fieldItem('Request option', ruleLabel(item))}
+            <div class="field-item"><label>Case type</label><div class="field-value">${escapeHtml(({normal:'Normal cases',exchange:'Exchange students',non_o:'Non-O → ED transfer'})[item.caseCategory] || 'Normal cases')}</div><button type="button" class="btn subtle case-move-button" id="moveCaseTypeBtn">Move to another case type →</button></div>
             ${fieldItem(isPassportCapped(item) ? 'Extend until (passport cap)' : 'Request until', item.requestUntil ? formatDate(item.requestUntil) : '—', true)}
           </div>
         </div>`;
     }
+    el('moveCaseTypeBtn')?.addEventListener('click', () => {
+      state.editing = true;
+      renderDrawer();
+      const selector = el('drawerContent').querySelector('#editCaseCategory');
+      selector?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      selector?.focus();
+    });
   }
 
   function ruleExplanation(item) {
@@ -1122,7 +1147,11 @@
   function saveDrawerChanges() {
     const item = getActiveCase();
     if (!item) return;
-    document.querySelectorAll('[data-edit-field]').forEach((input) => {
+    const category = el('drawerContent').querySelector('#editCaseCategory')?.value || item.caseCategory;
+    if (category !== item.caseCategory &&
+        !confirm('Move this student to ' + ({normal:'Normal cases',exchange:'Exchange students',non_o:'Non-O → ED transfer'})[category] + '? The case will use the corresponding Word letter template.')) return;
+    el('drawerContent').querySelectorAll('[data-edit-field]').forEach((input) => {
+      if (input.disabled) return;
       const field = input.dataset.editField;
       if (['studyYearOverride', 'graduationYearOverride'].includes(field)) {
         const enabled = document.querySelector('[data-unlock-target="edit_' + field + '"]')?.checked;
@@ -1154,7 +1183,9 @@
       renderDrawer();
     }
     renderWorkspace();
-    toast('Case updated', 'Visa calculations and academic reference data were refreshed automatically.');
+    const missing = validationFor(item).missing;
+    toast('Case saved', missing.length ? 'Complete missing information before generating Word: ' + missing.join(', ')
+      : 'Student information and visa calculations were updated.');
   }
 
   function renderStudentForm(category = state.activeCategory) {
@@ -1179,9 +1210,11 @@
         <div class="entry-section-title entry-priority">Exchange student information · complete before adding</div>
         <div class="form-field full"><label>Partner university (English)</label><input name="exchangeUniversity" list="partnerUniversitySuggestions" autocomplete="off" required placeholder="Enter a university name; previous entries will be suggested" /></div>
         <div class="form-field full"><label>Partner country (Thai)</label><input name="exchangeCountryThai" list="partnerCountrySuggestions" autocomplete="off" required placeholder="พิมพ์ชื่อประเทศภาษาไทยเพื่อค้นหา" /></div>
-        <div class="form-field"><label>Exchange semester</label><select name="exchangeTerm" required><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option></select></div>
-        <div class="form-field"><label>Academic year (B.E.)</label><input type="number" name="exchangeAcademicYear" min="2500" max="2700" value="${rememberedAcademicYear()}" required /></div>
-        <div class="form-field"><label>Exchange duration (semesters)</label><input type="number" name="exchangeDurationSemesters" min="1" max="12" value="1" required /></div>
+        <div class="exchange-trio">
+          <div class="form-field"><label>Exchange semester</label><select name="exchangeTerm" required><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option></select></div>
+          <div class="form-field"><label>Academic year (B.E.)</label><input type="number" name="exchangeAcademicYear" min="2500" max="2700" value="${rememberedAcademicYear()}" required /></div>
+          <div class="form-field"><label>Duration (semesters)</label><input type="number" name="exchangeDurationSemesters" min="1" max="12" value="1" required /></div>
+        </div>
       ` : ''}
       ${category === 'non_o' ? `
         <div class="entry-section-title entry-priority">Non-O transfer information · complete before adding</div>
