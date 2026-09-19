@@ -263,29 +263,75 @@
     let ci = 0;
     return row.replace(new RegExp(CELL_RE.source, 'g'), () => cells[ci++]);
   }
+
+  function listCells(row) {
+    return [...row.matchAll(new RegExp(CELL_RE.source, 'g'))].map(m => m[0]);
+  }
+  function replaceListRowCells(row, cells) {
+    const hits = [...row.matchAll(new RegExp(CELL_RE.source, 'g'))];
+    if (!hits.length) throw new Error('Student-list row has no table cells');
+    const first = hits[0], last = hits[hits.length - 1];
+    return row.slice(0, first.index) + cells.join('') + row.slice(last.index + last[0].length);
+  }
+  function listCellWidth(cell, width, value) {
+    if (!/<w:tcW\b[^>]*\/>/.test(cell)) throw new Error('Student-list template cell width is missing');
+    let updated = cell.replace(/<w:tcW\b[^>]*\/>/, '<w:tcW w:w="' + Math.max(1, Math.round(width)) + '" w:type="dxa"/>');
+    if (value !== undefined) {
+      const values = getTexts(updated);
+      if (!values.length) throw new Error('Student-list template header has no text node');
+      updated = replaceTextNodes(updated, values.map((_, i) => i ? '' : String(value)));
+    }
+    return updated;
+  }
+  function listTableGrid(table, count) {
+    const match = /<w:tblGrid\b[^>]*>([\s\S]*?)<\/w:tblGrid>/.exec(table);
+    if (!match) throw new Error('Student-list table grid not found');
+    const widths = [...match[1].matchAll(/<w:gridCol\b[^>]*w:w="(\d+)"[^>]*\/>/g)].map(m => Number(m[1]));
+    if (widths.length < 6) throw new Error('Student-list template must include four student fields and two blank columns');
+    const fixed = widths.slice(0, 4);
+    const space = widths.slice(4).reduce((sum, width) => sum + width, 0);
+    const extras = Array.from({length: count}, (_, i) => Math.floor(space / count) + (i < space % count ? 1 : 0));
+    const grid = '<w:tblGrid>' + [...fixed, ...extras].map(w => '<w:gridCol w:w="' + w + '"/>').join('') + '</w:tblGrid>';
+    return {table: table.replace(match[0], grid), fixed, extras};
+  }
   function titleCase(raw) {
     const x = text(raw).toLowerCase();
     return x ? x[0].toUpperCase() + x.slice(1) : '';
   }
-  async function generateStudentList(templateBuffer, students, issueDate) {
+  async function generateStudentList(templateBuffer, students, issueDate, columnNames = ['หน.บน.', 'ผศ.ดร.ธรรญธร', 'อ.เนาวกานต์']) {
+    const labels = Array.isArray(columnNames) ? columnNames.map(name => text(name)) : [];
+    if (labels.length > 6 || labels.some(name => !name)) throw new Error('Student list requires up to six nonempty column names');
     const files = await bufferToFiles(templateBuffer);
-    let xml = dec.decode(files.get('word/document.xml').data);
-    const tableMatch = new RegExp(TABLE_RE.source).exec(xml);
-    if (!tableMatch) throw new Error('Student-list table not found');
-    const table = tableMatch[0];
+    const part = files.get('word/document.xml');
+    if (!part) throw new Error('Invalid student-list template: document.xml is missing');
+    let xml = dec.decode(part.data);
+    const found = new RegExp(TABLE_RE.source).exec(xml);
+    if (!found) throw new Error('Student-list table not found');
+    const originalTable = found[0];
+    const oldRows = [...originalTable.matchAll(new RegExp(ROW_RE.source, 'g'))];
+    if (oldRows.length < 2) throw new Error('Student-list template needs header and data row');
+    const headerCells = listCells(oldRows[0][0]);
+    const dataCells = listCells(oldRows[1][0]);
+    if (headerCells.length < 3 || dataCells.length < 6) throw new Error('Student-list template requires four student cells and two blank columns');
+    const {table, fixed, extras} = listTableGrid(originalTable, labels.length);
     const rows = [...table.matchAll(new RegExp(ROW_RE.source, 'g'))];
-    if (rows.length < 2) throw new Error('Student-list template needs header and data row');
     const d = parseIso(issueDate);
     const dateEN = `${ENGLISH_MONTHS[d.m]} ${d.d}, ${d.y}`;
-    const header = replaceCells(rows[0][0], [dateEN, 'หน.บน.', 'ลส.นช.']);
+    const newHeader = replaceListRowCells(rows[0][0], [
+      listCellWidth(headerCells[0], fixed.reduce((sum, w) => sum + w, 0), dateEN),
+      ...labels.map((name, i) => listCellWidth(headerCells[1], extras[i], name)),
+    ]);
     const proto = rows[1][0];
-    const body = students.map(st => replaceCells(proto, [text(st.documentNo), text(st.studentId), titleCase(st.title), text(st.fullName), '', ''])).join('');
-    const firstStart = rows[0].index;
+    const body = students.map(student => {
+      const filled = replaceCells(proto, [text(student.documentNo), text(student.studentId), titleCase(student.title), text(student.fullName)]);
+      const leftCells = listCells(filled).slice(0, 4);
+      const emptyCells = extras.map(width => listCellWidth(dataCells[4], width));
+      return replaceListRowCells(filled, [...leftCells, ...emptyCells]);
+    }).join('');
     const last = rows[rows.length - 1];
-    const lastEnd = last.index + last[0].length;
-    const newTable = table.slice(0, firstStart) + header + body + table.slice(lastEnd);
-    xml = xml.slice(0, tableMatch.index) + newTable + xml.slice(tableMatch.index + table.length);
-    files.set('word/document.xml', { name: 'word/document.xml', data: enc.encode(xml) });
+    const newTable = table.slice(0, rows[0].index) + newHeader + body + table.slice(last.index + last[0].length);
+    xml = xml.slice(0, found.index) + newTable + xml.slice(found.index + originalTable.length);
+    files.set('word/document.xml', {name: 'word/document.xml', data: enc.encode(xml)});
     return filesToBlob(files);
   }
 
@@ -312,9 +358,9 @@
     return combineRendered(rendered);
   }
 
-  async function generateList(students, issueDate) {
+  async function generateList(students, issueDate, columnNames) {
     const tpl = await requireTemplate('studentList');
-    return generateStudentList(tpl, students, issueDate);
+    return generateStudentList(tpl, students, issueDate, columnNames);
   }
 
   window.BrowserDocx = { generateIndividual, generateBatch, generateList, formattedTitle };
