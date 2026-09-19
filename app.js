@@ -59,6 +59,8 @@
       signatory: 'somyot',
       newStudentPrefixes: '169, 769, 869, 969',
       studentListColumns: [...DEFAULT_STUDENT_LIST_COLUMNS],
+      exchangeUniversities: [],
+      lastExchangeAcademicYear: null,
     },
     templates: { letter16: null, letter76: null, studentList: null, exchange: null, non_o: null },
   };
@@ -293,6 +295,125 @@
       persist();
       renderListColumnSettings();
     });
+  }
+
+
+  function normalizeExchangeUniversities(value) {
+    if (!Array.isArray(value)) return [];
+    const names = [];
+    for (const entry of value) {
+      const name = String(entry ?? '').trim().slice(0, 180);
+      if (name && !names.some(saved => saved.toLocaleLowerCase() === name.toLocaleLowerCase())) names.push(name);
+    }
+    return names.slice(-200);
+  }
+
+  function rememberedAcademicYear() {
+    const saved = Number(state.settings.lastExchangeAcademicYear);
+    if (Number.isInteger(saved) && saved >= 2500 && saved <= 2700) return saved;
+    const last = [...state.cases].reverse().find(item =>
+      item.caseCategory === 'exchange' && Number.isInteger(Number(item.exchangeAcademicYear)) &&
+      Number(item.exchangeAcademicYear) >= 2500 && Number(item.exchangeAcademicYear) <= 2700);
+    if (last) return Number(last.exchangeAcademicYear);
+    const prefix = newStudentPrefixes().find(value => /^[0-9]{3}$/.test(value));
+    return 2500 + (prefix ? Number(prefix.slice(1, 3)) : 69);
+  }
+
+  function showPartnerUniversitySuggestions() {
+    const list = el('partnerUniversitySuggestions');
+    if (list) list.innerHTML = normalizeExchangeUniversities(state.settings.exchangeUniversities)
+      .map(name => '<option value="' + escapeHtml(name) + '"></option>').join('');
+  }
+
+  function renderSavedUniversities() {
+    const list = el('savedUniversitiesList');
+    if (!list) return;
+    const names = normalizeExchangeUniversities(state.settings.exchangeUniversities);
+    list.innerHTML = names.length
+      ? names.map((name, index) => '<div class="saved-university-row"><span>' + escapeHtml(name)
+        + '</span><button type="button" class="btn subtle" data-remove-university="' + index
+        + '" aria-label="Remove ' + escapeHtml(name) + '">Remove</button></div>').join('')
+      : '<div class="list-column-empty">No partner universities remembered yet.</div>';
+    el('clearSavedUniversitiesBtn').disabled = names.length === 0;
+  }
+
+  function rememberExchangeDetails(item) {
+    if (item.caseCategory !== 'exchange') return;
+    const name = String(item.exchangeUniversity || '').trim().slice(0, 180);
+    if (name) {
+      const names = normalizeExchangeUniversities(state.settings.exchangeUniversities);
+      if (!names.some(saved => saved.toLocaleLowerCase() === name.toLocaleLowerCase())) names.push(name);
+      state.settings.exchangeUniversities = names.slice(-200);
+    }
+    const year = Number(item.exchangeAcademicYear);
+    if (Number.isInteger(year) && year >= 2500 && year <= 2700) state.settings.lastExchangeAcademicYear = year;
+    showPartnerUniversitySuggestions();
+    renderSavedUniversities();
+  }
+
+  function countryOptions() {
+    const records = new Map();
+    for (const item of state.nationalities) {
+      if (item.thai) records.set(String(item.thai).trim(), String(item.english || '').trim());
+    }
+    // The supplied nationality reference uses shortened labels for some
+    // countries. Include familiar full country names as searchable alternatives.
+    for (const [thai, english] of [
+      ['ประเทศไทย', 'Thailand'], ['สหรัฐอเมริกา', 'United States'],
+      ['สหราชอาณาจักร', 'United Kingdom'], ['สาธารณรัฐประชาชนจีน', 'China'],
+      ['สาธารณรัฐเกาหลี', 'South Korea'], ['เกาหลีใต้', 'South Korea'],
+      ['สาธารณรัฐแห่งสหภาพเมียนมา', 'Myanmar']
+    ]) records.set(thai, english);
+    return [...records.entries()].map(([thai, english]) =>
+      '<option value="' + escapeHtml(thai) + '" label="' + escapeHtml(english) + '"></option>').join('');
+  }
+
+  function inferredAcademicYearFields(studentId, programType) {
+    const id = String(studentId || '').trim();
+    const intakePrefix = newStudentPrefixes().find(prefix => /^[0-9]{3}$/.test(prefix));
+    const cohort = intakePrefix ? Number(intakePrefix.slice(1, 3)) : null;
+    const valid = /^[0-9]{3}/.test(id);
+    return {
+      studyYear: valid && cohort !== null ? ((cohort - Number(id.slice(1, 3)) + 100) % 100) + 1 : '',
+      graduationYear: valid && programType !== 'graduate' ? 2504 + Number(id.slice(1, 3)) : '',
+    };
+  }
+
+  function lockedField(label, field, value, type = 'text', isDrawer = false, extra = '', initiallyEnabled = false) {
+    const key = (isDrawer ? 'edit_' : 'new_') + field;
+    const valueAttribute = value === null || value === undefined ? '' : String(value);
+    return '<div class="' + (isDrawer ? 'drawer-field' : 'form-field') + ' lockable-field" data-lock-field="' + field + '">'
+      + '<div class="locked-field-heading"><label for="' + key + '">' + escapeHtml(label) + '</label>'
+      + '<label class="unlock-field-check"><input type="checkbox" data-unlock-target="' + key + '" '
+      + (initiallyEnabled ? 'checked' : '') + '/><span>Enable edit</span></label></div>'
+      + '<input id="' + key + '" class="locked-input" ' + (isDrawer ? 'data-edit-field="' : 'name="') + field
+      + '" type="' + type + '" value="' + escapeHtml(valueAttribute) + '" '
+      + (initiallyEnabled ? '' : 'readonly ') + extra + '/></div>';
+  }
+
+  function bindLockedFields(root) {
+    root.querySelectorAll('[data-unlock-target]').forEach(toggle => {
+      const input = root.querySelector('#' + toggle.dataset.unlockTarget);
+      if (!input) return;
+      input.readOnly = !toggle.checked;
+      toggle.addEventListener('change', () => {
+        input.readOnly = !toggle.checked;
+        if (toggle.checked) input.focus();
+        if (!toggle.checked) updateAutomaticStudyFields(root);
+      });
+    });
+  }
+
+  function updateAutomaticStudyFields(root) {
+    const studentId = root.querySelector('[name="studentId"],[data-edit-field="studentId"]')?.value || '';
+    const programType = root.querySelector('[name="programType"],[data-edit-field="programType"]')?.value || '';
+    const auto = inferredAcademicYearFields(studentId, programType);
+    for (const [field, value] of [['studyYearOverride', auto.studyYear], ['graduationYearOverride', auto.graduationYear]]) {
+      const input = root.querySelector('[name="' + field + '"],[data-edit-field="' + field + '"]');
+      if (input && input.readOnly) input.value = value;
+    }
+    const duration = root.querySelector('[name="programDurationYears"],[data-edit-field="programDurationYears"]');
+    if (duration && duration.readOnly) duration.value = programType === 'graduate' ? 2 : 4;
   }
 
   function cleanNewStudentPrefixes(value) {
@@ -536,6 +657,7 @@
       state.settings.signatory = normalizeSignatoryKey(state.settings.signatory);
       state.settings.newStudentPrefixes = cleanNewStudentPrefixes(state.settings.newStudentPrefixes) || '169, 769, 869, 969';
       studentListColumns();
+      state.settings.exchangeUniversities = normalizeExchangeUniversities(state.settings.exchangeUniversities);
     } catch (err) {
       console.warn('Could not load browser state', err);
       state.cases = [];
@@ -1387,6 +1509,7 @@
       state.settings.signatory = normalizeSignatoryKey(state.settings.signatory);
       state.settings.newStudentPrefixes = cleanNewStudentPrefixes(state.settings.newStudentPrefixes) || '169, 769, 869, 969';
       studentListColumns();
+      state.settings.exchangeUniversities = normalizeExchangeUniversities(state.settings.exchangeUniversities);
       if (payload.templates) await VisaDB.importTemplatesBase64(payload.templates);
       persist();
       await refreshTemplateStatus();
@@ -1395,6 +1518,8 @@
       el('settingsSignaturePreview').innerHTML = signatoryPreview(state.settings.signatory);
       if (el('newStudentPrefixesInput')) el('newStudentPrefixesInput').value = state.settings.newStudentPrefixes;
       renderListColumnSettings();
+      showPartnerUniversitySuggestions();
+      renderSavedUniversities();
       state.selected.clear();
       renderWorkspace(); renderBatchHistory(); renderProgramTable();
       toast('Backup restored', `${state.cases.length} cases restored into this browser.`);
@@ -1613,6 +1738,25 @@
       toast('Setting saved', 'Default signatory updated.');
     });
     bindListColumnSettings();
+    el('savedUniversitiesList').addEventListener('click', event => {
+      const button = event.target.closest('[data-remove-university]');
+      if (!button) return;
+      const index = Number(button.dataset.removeUniversity);
+      const names = normalizeExchangeUniversities(state.settings.exchangeUniversities);
+      if (!Number.isInteger(index) || index < 0 || index >= names.length) return;
+      names.splice(index, 1);
+      state.settings.exchangeUniversities = names;
+      persist();
+      renderSavedUniversities();
+      showPartnerUniversitySuggestions();
+    });
+    el('clearSavedUniversitiesBtn').addEventListener('click', () => {
+      if (!confirm('Clear all remembered partner university suggestions? Existing cases will remain unchanged.')) return;
+      state.settings.exchangeUniversities = [];
+      persist();
+      renderSavedUniversities();
+      showPartnerUniversitySuggestions();
+    });
     el('newStudentPrefixesInput')?.addEventListener('change', (e) => {
       const cleaned = cleanNewStudentPrefixes(e.target.value);
       if (!cleaned) {
@@ -1633,12 +1777,15 @@
       await loadLocalState();
       await refreshTemplateStatus();
       ensureNationalityDatalist();
+      el('partnerCountrySuggestions').innerHTML = countryOptions();
+      showPartnerUniversitySuggestions();
 
       el('signatoryInput').innerHTML = signatoryOptions(state.settings.signatory);
       el('signatoryInput').value = state.settings.signatory;
       el('settingsSignaturePreview').innerHTML = signatoryPreview(state.settings.signatory);
       if (el('newStudentPrefixesInput')) el('newStudentPrefixesInput').value = state.settings.newStudentPrefixes;
       renderListColumnSettings();
+      renderSavedUniversities();
 
       bindEvents();
       renderWorkspace();
