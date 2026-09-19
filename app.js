@@ -358,6 +358,9 @@
       item.currentStudent = inferCurrentStudentFromId(item.studentId);
     }
     item.attachment43 = item.currentStudent ? 'transcript' : 'application';
+    // Configurable current intake: 169/769/869/969 -> 69; next year 170/770/870/970 -> 70.
+    const intakePrefix = newStudentPrefixes().find((prefix) => /^[0-9]{3}$/.test(prefix));
+    item.academicCohortYear = intakePrefix ? Number(intakePrefix.slice(1, 3)) : null;
     const program = programByKey(item.programKey);
     if (program) {
       item.programKey = program.key;
@@ -752,6 +755,8 @@
             <div class="drawer-field full"><label>Major</label><select data-edit-field="programKey" id="drawerProgramSelect" data-academic-program="drawer">${majorOptions.map((p) => `<option value="${escapeHtml(p.key)}" ${p.key === item.programKey ? 'selected' : ''}>${escapeHtml(majorLabelForType(item.programType, p))}</option>`).join('')}</select></div>
             ${editableField('Total credits', 'totalCredits', item.totalCredits, 'number')}
             ${editableField('Registered credits', 'registeredCredits', item.registeredCredits, 'number')}
+            ${editableField('Study year override (optional)', 'studyYearOverride', item.studyYearOverride || '', 'number')}
+            ${editableField('Graduation year B.E. override (optional)', 'graduationYearOverride', item.graduationYearOverride || '', 'number')}
           </div>
         </div>
         <div class="drawer-section"><div class="drawer-section-head"><h3>Visa request</h3></div>
@@ -790,6 +795,8 @@
             ${fieldItem('Thai major name', item.programThai || program?.programThai)}
             ${fieldItem('Total credits', item.totalCredits || program?.credits?.['2026'])}
             ${fieldItem('Registered credits', item.registeredCredits)}
+            ${fieldItem('Study year', item.currentStudent ? (item.studyYearOverride || ((item.academicCohortYear !== null && /^[0-9]{3}/.test(String(item.studentId || ''))) ? (((item.academicCohortYear - Number(String(item.studentId).slice(1, 3)) + 100) % 100) + 1) : 'Verify')) : 1)}
+            ${fieldItem('Graduation year B.E.', item.graduationYearOverride || (item.programType === 'graduate' ? 'Graduate template value' : (/^[0-9]{3}/.test(String(item.studentId || '')) ? 2504 + Number(String(item.studentId).slice(1, 3)) : 'Verify')))}
             ${fieldItem('Study hours', item.studyHours ? `${Number(item.studyHours).toLocaleString()} hours` : '—', true)}
           </div>
         </div>
@@ -907,6 +914,8 @@
       <div class="form-field full"><label>Major</label><select name="programKey" data-academic-program="new" required></select></div>
       <div class="form-field"><label>Total credits</label><input type="number" min="0" name="totalCredits" data-total-credits="new" /></div>
       <div class="form-field"><label>Registered credits</label><input type="number" min="0" name="registeredCredits" /></div>
+      <div class="form-field"><label>Study year override (optional)</label><input type="number" min="1" max="20" name="studyYearOverride" placeholder="Auto from Student ID" /></div>
+      <div class="form-field"><label>Graduation year B.E. override (optional)</label><input type="number" min="2500" max="2700" name="graduationYearOverride" placeholder="Auto from Student ID" /></div>
       <div class="form-field"><label>Request option</label><select name="requestRuleOverride" data-request-rule="new"><option value="six_months">+6 months</option><option value="one_year">+1 year</option><option value="manual">Manual Date</option></select></div>
       <div class="form-field manual-request-field hidden"><label>Manual request until</label><input type="date" name="manualRequestUntil" /></div>`;
     const form = el('studentForm');

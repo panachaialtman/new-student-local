@@ -177,6 +177,58 @@
     return out;
   }
 
+
+  function cohortStudyYear(st) {
+    const override = text(st.studyYearOverride);
+    if (override !== '') {
+      const n = Number(override);
+      if (!Number.isInteger(n) || n < 1 || n > 20) throw new Error('Study year override must be between 1 and 20');
+      return n;
+    }
+    const id = text(st.studentId);
+    const cohort = Number(st.academicCohortYear);
+    if (!/^[0-9]{3}/.test(id) || st.academicCohortYear == null ||
+        !Number.isInteger(cohort) || cohort < 0 || cohort > 99) {
+      throw new Error('Cannot infer study year. Check the student ID or enter a Study year override.');
+    }
+    return ((cohort - Number(id.slice(1, 3)) + 100) % 100) + 1;
+  }
+  function graduationAcademicYear(st) {
+    const override = text(st.graduationYearOverride);
+    if (override !== '') {
+      const n = Number(override);
+      if (!Number.isInteger(n) || n < 2500 || n > 2700) {
+        throw new Error('Graduation year override must be a B.E. year, e.g. 2573');
+      }
+      return n;
+    }
+    // Letter 76 has separate graduate-specific rules: don't apply undergraduate
+    // five-year cohort graduation calculations to a graduate case.
+    if (st.programType === 'graduate') return null;
+    const id = text(st.studentId);
+    if (!/^[0-9]{3}/.test(id)) {
+      throw new Error('Cannot infer graduation year. Check the student ID or enter a Graduation year override.');
+    }
+    return 2504 + Number(id.slice(1, 3));
+  }
+  function applyAcademicWording(xml, st) {
+    const current = st.currentStudent === true ||
+      (st.currentStudent !== false && st.attachment43 === 'transcript');
+    const year = current ? cohortStudyYear(st) : 1;
+    const enrollment = current ? 'ศึกษาอยู่ชั้นปีที่ ' + year : 'เริ่มศึกษาชั้นปีที่ 1';
+    let replaced = replacePlain(xml, 'ศึกษาอยู่ชั้นปีที่ 1', enrollment);
+    if (!replaced.replaced) throw new Error('Could not locate the enrollment-year sentence in the Word template');
+    xml = replaced.xml;
+    const graduation = graduationAcademicYear(st);
+    if (graduation !== null) {
+      replaced = replacePlain(xml, 'สำเร็จการศึกษาในปีการศึกษา 2572',
+        'สำเร็จการศึกษาในปีการศึกษา ' + graduation);
+      if (!replaced.replaced) throw new Error('Could not locate the graduation-year sentence in the Word template');
+      xml = replaced.xml;
+    }
+    return xml;
+  }
+
   function resolveSignatory(raw) {
     if (SIGNATORIES[raw]) return SIGNATORIES[raw];
     if (String(raw || '').includes('ดวงธิดา')) return SIGNATORIES.duangthida;
@@ -197,6 +249,7 @@
     if (!doc) throw new Error('Invalid Word template: word/document.xml is missing');
     let xml = dec.decode(doc.data);
     xml = fillHighlights(xml, replacements(st));
+    xml = applyAcademicWording(xml, st);
     xml = replaceIssueDate(xml, thaiDate(issueDate));
     const profile = resolveSignatory(signatory);
     if (profile.name !== DEFAULT_NAME) {
