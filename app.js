@@ -412,8 +412,6 @@
       const input = root.querySelector('[name="' + field + '"],[data-edit-field="' + field + '"]');
       if (input && input.readOnly) input.value = value;
     }
-    const duration = root.querySelector('[name="programDurationYears"],[data-edit-field="programDurationYears"]');
-    if (duration && duration.readOnly) duration.value = programType === 'graduate' ? 2 : 4;
   }
 
   function cleanNewStudentPrefixes(value) {
@@ -901,22 +899,22 @@
             <div class="drawer-field full"><label>Major</label><select data-edit-field="programKey" id="drawerProgramSelect" data-academic-program="drawer">${majorOptions.map((p) => `<option value="${escapeHtml(p.key)}" ${p.key === item.programKey ? 'selected' : ''}>${escapeHtml(majorLabelForType(item.programType, p))}</option>`).join('')}</select></div>
             ${editableField('Total credits', 'totalCredits', item.totalCredits, 'number')}
             ${editableField('Registered credits', 'registeredCredits', item.registeredCredits, 'number')}
-            ${editableField('Study year override (optional)', 'studyYearOverride', item.studyYearOverride || '', 'number')}
-            ${editableField('Graduation year B.E. override (optional)', 'graduationYearOverride', item.graduationYearOverride || '', 'number')}
+            ${lockedField('Study year override (optional)', 'studyYearOverride', item.studyYearOverride || '', 'number', true, 'min="1" max="20" placeholder="Automatic from Student ID"', Boolean(item.studyYearOverride))}
+            ${lockedField('Graduation year B.E. override (optional)', 'graduationYearOverride', item.graduationYearOverride || '', 'number', true, 'min="2500" max="2700" placeholder="Automatic from Student ID"', Boolean(item.graduationYearOverride))}
           </div>
         </div>
         ${item.caseCategory === 'exchange' ? `
         <div class="drawer-section"><div class="drawer-section-head"><h3>Exchange details</h3></div><div class="field-grid">
-          ${editableField('Partner university (English)', 'exchangeUniversity', item.exchangeUniversity)}
-          ${editableField('Partner country (Thai)', 'exchangeCountryThai', item.exchangeCountryThai)}
-          ${editableField('Exchange semester', 'exchangeTerm', item.exchangeTerm || 2, 'number')}
-          ${editableField('Academic year (B.E.)', 'exchangeAcademicYear', item.exchangeAcademicYear || '', 'number')}
+          ${editableField('Partner university (English)', 'exchangeUniversity', item.exchangeUniversity, 'text', 'list="partnerUniversitySuggestions" autocomplete="off"')}
+          ${editableField('Partner country (Thai)', 'exchangeCountryThai', item.exchangeCountryThai, 'text', 'list="partnerCountrySuggestions" autocomplete="off"')}
+          ${editableSelect('Exchange semester', 'exchangeTerm', String(item.exchangeTerm || 2), [['1','1'],['2','2'],['3','3']])}
+          ${editableField('Academic year (B.E.)', 'exchangeAcademicYear', item.exchangeAcademicYear || rememberedAcademicYear(), 'number', 'min="2500" max="2700"')}
           ${editableField('Duration (semesters)', 'exchangeDurationSemesters', item.exchangeDurationSemesters || 1, 'number')}
         </div></div>` : ''}
         ${item.caseCategory === 'non_o' ? `
         <div class="drawer-section"><div class="drawer-section-head"><h3>Non-O transfer details</h3></div><div class="field-grid">
-          ${editableField('Current Non-O visa purpose (Thai)', 'nonOVisaPurpose', item.nonOVisaPurpose || 'ติดตามธุรกิจ')}
-          ${editableField('Program duration (years)', 'programDurationYears', item.programDurationYears || 4, 'number')}
+          ${lockedField('Current Non-O visa purpose (Thai)', 'nonOVisaPurpose', item.nonOVisaPurpose || 'ติดตามธุรกิจ', 'text', true, '', false)}
+          ${lockedField('Program duration (years)', 'programDurationYears', item.programDurationYears || (item.programType === 'graduate' ? 2 : 4), 'number', true, 'min="1" max="10"', false)}
         </div></div>` : ''}
         <div class="drawer-section"><div class="drawer-section-head"><h3>Visa request</h3></div>
           <div class="field-grid">
@@ -928,6 +926,11 @@
       ruleSelect?.addEventListener('change', () => {
         el('drawerContent').querySelector('.manual-request-field')?.classList.toggle('hidden', ruleSelect.value !== 'manual');
       });
+      bindLockedFields(el('drawerContent'));
+      updateAutomaticStudyFields(el('drawerContent'));
+      const editRoot = el('drawerContent');
+      editRoot.querySelector('[data-edit-field="studentId"]')?.addEventListener('input', () => updateAutomaticStudyFields(editRoot));
+      editRoot.querySelector('[data-edit-field="programType"]')?.addEventListener('change', () => updateAutomaticStudyFields(editRoot));
       bindAcademicSelectors({
         root: el('drawerContent'),
         typeSelector: '[data-academic-type="drawer"]',
@@ -1046,9 +1049,14 @@
     const item = getActiveCase();
     if (!item) return;
     document.querySelectorAll('[data-edit-field]').forEach((input) => {
+      const field = input.dataset.editField;
+      if (['studyYearOverride', 'graduationYearOverride'].includes(field)) {
+        const enabled = document.querySelector('[data-unlock-target="edit_' + field + '"]')?.checked;
+        if (!enabled) { item[field] = ''; return; }
+      }
       let value = input.type === 'checkbox' ? input.checked : input.value;
       if (input.type === 'number' && value !== '') value = Number(value);
-      item[input.dataset.editField] = value;
+      item[field] = value;
     });
     const program = programByKey(item.programKey);
     if (program) {
@@ -1060,6 +1068,8 @@
     }
     if (item.requestRuleOverride !== 'manual') item.manualRequestUntil = '';
     Object.assign(item, normalizeCase(item));
+    rememberExchangeDetails(item);
+    persist();
     state.editing = false;
     // An edited Current student checkbox can move an ordinary case between
     // the New and Current sections. Keep the user on the case's new section.
