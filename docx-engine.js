@@ -422,7 +422,7 @@
       // The supplied exchange template does not have a graduation-year field:
       // retain its semester-specific academic wording instead of inventing one.
       return [...shared, text(st.facultyThai), text(st.programThai),
-        String(credits), commaInt(credits * 14), text(st.exchangeUniversity),
+        String(credits), commaInt(credits * 14), ' ' + text(st.exchangeUniversity),
         text(st.exchangeCountryThai), String(term), String(academicYear),
         String(duration), effectiveDate];
     }
