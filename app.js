@@ -29,6 +29,8 @@
     letter16: 'Visa Extension Letter 16',
     letter76: 'Visa Extension Letter 76',
     studentList: 'Student List',
+    exchange: 'Exchange Student Visa Letter',
+    non_o: 'Non-O to ED Transfer Letter',
   };
 
   const PROGRAM_TYPE_OPTIONS = [
@@ -405,6 +407,22 @@
     if (!item.facultyThai) missing.push('faculty');
     if (!item.programThai) missing.push('Thai major name');
     if (inferRule(item) === 'manual' && !item.manualRequestUntil) missing.push('manual request-until date');
+    if (item.caseCategory === 'exchange') {
+      for (const [field, label] of [
+        ['exchangeUniversity','partner university'],
+        ['exchangeCountryThai','partner country in Thai'],
+        ['exchangeTerm','exchange semester'],
+        ['exchangeAcademicYear','exchange academic year'],
+        ['exchangeDurationSemesters','exchange duration'],
+      ]) if (!String(item[field] ?? '').trim()) missing.push(label);
+    }
+    if (item.caseCategory === 'non_o') {
+      if (!String(item.nonOVisaPurpose || '').trim()) missing.push('current Non-O visa purpose');
+      if (!String(item.programDurationYears || '').trim()) missing.push('program duration');
+      if (item.programType === 'graduate' && !String(item.graduationYearOverride || '').trim()) {
+        missing.push('graduate expected graduation year (B.E.) override');
+      }
+    }
     return { missing, valid: missing.length === 0 };
   }
 
@@ -763,6 +781,19 @@
             ${editableField('Graduation year B.E. override (optional)', 'graduationYearOverride', item.graduationYearOverride || '', 'number')}
           </div>
         </div>
+        ${item.caseCategory === 'exchange' ? `
+        <div class="drawer-section"><div class="drawer-section-head"><h3>Exchange details</h3></div><div class="field-grid">
+          ${editableField('Partner university (English)', 'exchangeUniversity', item.exchangeUniversity)}
+          ${editableField('Partner country (Thai)', 'exchangeCountryThai', item.exchangeCountryThai)}
+          ${editableField('Exchange semester', 'exchangeTerm', item.exchangeTerm || 2, 'number')}
+          ${editableField('Academic year (B.E.)', 'exchangeAcademicYear', item.exchangeAcademicYear || '', 'number')}
+          ${editableField('Duration (semesters)', 'exchangeDurationSemesters', item.exchangeDurationSemesters || 1, 'number')}
+        </div></div>` : ''}
+        ${item.caseCategory === 'non_o' ? `
+        <div class="drawer-section"><div class="drawer-section-head"><h3>Non-O transfer details</h3></div><div class="field-grid">
+          ${editableField('Current Non-O visa purpose (Thai)', 'nonOVisaPurpose', item.nonOVisaPurpose || 'ติดตามธุรกิจ')}
+          ${editableField('Program duration (years)', 'programDurationYears', item.programDurationYears || 4, 'number')}
+        </div></div>` : ''}
         <div class="drawer-section"><div class="drawer-section-head"><h3>Visa request</h3></div>
           <div class="field-grid">
             ${editableSelect('Request option', 'requestRuleOverride', rule, [['six_months','+6 months'],['one_year','+1 year'],['manual','Manual Date']], 'data-request-rule="drawer"')}
@@ -804,6 +835,19 @@
             ${fieldItem('Study hours', item.studyHours ? `${Number(item.studyHours).toLocaleString()} hours` : '—', true)}
           </div>
         </div>
+        ${item.caseCategory === 'exchange' ? `
+        <div class="drawer-section"><div class="drawer-section-head"><h3>Exchange details</h3></div><div class="field-grid">
+          ${fieldItem('Partner university', item.exchangeUniversity)}
+          ${fieldItem('Partner country (Thai)', item.exchangeCountryThai)}
+          ${fieldItem('Exchange semester', item.exchangeTerm)}
+          ${fieldItem('Academic year (B.E.)', item.exchangeAcademicYear)}
+          ${fieldItem('Duration (semesters)', item.exchangeDurationSemesters)}
+        </div></div>` : ''}
+        ${item.caseCategory === 'non_o' ? `
+        <div class="drawer-section"><div class="drawer-section-head"><h3>Non-O transfer details</h3></div><div class="field-grid">
+          ${fieldItem('Current Non-O visa purpose', item.nonOVisaPurpose)}
+          ${fieldItem('Program duration (years)', item.programDurationYears)}
+        </div></div>` : ''}
         <div class="drawer-section"><div class="drawer-section-head"><h3>Visa request</h3></div>
           <div class="field-grid">
             ${fieldItem('Current stay', formatDate(item.currentStayUntil))}
@@ -925,7 +969,7 @@
         <div class="form-field full"><label>Partner university (full English name)</label><input name="exchangeUniversity" required placeholder="Partner university" /></div>
         <div class="form-field full"><label>Partner country (full Thai name)</label><input name="exchangeCountryThai" required placeholder="ชื่อประเทศเต็ม" /></div>
         <div class="form-field"><label>Exchange semester</label><input type="number" name="exchangeTerm" min="1" max="3" value="2" required /></div>
-        <div class="form-field"><label>Academic year (B.E.)</label><input type="number" name="exchangeAcademicYear" min="2500" max="2700" value="${2560 + Number(String(state.settings.newStudentPrefixes).match(/\\d(\\d\\d)/)?.[1] || 69) - 60}" required /></div>
+        <div class="form-field"><label>Academic year (B.E.)</label><input type="number" name="exchangeAcademicYear" min="2500" max="2700" value="${2500 + Number(String(state.settings.newStudentPrefixes).match(/[0-9]([0-9]{2})/)?.[1] || 69)}" required /></div>
         <div class="form-field"><label>Exchange duration (semesters)</label><input type="number" name="exchangeDurationSemesters" min="1" max="12" value="1" required /></div>
       ` : ''}
       ${category === 'non_o' ? `
@@ -1115,13 +1159,18 @@
     }));
   }
 
+  function templateKeyForCase(item) {
+    if (item.caseCategory === 'exchange') return 'exchange';
+    if (item.caseCategory === 'non_o') return 'non_o';
+    return item.programType === 'graduate' ? 'letter76' : 'letter16';
+  }
+
   function renderBatchModal() {
     const items = selectedCases();
     const letterValidCount = items.filter((item) => validationFor(item).valid).length;
     const listValidCount = items.filter((item) => listValidationFor(item).valid).length;
-    const needs16 = items.some((item) => item.programType !== 'graduate');
-    const needs76 = items.some((item) => item.programType === 'graduate');
-    const lettersTemplatesReady = (!needs16 || state.templates.letter16) && (!needs76 || state.templates.letter76);
+    const requiredTemplates = [...new Set(items.map(templateKeyForCase))];
+    const lettersTemplatesReady = requiredTemplates.every((key) => Boolean(state.templates[key]));
     const listTemplateReady = Boolean(state.templates.studentList);
     const issueDate = todayIso();
     el('batchModalBody').innerHTML = `
@@ -1181,7 +1230,7 @@
         documentNumbers: items.map((item) => String(item.documentNo || '').trim()),
         students: historyStudentSnapshot(items),
         count: items.length, signatory: body.signatory,
-        outputType: 'letters', filename,
+        outputType: 'letters', category: state.activeCategory, filename,
       });
       persist();
       closeModal('batchModal');
@@ -1246,7 +1295,7 @@
       <div class="rule-box">This creates one Word letter for this student. Open the downloaded DOCX in Word to print.</div>`;
     const signer = el('individualSignatory');
     signer?.addEventListener('change', () => { el('individualSignaturePreview').innerHTML = signatoryPreview(signer.value); });
-    const templateReady = item.programType === 'graduate' ? Boolean(state.templates.letter76) : Boolean(state.templates.letter16);
+    const templateReady = Boolean(state.templates[templateKeyForCase(item)]);
     if (!templateReady) el('individualModalBody').insertAdjacentHTML('beforeend', '<div class="template-warning"><strong>Word template not configured.</strong><br>Import the required Letter 16/76 DOCX once in Workspace settings.</div>');
     el('generateIndividualBtn').disabled = !validation.valid || !templateReady;
   }
