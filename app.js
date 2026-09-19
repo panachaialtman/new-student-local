@@ -909,8 +909,12 @@
         line.className = 'case-inline-label';
         label.before(line);
         line.append(label, checkbox);
-        // Keep the student ID input in the same field, beside its label row.
-        input.parentNode === idField ? null : idField.append(input);
+        // Remove the now-empty former input/checkbox row after relocation.
+        const oldRow = input.parentElement;
+        if (oldRow !== idField) {
+          idField.append(input);
+          if (oldRow.classList.contains('student-id-current-row')) oldRow.remove();
+        }
       }
     }
   }

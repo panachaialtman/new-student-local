@@ -556,3 +556,35 @@ body { font-size: 16px; }
 .saved-university-row { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:7px 9px; background:#f6f9fd; border:1px solid #e2e8f0; border-radius:8px; }
 .saved-university-row span { min-width:0; overflow-wrap:anywhere; font-size:12px; }
 .saved-university-row button { flex-shrink:0; font-size:11px; }
+
+/* v0.3.3 — 50% wider edit panel and requested two/three-field row layout */
+.detail-drawer.editing { width: min(840px, 100vw); }
+.detail-drawer.editing .drawer-content { padding-inline: 24px; }
+.ordered-case-grid {
+  display: grid; grid-template-columns: repeat(12, minmax(0,1fr));
+  column-gap: 12px; row-gap: 12px; align-items: start;
+}
+.ordered-case-grid > * { min-width: 0; }
+.ordered-case-grid > .case-col-12 {grid-column:span 12;}
+.ordered-case-grid > .case-col-6 {grid-column:span 6;}
+.ordered-case-grid > .case-col-5 {grid-column:span 5;}
+.ordered-case-grid > .case-col-2 {grid-column:span 2;}
+.student-entry-modal .form-grid > .entry-order-grid {grid-column:1/-1;}
+.student-entry-modal .form-grid > .entry-case-picker {grid-column:1/-1;}
+.detail-drawer.editing .ordered-case-grid .drawer-field > input,
+.detail-drawer.editing .ordered-case-grid .drawer-field > select {font-size: 13px; min-width:0;}
+.case-inline-label {display:flex;align-items:center;justify-content:space-between;gap:5px;flex-wrap:wrap;min-height:17px;}
+.case-inline-label .current-student-check {font-size:10px;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;color:#456181;}
+.case-inline-label .current-student-check input {height:14px!important;min-height:14px!important;width:14px!important;margin:0!important;}
+.ordered-case-grid .case-col-5 > input {width:100%;min-width:0;}
+.entry-case-picker {background:#edf4ff;border:1px solid #bad0f4;border-radius:12px;padding:12px 14px;display:grid;gap:7px;}
+.entry-case-picker label {font-size:12px;font-weight:800;color:#26486c;}
+.entry-case-picker select {width:100%;min-height:39px;border-radius:9px;border:1px solid #90b0e7;padding:6px 10px;background:white;}
+.entry-case-picker p {margin:0;color:#4c5e78;font-size:12px;line-height:1.45;}
+.student-entry-modal {width:min(1030px,calc(100vw - 24px));}
+@media(max-width:700px){
+  .ordered-case-grid {grid-template-columns:repeat(2,minmax(0,1fr));}
+  .ordered-case-grid > .case-col-12, .ordered-case-grid > .case-col-6,
+  .ordered-case-grid > .case-col-5, .ordered-case-grid > .case-col-2 {grid-column:span 2;}
+  .detail-drawer.editing .drawer-content {padding-inline:14px;}
+}
