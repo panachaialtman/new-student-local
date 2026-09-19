@@ -1088,7 +1088,7 @@
     const categoryLabels = {normal:'Normal student',exchange:'Exchange student',non_o:'Non-O transfer'};
     el('studentModalTitle').textContent = 'Add ' + (categoryLabels[category] || 'student');
     el('studentForm').innerHTML = `
-      <div class="entry-case-notice">${category === 'exchange' ? 'Exchange details appear immediately below the passport dates. Complete all fields before saving the case.' : category === 'non_o' ? 'Non-O transfer details appear immediately below the passport dates. Complete all fields before saving the case.' : 'Both new and current students belong here. The Student ID automatically suggests the Current student checkbox; you can change it.'}</div>
+      <div class="entry-case-notice">${category === 'exchange' ? 'Exchange details appear at the top of this form. Complete the required fields before saving the case.' : category === 'non_o' ? 'Non-O transfer details appear at the top of this form. Enable editing only when a default needs to be changed.' : 'Both new and current students belong here. The Student ID automatically suggests the Current student checkbox; you can change it.'}</div>
       ${category === 'exchange' ? `
         <div class="entry-section-title entry-priority">Exchange student information · complete before adding</div>
         <div class="form-field full"><label>Partner university (English)</label><input name="exchangeUniversity" list="partnerUniversitySuggestions" autocomplete="off" required placeholder="Enter a university name; previous entries will be suggested" /></div>
