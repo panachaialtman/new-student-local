@@ -937,7 +937,14 @@
     if (item.requestRuleOverride !== 'manual') item.manualRequestUntil = '';
     Object.assign(item, normalizeCase(item));
     state.editing = false;
-    renderDrawer();
+    // An edited Current student checkbox can move an ordinary case between
+    // the New and Current sections. Keep the user on the case's new section.
+    if (item.caseCategory !== state.activeCategory) {
+      closeDrawer();
+      switchView('workspace', item.caseCategory);
+    } else {
+      renderDrawer();
+    }
     renderWorkspace();
     toast('Case updated', 'Visa calculations and academic reference data were refreshed automatically.');
   }
