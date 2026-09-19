@@ -1147,6 +1147,7 @@
   function saveDrawerChanges() {
     const item = getActiveCase();
     if (!item) return;
+    const originalCategory = item.caseCategory;
     const category = el('drawerContent').querySelector('#editCaseCategory')?.value || item.caseCategory;
     if (category !== item.caseCategory &&
         !confirm('Move this student to ' + ({normal:'Normal cases',exchange:'Exchange students',non_o:'Non-O → ED transfer'})[category] + '? The case will use the corresponding Word letter template.')) return;
@@ -1170,6 +1171,13 @@
       item.programThai = program.programThai;
     }
     if (item.requestRuleOverride !== 'manual') item.manualRequestUntil = '';
+    if (originalCategory !== item.caseCategory) {
+      // Historical batch records are untouched. The new category needs a new
+      // letter generated using its own template.
+      item.generatedAt = null;
+      item.completedAt = null;
+      state.selected.delete(item.id);
+    }
     Object.assign(item, normalizeCase(item));
     rememberExchangeDetails(item);
     persist();
