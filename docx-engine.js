@@ -458,6 +458,15 @@
     if (!doc) throw new Error('Supplied Word template is missing word/document.xml');
     let xml = dec.decode(doc.data);
 
+    // The Exchange source has an unhighlighted leading "1" before its
+    // highlighted sample stay-until date ("18 เมษายน 2569"). Remove only
+    // that literal sample digit, or a generated date becomes "130 ..." etc.
+    // Do this BEFORE filling the highlighted date groups.
+    if (category === 'exchange') {
+      const sampleDate = replacePlain(xml, 'การขออยู่ต่อสิ้นสุด 1', 'การขออยู่ต่อสิ้นสุด ');
+      if (sampleDate.replaced) xml = sampleDate.xml;
+    }
+
     // Modify non-highlighted wording before populating highlighted data groups.
     if (category === 'non_o') {
       const visaPurpose = text(st.nonOVisaPurpose) || 'ติดตามธุรกิจ';
