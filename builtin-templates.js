@@ -19,6 +19,8 @@
       'templates-data/studentlist_part2.txt',
       'templates-data/studentlist_part3.txt',
     ],
+    exchange: [1, 2, 3, 4, 5].map(n => 'templates-data/exchange_part' + n + '.txt'),
+    non_o: [1, 2, 3, 4, 5].map(n => 'templates-data/non_o_part' + n + '.txt'),
   };
 
   const cache = new Map();

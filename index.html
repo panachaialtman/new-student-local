@@ -6,7 +6,7 @@
   <meta name="description" content="New Student Visa Preparation Workspace — local browser data, client-side Word generation" />
   <meta name="theme-color" content="#101d35" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>New Student Visa Workspace</title>
+  <title>BU Visa Case Workspace</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -21,8 +21,17 @@
       </div>
 
       <nav class="nav-list" aria-label="Primary">
-        <button class="nav-item active" data-view="workspace">
+        <button class="nav-item active" data-view="workspace" data-case-category="new">
           <span class="nav-icon">▦</span><span>New student cases</span>
+        </button>
+        <button class="nav-item" data-view="workspace" data-case-category="current">
+          <span class="nav-icon">▧</span><span>Current student cases</span>
+        </button>
+        <button class="nav-item" data-view="workspace" data-case-category="exchange">
+          <span class="nav-icon">⇄</span><span>Exchange students</span>
+        </button>
+        <button class="nav-item" data-view="workspace" data-case-category="non_o">
+          <span class="nav-icon">↗</span><span>Non-O → ED transfer</span>
         </button>
         <button class="nav-item" data-view="batches">
           <span class="nav-icon">▤</span><span>Generation history</span>
@@ -43,7 +52,7 @@
             <span>Student data and imported Word templates stay in this browser. GitHub hosts only the app code.</span>
           </div>
         </div>
-        <div class="version-row"><span>Visa Workspace</span><span>v0.2.9 Web</span></div>
+        <div class="version-row"><span>Visa Workspace</span><span>v0.3.0 Web</span></div>
       </div>
     </aside>
 
@@ -155,10 +164,12 @@
           <div class="content-card setting-card template-setting-card">
             <div class="setting-icon">W</div>
             <h3>Word templates</h3>
-            <p>The approved Letter 16, Letter 76 and Student List templates are already built in. Import a DOCX only if you want to override the built-in version on this browser.</p>
+            <p>Five Word templates are built in, including the supplied Exchange and Non-O documents. You may import an optional replacement for any template on this browser.</p>
             <div class="template-import-row"><label>Letter 16 — optional override<input id="letter16TemplateInput" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" /></label><span id="letter16TemplateStatus" class="template-status">Not configured</span></div>
             <div class="template-import-row"><label>Letter 76 — optional override<input id="letter76TemplateInput" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" /></label><span id="letter76TemplateStatus" class="template-status">Not configured</span></div>
             <div class="template-import-row"><label>Student list — optional override<input id="studentListTemplateInput" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" /></label><span id="studentListTemplateStatus" class="template-status">Not configured</span></div>
+            <div class="template-import-row"><label>Exchange letter — optional override<input id="exchangeTemplateInput" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" /></label><span id="exchangeTemplateStatus" class="template-status">Not configured</span></div>
+            <div class="template-import-row"><label>Non-O transfer — optional override<input id="nonOTemplateInput" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" /></label><span id="nonOTemplateStatus" class="template-status">Not configured</span></div>
             <div class="rule-summary">Built-in templates are available automatically. Any optional override remains only on this browser profile and is included in Backup data.</div>
           </div>
           <div class="content-card setting-card">
