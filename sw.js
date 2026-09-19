@@ -1,4 +1,4 @@
-const CACHE = 'new-student-local-v02-7';
+const CACHE = 'new-student-local-v02-8';
 const SHELL = [
   './', './index.html', './styles.css', './reference-data.js', './builtin-templates.js', './ui-enhancements.js', './db.js', './zip.js', './docx-engine.js', './excel-export.js', './app.js',
   './manifest.webmanifest', './icon.svg', './templates-data/letter16_part1.txt', './templates-data/letter16_part2.txt', './templates-data/letter16_part3.txt', './templates-data/letter16_part4.txt', './templates-data/letter76_part1.txt', './templates-data/letter76_part2.txt', './templates-data/letter76_part3.txt', './templates-data/letter76_part4.txt', './templates-data/studentlist_part1.txt', './templates-data/studentlist_part2.txt', './templates-data/studentlist_part3.txt', './data/programs-1.json', './data/programs-2.json', './data/programs-3.json', './data/programs-4.json', './data/programs-5.json', './data/nationalities-1.json', './data/nationalities-2.json', './data/nationalities-3.json', './data/nationalities-4.json'

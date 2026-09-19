@@ -893,11 +893,18 @@
     return sortCasesOldestFirst(state.cases.filter((item) => state.selected.has(item.id)));
   }
 
+  function departmentFullName(item) {
+    const title = String(item.title || '').trim().toUpperCase();
+    const prefix = ({ MR: 'MR.', 'MR.': 'MR.', MS: 'MS.', 'MS.': 'MS.', MRS: 'MRS.', 'MRS.': 'MRS.', MISS: 'MISS' })[title] || title;
+    const name = String(item.fullName || '').trim().replace(/^(?:MR\.?|MRS\.?|MS\.?|MISS)\s+/i, '');
+    return [prefix, name].filter(Boolean).join(' ');
+  }
+
   function departmentRows(items = selectedCases()) {
     return items.map((item) => ({
       documentNo: String(item.documentNo || '').trim(),
       studentId: String(item.studentId || '').trim(),
-      fullName: String(item.fullName || '').trim(),
+      fullName: departmentFullName(item),
       passportNo: String(item.passportNo || '').trim(),
       passportExpiry: formatDepartmentDate(item.passportExpiry),
       visaExpiry: formatDepartmentDate(item.currentStayUntil),
