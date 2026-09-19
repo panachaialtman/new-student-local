@@ -541,3 +541,18 @@ body { font-size: 16px; }
 .entry-section-title.first { border-top: 0; padding-top: 0; }
 .entry-case-notice { grid-column: 1/-1; font-size: 12px; line-height: 1.45; background: #f3f7ff; border: 1px solid #dbe5f5; border-radius: 9px; padding: 10px 12px; color: #354b6b; }
 @media (max-width:600px) { .settings-shortcuts { padding: 13px; } .settings-shortcut-actions { width: 100%; } .student-entry-modal { max-height: calc(100vh - 12px); } }
+
+/* v0.3.2: explicit unlocked overrides and visible case-specific entry */
+.student-entry-modal { width:min(960px, calc(100vw - 22px)); max-height:calc(100vh - 14px); }
+.student-entry-modal .modal-body { align-content:start; padding-bottom:36px; }
+.entry-section-title.entry-priority { background:#edf4ff; padding:11px 12px; border:1px solid #c5d9f9; border-radius:10px; color:#254c86; margin:0; }
+.locked-field-heading { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:6px; }
+.locked-field-heading > label:first-child { margin:0; }
+.unlock-field-check { display:inline-flex!important; flex-direction:row!important; align-items:center; gap:5px; white-space:nowrap; font-size:10px!important; letter-spacing:0; font-weight:750; cursor:pointer; text-transform:none; }
+.unlock-field-check input[type="checkbox"] { width:15px!important; min-height:15px!important; height:15px; padding:0; margin:0; }
+.locked-input[readonly] { background:#f0f4f9!important; color:#52637c; cursor:not-allowed; }
+.locked-input:not([readonly]) { background:#fff!important; }
+.saved-universities-list { display:grid; gap:6px; margin:12px 0; max-height:230px; overflow-y:auto; }
+.saved-university-row { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:7px 9px; background:#f6f9fd; border:1px solid #e2e8f0; border-radius:8px; }
+.saved-university-row span { min-width:0; overflow-wrap:anywhere; font-size:12px; }
+.saved-university-row button { flex-shrink:0; font-size:11px; }

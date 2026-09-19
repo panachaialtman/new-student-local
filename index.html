@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#101d35" />
   <link rel="manifest" href="manifest.webmanifest" />
   <title>BU Visa Case Workspace</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=032" />
 </head>
 <body>
   <div class="app-shell">
@@ -36,7 +36,7 @@
         <button class="nav-item nav-settings" data-view="settings">
           <span class="nav-icon">⚙</span><span>Workspace settings</span>
         </button>
-        <div class="version-row"><span>Visa Workspace</span><span>v0.3.1 Web</span></div>
+        <div class="version-row"><span>Visa Workspace</span><span>v0.3.2 Web</span></div>
       </div>
     </aside>
 
@@ -116,6 +116,13 @@
           </div>
         </div>
         <div class="settings-grid">
+          <div class="content-card setting-card">
+            <div class="setting-icon">⌕</div>
+            <h3>Remembered partner universities</h3>
+            <p>Exchange university names are saved only in this browser when a case is created or edited. Remove individual suggestions or clear them all here. Deleting a suggestion does not change any existing student record.</p>
+            <div id="savedUniversitiesList" class="saved-universities-list"></div>
+            <button type="button" class="btn subtle" id="clearSavedUniversitiesBtn">Clear all remembered universities</button>
+          </div>
           <div class="content-card setting-card">
             <div class="setting-icon">✦</div>
             <h3>Signatories</h3>
@@ -257,6 +264,8 @@
   </section>
 
   <datalist id="nationalitySuggestions"></datalist>
+  <datalist id="partnerCountrySuggestions"></datalist>
+  <datalist id="partnerUniversitySuggestions"></datalist>
   <input id="restoreFileInput" type="file" accept=".visabackup,.json,application/json" hidden />
   <div class="toast-stack" id="toastStack" aria-live="polite"></div>
 
@@ -266,7 +275,7 @@
   <script src="builtin-templates.js"></script>
   <script src="docx-engine.js"></script>
   <script src="excel-export.js"></script>
-  <script src="app.js"></script>
+  <script src="app.js?v=032"></script>
   <script src="ui-enhancements.js"></script>
   <script>
     if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(console.warn));
