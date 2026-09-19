@@ -43,7 +43,7 @@
             <span>Student data and imported Word templates stay in this browser. GitHub hosts only the app code.</span>
           </div>
         </div>
-        <div class="version-row"><span>Visa Workspace</span><span>v0.2.4 Web</span></div>
+        <div class="version-row"><span>Visa Workspace</span><span>v0.2.5 Web</span></div>
       </div>
     </aside>
 
@@ -130,6 +130,15 @@
             <h3>Request date rules</h3>
             <p>Choose the extension period per student. Manual request date appears only when Manual Date is selected.</p>
             <div class="rule-summary">+6 months → current stay + 6 months<br/>+1 year → current stay + 12 months<br/>Manual Date → use the entered request-until date</div>
+          </div>
+          <div class="content-card setting-card">
+            <div class="setting-icon">ID</div>
+            <h3>New student ID prefixes</h3>
+            <p>IDs beginning with one of these prefixes are treated as new students. Any other entered ID is automatically marked as a current student. You can still override the checkbox on an individual case.</p>
+            <label>New student prefixes
+              <input id="newStudentPrefixesInput" type="text" value="169, 769, 869, 969" placeholder="169, 769, 869, 969" />
+            </label>
+            <div class="rule-summary">New student → 4.3 สำเนาหลักฐานการศึกษาที่ใช้สมัครเรียน<br/>Current student → 4.3 สำเนาหลักฐานการศึกษา (Transcript)</div>
           </div>
           <div class="content-card setting-card template-setting-card">
             <div class="setting-icon">W</div>

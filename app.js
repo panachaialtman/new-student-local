@@ -51,6 +51,7 @@
     editing: false,
     settings: {
       signatory: 'somyot',
+      newStudentPrefixes: '169, 769, 869, 969',
     },
     templates: { letter16: null, letter76: null, studentList: null },
   };
@@ -198,6 +199,26 @@
     return `<div class="signature-preview"><strong>(${escapeHtml(profile.name)})</strong><span>${escapeHtml(profile.role)}</span><span>อธิการบดี</span></div>`;
   }
 
+  function cleanNewStudentPrefixes(value) {
+    const items = String(value || '')
+      .split(/[\s,;]+/)
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .filter((item) => /^\d+$/.test(item));
+    return [...new Set(items)].join(', ');
+  }
+
+  function newStudentPrefixes() {
+    const cleaned = cleanNewStudentPrefixes(state.settings.newStudentPrefixes);
+    return cleaned ? cleaned.split(',').map((item) => item.trim()) : [];
+  }
+
+  function inferCurrentStudentFromId(studentId) {
+    const id = String(studentId || '').trim();
+    if (!id) return false;
+    return !newStudentPrefixes().some((prefix) => id.startsWith(prefix));
+  }
+
   function normalizedProgramSearch(value) {
     return String(value || '')
       .toLowerCase()
@@ -240,6 +261,10 @@
 
   function normalizeCase(caseItem) {
     const item = { ...caseItem };
+    if (typeof item.currentStudent !== 'boolean') {
+      item.currentStudent = inferCurrentStudentFromId(item.studentId);
+    }
+    item.attachment43 = item.currentStudent ? 'transcript' : 'application';
     const program = programByKey(item.programKey);
     if (program) {
       item.programKey = program.key;
@@ -390,6 +415,7 @@
       }
       delete state.settings.nextDocumentNumber;
       state.settings.signatory = normalizeSignatoryKey(state.settings.signatory);
+      state.settings.newStudentPrefixes = cleanNewStudentPrefixes(state.settings.newStudentPrefixes) || '169, 769, 869, 969';
     } catch (err) {
       console.warn('Could not load browser state', err);
       state.cases = [];
@@ -612,7 +638,12 @@
             ${editableField('Document no.', 'documentNo', item.documentNo)}
             ${editableSelect('Title', 'title', item.title, [['MISS','MISS'],['MR','MR'],['MS','MS'],['MRS','MRS']])}
             ${editableField('Full name', 'fullName', item.fullName)}
-            ${editableField('Student ID', 'studentId', item.studentId)}
+            <div class="drawer-field"><label>Student ID</label>
+              <div class="student-id-current-row">
+                <input data-edit-field="studentId" type="text" value="${escapeHtml(item.studentId || '')}" />
+                <label class="current-student-check"><input data-edit-field="currentStudent" type="checkbox" ${item.currentStudent ? 'checked' : ''} /> <span>Current student</span></label>
+              </div>
+            </div>
             ${editableField('Nationality Thai', 'nationalityThai', item.nationalityThai, 'text', 'list="nationalitySuggestions" autocomplete="off"')}
             ${editableField('Passport no.', 'passportNo', item.passportNo)}
             ${editableField('Passport expiry', 'passportExpiry', item.passportExpiry, 'date')}
@@ -645,6 +676,7 @@
         programSelector: '#drawerProgramSelect',
         totalCreditsSelector: '[data-edit-field="totalCredits"]',
         studentIdSelector: '[data-edit-field="studentId"]',
+        currentStudentSelector: '[data-edit-field="currentStudent"]',
       });
     } else {
       const facultyDisplay = program ? facultyLabelForType(item.programType, program) : (item.facultyThai || item.facultyEnglish);
@@ -652,6 +684,7 @@
         <div class="drawer-section"><div class="drawer-section-head"><h3>Personal information</h3></div>
           <div class="field-grid">
             ${fieldItem('Title', item.title)}${fieldItem('Nationality', item.nationalityThai)}${fieldItem('Passport', item.passportNo, true)}${fieldItem('Passport expiry', formatDate(item.passportExpiry))}
+            ${fieldItem('Student type', item.currentStudent ? 'Current student · 4.3 Transcript' : 'New student · 4.3 Admission education document')}
           </div>
         </div>
         <div class="drawer-section"><div class="drawer-section-head"><h3>Academic information</h3></div>
@@ -683,12 +716,13 @@
     return '';
   }
 
-  function bindAcademicSelectors({ root, typeSelector, facultySelector, programSelector, totalCreditsSelector, studentIdSelector = '' }) {
+  function bindAcademicSelectors({ root, typeSelector, facultySelector, programSelector, totalCreditsSelector, studentIdSelector = '', currentStudentSelector = '' }) {
     const typeSelect = root.querySelector(typeSelector);
     const facultySelect = root.querySelector(facultySelector);
     const programSelect = root.querySelector(programSelector);
     const creditsInput = totalCreditsSelector ? root.querySelector(totalCreditsSelector) : null;
     const studentIdInput = studentIdSelector ? root.querySelector(studentIdSelector) : null;
+    const currentStudentInput = currentStudentSelector ? root.querySelector(currentStudentSelector) : null;
     if (!typeSelect || !facultySelect || !programSelect) return;
 
     const refreshPrograms = (preferredProgramKey = '') => {
@@ -716,9 +750,13 @@
     typeSelect.addEventListener('change', () => refreshFaculties());
     facultySelect.addEventListener('change', () => refreshPrograms());
     studentIdInput?.addEventListener('input', () => {
-      if (String(studentIdInput.value || '').trim().startsWith('7') && typeSelect.value !== 'graduate') {
+      const studentId = String(studentIdInput.value || '').trim();
+      if (studentId.startsWith('7') && typeSelect.value !== 'graduate') {
         typeSelect.value = 'graduate';
         refreshFaculties();
+      }
+      if (currentStudentInput) {
+        currentStudentInput.checked = inferCurrentStudentFromId(studentId);
       }
     });
     programSelect.addEventListener('change', () => {
@@ -731,7 +769,7 @@
     const item = getActiveCase();
     if (!item) return;
     document.querySelectorAll('[data-edit-field]').forEach((input) => {
-      let value = input.value;
+      let value = input.type === 'checkbox' ? input.checked : input.value;
       if (input.type === 'number' && value !== '') value = Number(value);
       item[input.dataset.editField] = value;
     });
@@ -756,7 +794,12 @@
       <div class="form-field"><label>Document no.</label><input name="documentNo" value="" required /></div>
       <div class="form-field"><label>Title</label><select name="title"><option>MISS</option><option>MR</option><option>MS</option><option>MRS</option></select></div>
       <div class="form-field full"><label>Full name</label><input name="fullName" required placeholder="Student full name" /></div>
-      <div class="form-field"><label>Student ID</label><input name="studentId" required /></div>
+      <div class="form-field student-id-field"><label>Student ID</label>
+        <div class="student-id-current-row">
+          <input name="studentId" required />
+          <label class="current-student-check"><input type="checkbox" name="currentStudent" /> <span>Current student</span></label>
+        </div>
+      </div>
       <div class="form-field"><label>Nationality Thai</label><input name="nationalityThai" required list="nationalitySuggestions" autocomplete="off" placeholder="Start typing เช่น เมียนมา" /></div>
       <div class="form-field"><label>Passport no.</label><input name="passportNo" /></div>
       <div class="form-field"><label>Passport expiry</label><input type="date" name="passportExpiry" /></div>
@@ -783,6 +826,7 @@
       programSelector: '[data-academic-program="new"]',
       totalCreditsSelector: '[data-total-credits="new"]',
       studentIdSelector: '[name="studentId"]',
+      currentStudentSelector: '[name="currentStudent"]',
     });
     const ruleSelect = form.querySelector('[data-request-rule="new"]');
     ruleSelect?.addEventListener('change', () => {
@@ -793,6 +837,7 @@
   function addStudentFromForm(form) {
     const fd = new FormData(form);
     const obj = Object.fromEntries(fd.entries());
+    obj.currentStudent = Boolean(form.elements.currentStudent?.checked);
     const program = programByKey(obj.programKey);
     if (obj.requestRuleOverride !== 'manual') obj.manualRequestUntil = '';
     const item = normalizeCase({
@@ -1136,12 +1181,14 @@
       state.batches = Array.isArray(payload.batches) ? payload.batches : [];
       state.settings = { ...state.settings, ...(payload.settings || {}) };
       state.settings.signatory = normalizeSignatoryKey(state.settings.signatory);
+      state.settings.newStudentPrefixes = cleanNewStudentPrefixes(state.settings.newStudentPrefixes) || '169, 769, 869, 969';
       if (payload.templates) await VisaDB.importTemplatesBase64(payload.templates);
       persist();
       await refreshTemplateStatus();
       el('signatoryInput').innerHTML = signatoryOptions(state.settings.signatory);
       el('signatoryInput').value = state.settings.signatory;
       el('settingsSignaturePreview').innerHTML = signatoryPreview(state.settings.signatory);
+      if (el('newStudentPrefixesInput')) el('newStudentPrefixesInput').value = state.settings.newStudentPrefixes;
       state.selected.clear();
       renderWorkspace(); renderBatchHistory(); renderProgramTable();
       toast('Backup restored', `${state.cases.length} cases restored into this browser.`);
@@ -1334,6 +1381,18 @@
       persist();
       toast('Setting saved', 'Default signatory updated.');
     });
+    el('newStudentPrefixesInput')?.addEventListener('change', (e) => {
+      const cleaned = cleanNewStudentPrefixes(e.target.value);
+      if (!cleaned) {
+        e.target.value = state.settings.newStudentPrefixes;
+        toast('Prefixes not changed', 'Enter at least one numeric prefix, separated by commas.', true);
+        return;
+      }
+      state.settings.newStudentPrefixes = cleaned;
+      e.target.value = cleaned;
+      persist();
+      toast('Setting saved', `New-student prefixes: ${cleaned}`);
+    });
   }
 
   async function boot() {
@@ -1346,6 +1405,7 @@
       el('signatoryInput').innerHTML = signatoryOptions(state.settings.signatory);
       el('signatoryInput').value = state.settings.signatory;
       el('settingsSignaturePreview').innerHTML = signatoryPreview(state.settings.signatory);
+      if (el('newStudentPrefixesInput')) el('newStudentPrefixesInput').value = state.settings.newStudentPrefixes;
 
       bindEvents();
       renderWorkspace();
