@@ -129,7 +129,7 @@
       warning.classList.toggle('hidden', !show);
       if (show) {
         warning.querySelector('#newPassportWarningText').textContent =
-          `Passport expires ${pretty(expiry)}, before the requested stay date ${pretty(requested)}. Consider renewing the passport before extension; otherwise the requested date exceeds the passport validity.`;
+          `Passport expires ${pretty(expiry)}, before the requested stay date ${pretty(requested)}. The generated letter will use ${pretty(expiry)} as the extension end date, even if you dismiss this warning. Renew the passport first if you need the full requested period.`;
       }
     }
 

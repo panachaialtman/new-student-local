@@ -36,10 +36,19 @@
   function thaiDate(raw) { return thaiDateObj(parseIso(raw)); }
   function requestUntil(st) {
     const rule = text(st.requestRuleOverride) || 'six_months';
-    if (rule === 'six_months') return addMonths(st.currentStayUntil, 6);
-    if (rule === 'one_year') return addMonths(st.currentStayUntil, 12);
-    if (rule === 'manual') return parseIso(st.manualRequestUntil);
-    throw new Error(`Unknown request rule: ${rule}`);
+    let requested;
+    if (rule === 'six_months') requested = addMonths(st.currentStayUntil, 6);
+    else if (rule === 'one_year') requested = addMonths(st.currentStayUntil, 12);
+    else if (rule === 'manual') requested = parseIso(st.manualRequestUntil);
+    else throw new Error(`Unknown request rule: ${rule}`);
+
+    // Recalculate within the document engine: do not trust a potentially stale
+    // requestUntil supplied by the UI, or the dismissed UI warning.
+    const expiry = parseIso(st.passportExpiry);
+    const passportBeforeRequest = expiry.y < requested.y ||
+      (expiry.y === requested.y && (expiry.m < requested.m ||
+      (expiry.m === requested.m && expiry.d < requested.d)));
+    return passportBeforeRequest ? expiry : requested;
   }
   function formattedTitle(raw) {
     const t = text(raw).toUpperCase();

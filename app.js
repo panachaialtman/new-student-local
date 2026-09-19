@@ -163,12 +163,26 @@
     return ['six_months', 'one_year', 'manual'].includes(rule) ? rule : 'six_months';
   }
 
-  function calculateRequestUntil(caseItem) {
+  function calculateRequestedUntil(caseItem) {
     const rule = inferRule(caseItem);
     if (rule === 'six_months') return addMonths(caseItem.currentStayUntil, 6);
     if (rule === 'one_year') return addMonths(caseItem.currentStayUntil, 12);
     if (rule === 'manual') return caseItem.manualRequestUntil || '';
     return '';
+  }
+
+  // The passport expiration date is a hard ceiling for every letter, even
+  // when a staff member dismisses the separate on-screen warning.
+  function calculateRequestUntil(caseItem) {
+    const requested = calculateRequestedUntil(caseItem);
+    const expiry = String(caseItem.passportExpiry || '').trim();
+    return requested && expiry && expiry < requested ? expiry : requested;
+  }
+
+  function isPassportCapped(caseItem) {
+    const requested = calculateRequestedUntil(caseItem);
+    const expiry = String(caseItem.passportExpiry || '').trim();
+    return Boolean(requested && expiry && expiry < requested);
   }
 
   function ruleLabel(caseItem) {
@@ -525,6 +539,7 @@
   function renderCaseRow(item) {
     const selected = state.selected.has(item.id);
     const requestUntil = calculateRequestUntil(item);
+    const capped = isPassportCapped(item);
     const program = programByKey(item.programKey);
     const programName = displayProgramName(item, program);
     return `
@@ -540,7 +555,7 @@
         </div>
         <div class="case-click visa-cell">
           <div class="visa-primary">${requestUntil ? formatDate(requestUntil) : 'Not available yet'}</div>
-          <div class="visa-secondary">Stay: ${formatDate(item.currentStayUntil)}</div>
+          <div class="visa-secondary">Stay: ${formatDate(item.currentStayUntil)}${capped ? ' · Passport cap' : ''}</div>
         </div>
         <div class="case-click row-chevron">›</div>
       </div>`;
@@ -702,7 +717,7 @@
           <div class="field-grid">
             ${fieldItem('Current stay', formatDate(item.currentStayUntil))}
             ${fieldItem('Request option', ruleLabel(item))}
-            ${fieldItem('Request until', item.requestUntil ? formatDate(item.requestUntil) : '—', true)}
+            ${fieldItem(isPassportCapped(item) ? 'Extend until (passport cap)' : 'Request until', item.requestUntil ? formatDate(item.requestUntil) : '—', true)}
           </div>
         </div>`;
     }
@@ -710,9 +725,12 @@
 
   function ruleExplanation(item) {
     const rule = inferRule(item);
-    if (rule === 'six_months') return `Request-until date is calculated six months after the current stay-until date: ${formatDate(calculateRequestUntil(item))}.`;
-    if (rule === 'one_year') return `Request-until date is calculated twelve months after the current stay-until date: ${formatDate(calculateRequestUntil(item))}.`;
-    if (rule === 'manual') return `Manual request-until date: ${formatDate(calculateRequestUntil(item))}.`;
+    const requested = calculateRequestedUntil(item);
+    const capped = isPassportCapped(item);
+    const description = rule === 'six_months' ? 'Six-month request' : rule === 'one_year' ? 'One-year request' : 'Manual request';
+    return capped
+      ? `${description}: ${formatDate(requested)}. Passport expires ${formatDate(item.passportExpiry)}, so the letter and table use the passport expiry date.`
+      : `${description}: ${formatDate(calculateRequestUntil(item))}.`;
     return '';
   }
 
@@ -994,7 +1012,7 @@
           ${items.map((item) => {
             const letterV = validationFor(item);
             const listV = listValidationFor(item);
-            return `<div class="batch-case"><div><strong>${escapeHtml(item.fullName)}</strong><small>Doc ${escapeHtml(item.documentNo || '—')} · ${escapeHtml(item.studentId)} · ${escapeHtml(ruleLabel(item))}</small></div><div class="batch-validations"><span class="validation-pill ${letterV.valid ? 'ok' : 'error'}">LETTER ${letterV.valid ? 'VALID' : `${letterV.missing.length} ISSUE${letterV.missing.length === 1 ? '' : 'S'}`}</span><span class="validation-pill ${listV.valid ? 'ok' : 'error'}">LIST ${listV.valid ? 'VALID' : `${listV.missing.length} ISSUE${listV.missing.length === 1 ? '' : 'S'}`}</span></div></div>`;
+            return `<div class="batch-case"><div><strong>${escapeHtml(item.fullName)}</strong><small>Doc ${escapeHtml(item.documentNo || '—')} · ${escapeHtml(item.studentId)} · ${escapeHtml(ruleLabel(item))}${isPassportCapped(item) ? ' · Passport cap: ' + escapeHtml(formatDate(item.passportExpiry)) : ''}</small></div><div class="batch-validations"><span class="validation-pill ${letterV.valid ? 'ok' : 'error'}">LETTER ${letterV.valid ? 'VALID' : `${letterV.missing.length} ISSUE${letterV.missing.length === 1 ? '' : 'S'}`}</span><span class="validation-pill ${listV.valid ? 'ok' : 'error'}">LIST ${listV.valid ? 'VALID' : `${listV.missing.length} ISSUE${listV.missing.length === 1 ? '' : 'S'}`}</span></div></div>`;
           }).join('')}
           <div class="validation-summary ${letterValidCount === items.length ? 'good' : 'bad'}">
             <strong>Letters: ${letterValidCount}/${items.length} cases valid.</strong><br>
@@ -1099,6 +1117,7 @@
     const validation = validationFor(item);
     el('individualModalBody').innerHTML = `
       <div class="individual-summary"><strong>${escapeHtml(item.fullName || 'Student')}</strong><span>${escapeHtml(item.studentId || '')} · Document ${escapeHtml(item.documentNo || '—')}</span></div>
+      ${isPassportCapped(item) ? `<div class="validation-summary"><strong>Passport expiry cap:</strong> Requested until ${escapeHtml(formatDate(calculateRequestedUntil(item)))}; the Word letter will use ${escapeHtml(formatDate(item.passportExpiry))}.</div>` : ''}
       ${validation.valid ? '' : `<div class="validation-summary bad"><strong>Needs attention:</strong> ${escapeHtml(validation.missing.join(', '))}</div>`}
       <div class="batch-setting"><label>Letter date</label><input id="individualIssueDate" type="date" value="${todayIso()}" /></div>
       <div class="rule-box"><strong>Document ${escapeHtml(item.documentNo || "—")}</strong><br>The letter uses the document number already saved on this student case.</div>
