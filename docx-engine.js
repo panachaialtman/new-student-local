@@ -395,19 +395,135 @@
     return await window.BuiltinTemplates.getTemplate(key);
   }
 
-  async function generateIndividual(st, issueDate, signatory) {
-    const key = st.programType === 'graduate' ? 'letter76' : 'letter16';
+
+  function specialReplacements(st, issueDate, category) {
+    const credits = Number.parseInt(text(st.registeredCredits), 10);
+    if (!Number.isFinite(credits) || credits < 0) throw new Error('Registered credits are missing or invalid');
+    const shared = [
+      text(st.documentNo),
+      (formattedTitle(st.title) + ' ' + text(st.fullName).toUpperCase()).trim(),
+      text(st.nationalityThai),
+      text(st.studentId),
+      text(st.passportNo),
+      thaiDate(st.passportExpiry),
+      thaiDate(st.currentStayUntil),
+    ];
+    const effectiveDate = thaiDateObj(requestUntil(st));
+    if (category === 'exchange') {
+      const term = Number(st.exchangeTerm);
+      const academicYear = Number(st.exchangeAcademicYear);
+      const duration = Number(st.exchangeDurationSemesters);
+      if (!text(st.exchangeUniversity) || !text(st.exchangeCountryThai) ||
+          !Number.isInteger(term) || term < 1 || term > 3 ||
+          !Number.isInteger(academicYear) || academicYear < 2500 ||
+          !Number.isInteger(duration) || duration < 1) {
+        throw new Error('Complete the exchange university, country, semester, academic year, and duration.');
+      }
+      // The supplied exchange template does not have a graduation-year field:
+      // retain its semester-specific academic wording instead of inventing one.
+      return [...shared, text(st.facultyThai), text(st.programThai),
+        String(credits), commaInt(credits * 14), text(st.exchangeUniversity),
+        text(st.exchangeCountryThai), String(term), String(academicYear),
+        String(duration), effectiveDate];
+    }
+    if (category === 'non_o') {
+      const duration = Number(st.programDurationYears || (st.programType === 'graduate' ? 2 : 4));
+      const graduation = graduationAcademicYear(st);
+      if (!Number.isInteger(duration) || duration < 1 || duration > 10 || graduation === null) {
+        throw new Error('Provide program duration and the expected graduation year (B.E.) for this Non-O case.');
+      }
+      const current = st.currentStudent === true ||
+        (st.currentStudent !== false && st.attachment43 === 'transcript');
+      const studyYear = current ? cohortStudyYear(st) : 1;
+      const degree = st.programType === 'graduate' ? 'โท' : 'ตรี';
+      return [text(st.documentNo), thaiDate(issueDate),
+        ...shared.slice(1), degree, text(st.facultyThai), text(st.programThai),
+        String(duration), text(st.totalCredits), String(graduation),
+        String(studyYear), String(credits), commaInt(credits * 14), effectiveDate];
+    }
+    throw new Error('Unknown special letter category: ' + category);
+  }
+
+  function replaceFirstMatching(xml, needles, replacement, description) {
+    for (const needle of needles) {
+      const result = replacePlain(xml, needle, replacement);
+      if (result.replaced) return result.xml;
+    }
+    throw new Error('Cannot locate ' + description + ' in the supplied Word template.');
+  }
+
+  async function renderSpecialLetter(templateBuffer, st, issueDate, signatory, category) {
+    const files = await bufferToFiles(templateBuffer);
+    const doc = files.get('word/document.xml');
+    if (!doc) throw new Error('Supplied Word template is missing word/document.xml');
+    let xml = dec.decode(doc.data);
+
+    // Modify non-highlighted wording before populating highlighted data groups.
+    if (category === 'non_o') {
+      const visaPurpose = text(st.nonOVisaPurpose) || 'ติดตามธุรกิจ';
+      xml = replaceFirstMatching(xml, ['ติดตามธุรกิจ'], visaPurpose, 'Non-O visa purpose');
+      if (st.currentStudent === true || st.attachment43 === 'transcript') {
+        xml = replaceFirstMatching(xml, ['เริ่มศึกษาชั้นปีที่ '],
+          'ศึกษาอยู่ชั้นปีที่ ', 'current-student enrollment wording');
+      }
+      if (st.currentStudent === true || st.attachment43 === 'transcript') {
+        xml = replaceFirstMatching(xml,
+          ['สำเนาหลักฐานการศึกษาที่ใช้สมัครเรียน',
+           'สำเนาหลักฐานการศึกษาที่ใช้ในการสมัครเรียน'],
+          ATTACHMENT_TRANSCRIPT, 'attachment 4.3');
+      }
+    } else if (category === 'exchange') {
+      if (st.programType === 'graduate') {
+        xml = replaceFirstMatching(xml, ['หลักสูตรปริญญาตรี'],
+          'หลักสูตรปริญญาโท', 'exchange degree level');
+      }
+      if (st.currentStudent === false || st.attachment43 === 'application') {
+        xml = replaceFirstMatching(xml, [ATTACHMENT_TRANSCRIPT],
+          'สำเนาหลักฐานการศึกษาที่ใช้สมัครเรียน', 'attachment 4.3');
+      }
+    }
+
+    const expectedCount = category === 'exchange' ? 17 : 18;
+    const values = specialReplacements(st, issueDate, category);
+    if (values.length !== expectedCount) throw new Error('Special template field count mismatch');
+    xml = fillHighlights(xml, values);
+    // The Exchange template's top document date is plain text. Non-O's date
+    // is one of its highlighted fields, so must not be overwritten again.
+    if (category === 'exchange') xml = replaceIssueDate(xml, thaiDate(issueDate));
+    const profile = resolveSignatory(signatory);
+    if (profile.name !== DEFAULT_NAME) {
+      xml = replaceFirstMatching(xml,
+        [DEFAULT_NAME, 'ผู้ช่วยศาสตราจารย์ ดร.สมยศ วัฒนากมลชัย'],
+        profile.name, 'signatory name');
+    }
+    if (profile.role !== DEFAULT_ROLE) {
+      xml = replaceFirstMatching(xml, [DEFAULT_ROLE], profile.role, 'signatory role');
+    }
+    files.set('word/document.xml', {name:'word/document.xml',data:enc.encode(xml)});
+    return files;
+  }
+
+  function letterTemplateKey(st) {
+    if (st.caseCategory === 'exchange') return 'exchange';
+    if (st.caseCategory === 'non_o') return 'non_o';
+    return st.programType === 'graduate' ? 'letter76' : 'letter16';
+  }
+
+  async function renderCaseLetter(st, issueDate, signatory) {
+    const key = letterTemplateKey(st);
     const tpl = await requireTemplate(key);
-    return filesToBlob(await renderLetter(tpl, st, issueDate, signatory));
+    return key === 'exchange' || key === 'non_o'
+      ? renderSpecialLetter(tpl, st, issueDate, signatory, key)
+      : renderLetter(tpl, st, issueDate, signatory);
+  }
+
+  async function generateIndividual(st, issueDate, signatory) {
+    return filesToBlob(await renderCaseLetter(st, issueDate, signatory));
   }
 
   async function generateBatch(students, issueDate, signatory) {
     const rendered = [];
-    for (const st of students) {
-      const key = st.programType === 'graduate' ? 'letter76' : 'letter16';
-      const tpl = await requireTemplate(key);
-      rendered.push(await renderLetter(tpl, st, issueDate, signatory));
-    }
+    for (const st of students) rendered.push(await renderCaseLetter(st, issueDate, signatory));
     return combineRendered(rendered);
   }
 
