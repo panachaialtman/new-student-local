@@ -49,7 +49,7 @@
     cases: [],
     batches: [],
     selected: new Set(),
-    activeCategory: 'new',
+    activeCategory: 'normal',
     activeStatus: 'all',
     search: '',
     programTypeFilter: 'all',
@@ -361,8 +361,10 @@
       item.currentStudent = inferCurrentStudentFromId(item.studentId);
     }
     item.attachment43 = item.currentStudent ? 'transcript' : 'application';
+    // The normal workspace includes both new and continuing students.
+    // Preserve the independent checkbox so attachment 4.3 and study wording still differ.
     item.caseCategory = ['exchange', 'non_o'].includes(item.caseCategory)
-      ? item.caseCategory : (item.currentStudent ? 'current' : 'new');
+      ? item.caseCategory : 'normal';
     // Configurable current intake: 169/769/869/969 -> 69; next year 170/770/870/970 -> 70.
     const intakePrefix = newStudentPrefixes().find((prefix) => /^[0-9]{3}$/.test(prefix));
     item.academicCohortYear = intakePrefix ? Number(intakePrefix.slice(1, 3)) : null;
@@ -951,9 +953,11 @@
 
   function renderStudentForm() {
     const category = state.activeCategory;
-    const categoryLabels = {new:'New student',current:'Current student',exchange:'Exchange student',non_o:'Non-O transfer'};
+    const categoryLabels = {normal:'Normal student',exchange:'Exchange student',non_o:'Non-O transfer'};
     el('studentModalTitle').textContent = 'Add ' + (categoryLabels[category] || 'student');
     el('studentForm').innerHTML = `
+      <div class="entry-case-notice">${category === 'exchange' ? 'Exchange details appear immediately below the passport dates. Complete all fields before saving the case.' : category === 'non_o' ? 'Non-O transfer details appear immediately below the passport dates. Complete all fields before saving the case.' : 'Both new and current students belong here. The Student ID automatically suggests the Current student checkbox; you can change it.'}</div>
+      <div class="entry-section-title first">Student and passport information</div>
       <div class="form-field"><label>Document no.</label><input name="documentNo" value="" required /></div>
       <div class="form-field"><label>Title</label><select name="title"><option>MISS</option><option>MR</option><option>MS</option><option>MRS</option></select></div>
       <div class="form-field full"><label>Full name</label><input name="fullName" required placeholder="Student full name" /></div>
@@ -967,12 +971,8 @@
       <div class="form-field"><label>Passport no.</label><input name="passportNo" /></div>
       <div class="form-field"><label>Passport expiry</label><input type="date" name="passportExpiry" /></div>
       <div class="form-field"><label>Current stay until</label><input type="date" name="currentStayUntil" required /></div>
-      <div class="form-field"><label>Program type</label><select name="programType" data-academic-type="new">${PROGRAM_TYPE_OPTIONS.map(([v,l]) => `<option value="${v}">${escapeHtml(l)}</option>`).join('')}</select></div>
-      <div class="form-field"><label>Faculty</label><select name="facultyKey" data-academic-faculty="new" required></select></div>
-      <div class="form-field full"><label>Major</label><select name="programKey" data-academic-program="new" required></select></div>
-      <div class="form-field"><label>Total credits</label><input type="number" min="0" name="totalCredits" data-total-credits="new" /></div>
-      <div class="form-field"><label>Registered credits</label><input type="number" min="0" name="registeredCredits" /></div>
       ${category === 'exchange' ? `
+        <div class="entry-section-title">Exchange student information · complete before adding</div>
         <div class="form-field full"><label>Partner university (full English name)</label><input name="exchangeUniversity" required placeholder="Partner university" /></div>
         <div class="form-field full"><label>Partner country (full Thai name)</label><input name="exchangeCountryThai" required placeholder="ชื่อประเทศเต็ม" /></div>
         <div class="form-field"><label>Exchange semester</label><input type="number" name="exchangeTerm" min="1" max="3" value="2" required /></div>
@@ -980,15 +980,24 @@
         <div class="form-field"><label>Exchange duration (semesters)</label><input type="number" name="exchangeDurationSemesters" min="1" max="12" value="1" required /></div>
       ` : ''}
       ${category === 'non_o' ? `
+        <div class="entry-section-title">Non-O transfer information · complete before adding</div>
         <div class="form-field full"><label>Current Non-O visa purpose (Thai)</label><input name="nonOVisaPurpose" value="ติดตามธุรกิจ" required /></div>
         <div class="form-field"><label>Program duration (years)</label><input type="number" name="programDurationYears" min="1" max="10" value="4" required /></div>
       ` : ''}
+      <div class="entry-section-title">Academic information and visa request</div>
+
+      <div class="form-field"><label>Program type</label><select name="programType" data-academic-type="new">${PROGRAM_TYPE_OPTIONS.map(([v,l]) => `<option value="${v}">${escapeHtml(l)}</option>`).join('')}</select></div>
+      <div class="form-field"><label>Faculty</label><select name="facultyKey" data-academic-faculty="new" required></select></div>
+      <div class="form-field full"><label>Major</label><select name="programKey" data-academic-program="new" required></select></div>
+      <div class="form-field"><label>Total credits</label><input type="number" min="0" name="totalCredits" data-total-credits="new" /></div>
+      <div class="form-field"><label>Registered credits</label><input type="number" min="0" name="registeredCredits" /></div>
       <div class="form-field"><label>Study year override (optional)</label><input type="number" min="1" max="20" name="studyYearOverride" placeholder="Auto from Student ID" /></div>
       <div class="form-field"><label>Graduation year B.E. override (optional)</label><input type="number" min="2500" max="2700" name="graduationYearOverride" placeholder="Auto from Student ID" /></div>
       <div class="form-field"><label>Request option</label><select name="requestRuleOverride" data-request-rule="new"><option value="six_months">+6 months</option><option value="one_year">+1 year</option><option value="manual">Manual Date</option></select></div>
       <div class="form-field manual-request-field hidden"><label>Manual request until</label><input type="date" name="manualRequestUntil" /></div>`;
     const form = el('studentForm');
-    if (category === 'current') form.elements.currentStudent.checked = true;
+    // New/current classification is determined by the editable checkbox and
+    // ID-prefix rules within Normal cases; it is not a separate sidebar category.
     const typeSelect = form.querySelector('[data-academic-type="new"]');
     const initialFaculty = facultyOptionsForType(typeSelect.value)[0]?.[0] || '';
     const facultySelect = form.querySelector('[data-academic-faculty="new"]');
@@ -1482,13 +1491,12 @@
 
   function switchView(view, caseCategory = state.activeCategory) {
     const categories = {
-      new: ['New student cases', 'NEW STUDENTS'],
-      current: ['Current student cases', 'CURRENT STUDENTS'],
+      normal: ['Normal cases', 'NEW & CURRENT STUDENTS'],
       exchange: ['Exchange students', 'EXCHANGE LETTERS'],
       non_o: ['Non-O → ED transfer', 'NON-O TRANSFER LETTERS'],
     };
     if (view === 'workspace') {
-      state.activeCategory = categories[caseCategory] ? caseCategory : 'new';
+      state.activeCategory = categories[caseCategory] ? caseCategory : 'normal';
       state.selected.clear();
       if (el('detailDrawer')?.classList.contains('open')) closeDrawer();
       renderCaseList();
@@ -1530,6 +1538,8 @@
       () => switchView(item.dataset.view, item.dataset.caseCategory || state.activeCategory)));
     el('menuToggle')?.addEventListener('click', () => el('sidebar').classList.toggle('open'));
     el('addStudentBtn').addEventListener('click', () => { renderStudentForm(); openModal('studentModal'); });
+    el('openHistoryFromSettings').addEventListener('click', () => switchView('batches'));
+    el('openProgramsFromSettings').addEventListener('click', () => switchView('programs'));
 
     el('backupBtn').addEventListener('click', () => exportBackup().catch((err) => toast('Backup failed', err.message || String(err), true)));
     el('restoreBtn').addEventListener('click', () => el('restoreFileInput').click());
