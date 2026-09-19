@@ -43,7 +43,7 @@
             <span>Student data and imported Word templates stay in this browser. GitHub hosts only the app code.</span>
           </div>
         </div>
-        <div class="version-row"><span>Visa Workspace</span><span>v0.2.7 Web</span></div>
+        <div class="version-row"><span>Visa Workspace</span><span>v0.2.8 Web</span></div>
       </div>
     </aside>
 
@@ -139,6 +139,18 @@
               <input id="newStudentPrefixesInput" type="text" value="169, 769, 869, 969" placeholder="169, 769, 869, 969" />
             </label>
             <div class="rule-summary">New student → 4.3 สำเนาหลักฐานการศึกษาที่ใช้สมัครเรียน<br/>Current student → 4.3 สำเนาหลักฐานการศึกษา (Transcript)</div>
+          </div>
+          <div class="content-card setting-card template-setting-card list-columns-card">
+            <div class="setting-icon">≡</div>
+            <h3>Student List columns</h3>
+            <p>These columns appear after Document no., Student ID, Title, and Name. Add, rename, delete, or reorder columns here; all changes are saved locally.</p>
+            <div id="studentListColumnsEditor" class="list-column-editor"></div>
+            <div class="list-columns-actions">
+              <button type="button" class="btn subtle" id="addStudentListColumnBtn">+ Add column</button>
+              <button type="button" class="btn subtle" id="resetStudentListColumnsBtn">Restore defaults</button>
+              <span id="studentListColumnCount" class="list-columns-count"></span>
+            </div>
+            <div class="rule-summary">Default: หน.บน. | ผศ.ดร.ธรรญธร | อ.เนาวกานต์. Extra cells remain blank for handwritten notes or signatures. More than three columns may appear narrow in portrait Word documents.</div>
           </div>
           <div class="content-card setting-card template-setting-card">
             <div class="setting-icon">W</div>

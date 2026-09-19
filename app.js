@@ -38,6 +38,9 @@
     ['graduate', 'Graduate School'],
   ];
 
+  const DEFAULT_STUDENT_LIST_COLUMNS = ['หน.บน.', 'ผศ.ดร.ธรรญธร', 'อ.เนาวกานต์'];
+  const MAX_STUDENT_LIST_COLUMNS = 6;
+
   const state = {
     programs: [],
     nationalities: [],
@@ -52,6 +55,7 @@
     settings: {
       signatory: 'somyot',
       newStudentPrefixes: '169, 769, 869, 969',
+      studentListColumns: [...DEFAULT_STUDENT_LIST_COLUMNS],
     },
     templates: { letter16: null, letter76: null, studentList: null },
   };
@@ -211,6 +215,81 @@
   function signatoryPreview(value) {
     const profile = signatoryProfile(value);
     return `<div class="signature-preview"><strong>(${escapeHtml(profile.name)})</strong><span>${escapeHtml(profile.role)}</span><span>อธิการบดี</span></div>`;
+  }
+
+
+  function studentListColumns() {
+    const saved = state.settings.studentListColumns;
+    if (!Array.isArray(saved)) state.settings.studentListColumns = [...DEFAULT_STUDENT_LIST_COLUMNS];
+    else state.settings.studentListColumns = saved.slice(0, MAX_STUDENT_LIST_COLUMNS)
+      .map(value => String(value ?? '').trim().slice(0, 70)).filter(Boolean);
+    return state.settings.studentListColumns;
+  }
+
+  function renderListColumnSettings() {
+    const root = el('studentListColumnsEditor');
+    if (!root) return;
+    const labels = studentListColumns();
+    root.innerHTML = labels.length ? labels.map((name, i) => `
+      <div class="list-column-item" data-column-index="${i}">
+        <span class="list-column-index">${i + 1}.</span>
+        <input class="list-column-name" type="text" maxlength="70" aria-label="Column name ${i + 1}" value="${escapeHtml(name)}" />
+        <button type="button" class="list-column-control" data-action="up" aria-label="Move up" ${i === 0 ? 'disabled' : ''}>↑</button>
+        <button type="button" class="list-column-control" data-action="down" aria-label="Move down" ${i === labels.length - 1 ? 'disabled' : ''}>↓</button>
+        <button type="button" class="list-column-control list-column-remove" data-action="remove" aria-label="Delete column">×</button>
+      </div>`).join('') : '<div class="list-column-empty">No additional columns. The list will only contain the date and student details.</div>';
+    el('addStudentListColumnBtn').disabled = labels.length >= MAX_STUDENT_LIST_COLUMNS;
+    el('studentListColumnCount').textContent = `${labels.length} additional column${labels.length === 1 ? '' : 's'} · Saved locally`;
+  }
+
+  function bindListColumnSettings() {
+    const root = el('studentListColumnsEditor');
+    root?.addEventListener('change', event => {
+      const input = event.target.closest('.list-column-name');
+      if (!input) return;
+      const idx = Number(input.closest('[data-column-index]').dataset.columnIndex);
+      const name = input.value.trim();
+      if (!name) {
+        input.value = studentListColumns()[idx];
+        toast('Column name required', 'Give the column a name or use × to delete it.', true);
+        return;
+      }
+      studentListColumns()[idx] = name;
+      input.value = name;
+      persist();
+    });
+    root?.addEventListener('keydown', event => {
+      if (event.key === 'Enter' && event.target.matches('.list-column-name')) {
+        event.preventDefault();
+        event.target.blur();
+      }
+    });
+    root?.addEventListener('click', event => {
+      const button = event.target.closest('[data-action]');
+      if (!button) return;
+      const idx = Number(button.closest('[data-column-index]').dataset.columnIndex);
+      const list = studentListColumns();
+      if (button.dataset.action === 'remove') list.splice(idx, 1);
+      if (button.dataset.action === 'up' && idx > 0) [list[idx - 1], list[idx]] = [list[idx], list[idx - 1]];
+      if (button.dataset.action === 'down' && idx < list.length - 1) [list[idx + 1], list[idx]] = [list[idx], list[idx + 1]];
+      persist();
+      renderListColumnSettings();
+    });
+    el('addStudentListColumnBtn')?.addEventListener('click', () => {
+      const list = studentListColumns();
+      if (list.length >= MAX_STUDENT_LIST_COLUMNS) return;
+      list.push('New column');
+      persist();
+      renderListColumnSettings();
+      const input = root.querySelector('.list-column-item:last-child .list-column-name');
+      input?.focus();
+      input?.select();
+    });
+    el('resetStudentListColumnsBtn')?.addEventListener('click', () => {
+      state.settings.studentListColumns = [...DEFAULT_STUDENT_LIST_COLUMNS];
+      persist();
+      renderListColumnSettings();
+    });
   }
 
   function cleanNewStudentPrefixes(value) {
@@ -430,6 +509,7 @@
       delete state.settings.nextDocumentNumber;
       state.settings.signatory = normalizeSignatoryKey(state.settings.signatory);
       state.settings.newStudentPrefixes = cleanNewStudentPrefixes(state.settings.newStudentPrefixes) || '169, 769, 869, 969';
+      studentListColumns();
     } catch (err) {
       console.warn('Could not load browser state', err);
       state.cases = [];
@@ -1034,7 +1114,7 @@
           <h3>Generate settings</h3>
           <div class="batch-setting"><label>Document date</label><input id="batchIssueDate" type="date" value="${issueDate}" /></div>
           ${lettersTemplatesReady && listTemplateReady ? '' : `<div class="template-warning"><strong>Template setup required</strong><br>${!lettersTemplatesReady ? 'Letter template missing. ' : ''}${!listTemplateReady ? 'Student-list template missing.' : ''} Open Workspace settings and import the approved DOCX file once.</div>`}
-          <div class="rule-box"><strong>Student list date</strong><br>The selected date replaces <code>mmmm dd, 2026</code> in the list template automatically.</div>
+          <div class="rule-box"><strong>Student list date</strong><br>The selected date replaces <code>mmmm dd, 2026</code> in the list template automatically.<br><strong>Columns:</strong> ${escapeHtml(studentListColumns().join(' | ') || 'None')}. Manage them in Workspace settings.</div>
           <div class="batch-setting"><label>Signatory — letters only</label><select id="batchSignatory">${signatoryOptions(state.settings.signatory)}</select></div>
           <div id="batchSignaturePreview">${signatoryPreview(state.settings.signatory)}</div>
           <div class="rule-box"><strong>Document numbers</strong><br>Each output uses the document number already saved on each student. No renumbering or sorting is applied.</div>
@@ -1096,7 +1176,8 @@
     button.disabled = true;
     button.textContent = 'Generating list…';
     try {
-      const blob = await BrowserDocx.generateList(body.students, body.issueDate);
+      const columns = [...studentListColumns()];
+      const blob = await BrowserDocx.generateList(body.students, body.issueDate, columns);
       const filename = `Student_List_${body.issueDate.replaceAll('-', '')}.docx`;
       downloadBlob(blob, filename);
       const generatedAt = new Date().toISOString();
@@ -1105,7 +1186,7 @@
         documentNumbers: items.map((item) => String(item.documentNo || '').trim()),
         students: historyStudentSnapshot(items),
         count: items.length, signatory: state.settings.signatory,
-        outputType: 'student_list', filename,
+        outputType: 'student_list', listColumns: [...columns], filename,
       });
       persist();
       renderBatchHistory();
@@ -1208,6 +1289,7 @@
       state.settings = { ...state.settings, ...(payload.settings || {}) };
       state.settings.signatory = normalizeSignatoryKey(state.settings.signatory);
       state.settings.newStudentPrefixes = cleanNewStudentPrefixes(state.settings.newStudentPrefixes) || '169, 769, 869, 969';
+      studentListColumns();
       if (payload.templates) await VisaDB.importTemplatesBase64(payload.templates);
       persist();
       await refreshTemplateStatus();
@@ -1215,6 +1297,7 @@
       el('signatoryInput').value = state.settings.signatory;
       el('settingsSignaturePreview').innerHTML = signatoryPreview(state.settings.signatory);
       if (el('newStudentPrefixesInput')) el('newStudentPrefixesInput').value = state.settings.newStudentPrefixes;
+      renderListColumnSettings();
       state.selected.clear();
       renderWorkspace(); renderBatchHistory(); renderProgramTable();
       toast('Backup restored', `${state.cases.length} cases restored into this browser.`);
@@ -1407,6 +1490,7 @@
       persist();
       toast('Setting saved', 'Default signatory updated.');
     });
+    bindListColumnSettings();
     el('newStudentPrefixesInput')?.addEventListener('change', (e) => {
       const cleaned = cleanNewStudentPrefixes(e.target.value);
       if (!cleaned) {
@@ -1432,6 +1516,7 @@
       el('signatoryInput').value = state.settings.signatory;
       el('settingsSignaturePreview').innerHTML = signatoryPreview(state.settings.signatory);
       if (el('newStudentPrefixesInput')) el('newStudentPrefixesInput').value = state.settings.newStudentPrefixes;
+      renderListColumnSettings();
 
       bindEvents();
       renderWorkspace();
