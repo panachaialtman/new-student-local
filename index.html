@@ -21,11 +21,8 @@
       </div>
 
       <nav class="nav-list" aria-label="Primary">
-        <button class="nav-item active" data-view="workspace" data-case-category="new">
-          <span class="nav-icon">▦</span><span>New student cases</span>
-        </button>
-        <button class="nav-item" data-view="workspace" data-case-category="current">
-          <span class="nav-icon">▧</span><span>Current student cases</span>
+        <button class="nav-item active" data-view="workspace" data-case-category="normal">
+          <span class="nav-icon">▦</span><span>Normal cases</span>
         </button>
         <button class="nav-item" data-view="workspace" data-case-category="exchange">
           <span class="nav-icon">⇄</span><span>Exchange students</span>
@@ -33,26 +30,13 @@
         <button class="nav-item" data-view="workspace" data-case-category="non_o">
           <span class="nav-icon">↗</span><span>Non-O → ED transfer</span>
         </button>
-        <button class="nav-item" data-view="batches">
-          <span class="nav-icon">▤</span><span>Generation history</span>
-        </button>
-        <button class="nav-item" data-view="programs">
-          <span class="nav-icon">⌘</span><span>Academic programs</span>
-        </button>
-        <button class="nav-item" data-view="settings">
-          <span class="nav-icon">⚙</span><span>Workspace settings</span>
-        </button>
       </nav>
 
       <div class="sidebar-foot">
-        <div class="privacy-card">
-          <div class="privacy-dot"></div>
-          <div>
-            <strong>Local browser workspace</strong>
-            <span>Student data and imported Word templates stay in this browser. GitHub hosts only the app code.</span>
-          </div>
-        </div>
-        <div class="version-row"><span>Visa Workspace</span><span>v0.3.0 Web</span></div>
+        <button class="nav-item nav-settings" data-view="settings">
+          <span class="nav-icon">⚙</span><span>Workspace settings</span>
+        </button>
+        <div class="version-row"><span>Visa Workspace</span><span>v0.3.1 Web</span></div>
       </div>
     </aside>
 
@@ -124,6 +108,13 @@
         <div class="section-head">
           <div><h2>Workspace settings</h2><p>Batch-level information should live here instead of being hard-coded inside Word templates.</p></div>
         </div>
+        <div class="content-card settings-shortcuts">
+          <div><h3>Tools and records</h3><p>Open previous document batches or browse the academic program reference.</p></div>
+          <div class="settings-shortcut-actions">
+            <button type="button" class="btn subtle" id="openHistoryFromSettings">▤ Generation history →</button>
+            <button type="button" class="btn subtle" id="openProgramsFromSettings">⌘ Academic programs →</button>
+          </div>
+        </div>
         <div class="settings-grid">
           <div class="content-card setting-card">
             <div class="setting-icon">✦</div>
@@ -175,7 +166,7 @@
           <div class="content-card setting-card">
             <div class="setting-icon">⇄</div>
             <h3>Browser data</h3>
-            <p>Use Backup data before clearing browser data or moving to another computer. Restore accepts both the new .visabackup file and older JSON backups from the portable version.</p>
+            <p>Student records and imported Word templates are stored in this browser, not uploaded to GitHub. Use Backup data before clearing site data, changing devices, or using another browser profile. Restore accepts .visabackup and older JSON backups.</p>
             <button class="btn subtle" id="settingsRestoreBtn">Restore backup</button>
           </div>
         </div>
@@ -215,7 +206,7 @@
   </aside>
 
   <div class="modal-backdrop hidden" id="modalBackdrop"></div>
-  <section class="modal hidden" id="studentModal" role="dialog" aria-modal="true" aria-labelledby="studentModalTitle">
+  <section class="modal student-entry-modal hidden" id="studentModal" role="dialog" aria-modal="true" aria-labelledby="studentModalTitle">
     <div class="modal-head">
       <div><div class="eyebrow">NEW CASE</div><h2 id="studentModalTitle">Add student</h2></div>
       <button class="icon-btn modal-close" data-close="studentModal">×</button>
