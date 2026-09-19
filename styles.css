@@ -588,3 +588,14 @@ body { font-size: 16px; }
   .ordered-case-grid > .case-col-5, .ordered-case-grid > .case-col-2 {grid-column:span 2;}
   .detail-drawer.editing .drawer-content {padding-inline:14px;}
 }
+
+/* v0.3.4 — preservative form behavior and aligned Exchange semester/date/duration controls */
+.student-entry-modal .form-grid > .exchange-trio { grid-column:1 / -1; }
+.exchange-trio { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; min-width:0; }
+.exchange-trio > .form-field,.exchange-trio > .drawer-field {min-width:0;}
+.exchange-trio input,.exchange-trio select {width:100%;min-width:0;}
+.drawer-section .field-grid > .exchange-trio {grid-column:1 / -1;}
+.case-move-hint {grid-column:1 / -1;padding:9px 10px;background:#edf4ff;border-radius:9px;font-size:12px;color:#425a7b;}
+.case-move-button {margin-top:8px;}
+.case-passport-warning {grid-column:1 / -1;}
+@media(max-width:650px){.exchange-trio{grid-template-columns:1fr;}}
