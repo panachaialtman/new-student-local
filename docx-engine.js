@@ -30,7 +30,10 @@
     const idx = d.m - 1 + count;
     const y = d.y + Math.floor(idx / 12);
     const m = (idx % 12 + 12) % 12 + 1;
-    return { y, m, d: Math.min(d.d, daysInMonth(y, m)) };
+    const last = daysInMonth(y, m);
+    if (d.d <= last) return { y, m, d: d.d };
+    // Match the workspace and warning: absent day -> first of next month.
+    return m === 12 ? { y: y + 1, m: 1, d: 1 } : { y, m: m + 1, d: 1 };
   }
   function thaiDateObj(d) { return `${d.d}  ${THAI_MONTHS[d.m]}  ${d.y + 543}`; }
   function thaiDate(raw) { return thaiDateObj(parseIso(raw)); }

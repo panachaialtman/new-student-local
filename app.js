@@ -102,7 +102,10 @@
     const day = source.getDate();
     const target = new Date(source.getFullYear(), source.getMonth() + count, 1);
     const last = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
-    target.setDate(Math.min(day, last));
+    // BU operational rule: if the same calendar day does not exist in the
+    // target month, use the FIRST day of the following month, not the last
+    // day of the target month. E.g. 2026-10-31 + 6m -> 2027-05-01.
+    target.setDate(day > last ? last + 1 : day);
     return toIsoDate(target);
   }
 

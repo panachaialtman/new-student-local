@@ -13,7 +13,8 @@
   const addMonths=(value,count)=>{
     const source=date(value);if(!source)return null;
     const result=new Date(source.getFullYear(),source.getMonth()+count,1);
-    result.setDate(Math.min(source.getDate(),new Date(result.getFullYear(),result.getMonth()+1,0).getDate()));
+    const last=new Date(result.getFullYear(),result.getMonth()+1,0).getDate();
+    result.setDate(source.getDate()>last?last+1:source.getDate());
     return result;
   };
   const readable=value=>value?new Intl.DateTimeFormat('en-GB',{day:'2-digit',month:'short',year:'numeric'}).format(value):'—';
