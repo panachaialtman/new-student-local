@@ -878,18 +878,22 @@
       header.after(personalGrid);
       academicHeader.after(academicGrid);
     }
+    if (personalGrid) personalGrid.classList.add('personal-case-grid');
     move(personalGrid, [
-      ['documentNo', 12],
-      ['nationalityThai', 6], ['passportNo', 6],
-      ['title', 2], ['fullName', 5], ['studentId', 5],
-      ['passportExpiry', 6], ['currentStayUntil', 6],
+      ['documentNo', 3], ['nationalityThai', 3], ['passportNo', 3],
+      ['passportExpiry', 3], ['currentStayUntil', 3],
+      ['title', 2], ['fullName', 7], ['studentId', 6],
     ]);
     move(academicGrid, [
       ['programType', 12],
       ['facultyKey', 6], ['programKey', 6],
-      ['totalCredits', 6], ['registeredCredits', 6],
+      ['totalCredits', 4], ['registeredCredits', 4], ['requestRuleOverride', 4],
       ['studyYearOverride', 6], ['graduationYearOverride', 6],
     ]);
+    if (!isDrawer && academicGrid) {
+      const manual = fieldFor('manualRequestUntil');
+      if (manual) { manual.classList.add('case-col-12'); academicGrid.appendChild(manual); }
+    }
     // Faculty has no data-edit-field because its key is a UI-only selector.
     if (isDrawer && academicGrid) {
       const faculty = root.querySelector('#drawerFacultySelect')?.closest('.drawer-field');
@@ -1200,24 +1204,27 @@
     if (!['normal', 'exchange', 'non_o'].includes(category)) category = 'normal';
     const categoryLabels = {normal:'Normal student',exchange:'Exchange student',non_o:'Non-O transfer'};
     el('studentModalTitle').textContent = 'Add ' + (categoryLabels[category] || 'student');
-    el('studentForm').innerHTML = `
-      <div class="entry-case-picker">
-        <label for="newCaseCategory">Case type</label>
-        <select id="newCaseCategory" name="caseCategory" aria-label="Choose case type">
-          <option value="normal" ${category === 'normal' ? 'selected' : ''}>Normal student (new or current)</option>
-          <option value="exchange" ${category === 'exchange' ? 'selected' : ''}>Exchange student</option>
-          <option value="non_o" ${category === 'non_o' ? 'selected' : ''}>Non-O → ED transfer</option>
-        </select>
-        <p>${category === 'normal'
-          ? 'Select Exchange student above to show exchange-specific information without leaving this dialog.'
-          : category === 'exchange' ? 'Fill in the partner university, country and exchange details in the highlighted section below.'
-            : 'Fill in Non-O transfer details in the highlighted section below.'}</p>
+    const typePanel = el('studentCaseTypePanel');
+    typePanel.innerHTML = `
+      <p class="type-panel-eyebrow">STEP 1 · CASE TYPE</p>
+      <h3>Select student type</h3>
+      <div class="type-option-list" role="group" aria-label="Student case type">
+        ${[['normal','▦','Normal cases'],['exchange','⇄','Exchange students'],['non_o','↗','Non-O → ED transfer']]
+          .map(([value,icon,label]) => `
+            <button class="type-option" type="button" data-entry-category="${value}" aria-pressed="${category === value}">
+              <span class="type-option-icon" aria-hidden="true">${icon}</span>
+              <span>${label}</span>
+            </button>`).join('')}
       </div>
-      <div class="entry-case-notice">${category === 'exchange' ? 'Exchange details appear at the top of this form. Complete the required fields before saving the case.' : category === 'non_o' ? 'Non-O transfer details appear at the top of this form. Enable editing only when a default needs to be changed.' : 'Both new and current students belong here. The Student ID automatically suggests the Current student checkbox; you can change it.'}</div>
+      <p class="type-panel-help">The form on the right changes to match your selection. Your existing cases are not affected.</p>`;
+    el('studentForm').innerHTML = `
+      <input type="hidden" name="caseCategory" value="${category}" />
       ${category === 'exchange' ? `
         <div class="entry-section-title entry-priority">Exchange student information · complete before adding</div>
-        <div class="form-field full"><label>Partner university (English)</label><input name="exchangeUniversity" list="partnerUniversitySuggestions" autocomplete="off" required placeholder="Enter a university name; previous entries will be suggested" /></div>
-        <div class="form-field full"><label>Partner country (Thai)</label><input name="exchangeCountryThai" list="partnerCountrySuggestions" autocomplete="off" required placeholder="พิมพ์ชื่อประเทศภาษาไทยเพื่อค้นหา" /></div>
+        <div class="exchange-partners">
+          <div class="form-field"><label>Partner university (English)</label><input name="exchangeUniversity" list="partnerUniversitySuggestions" autocomplete="off" required placeholder="Enter a university name; previous entries will be suggested" /></div>
+          <div class="form-field"><label>Partner country (Thai)</label><input name="exchangeCountryThai" list="partnerCountrySuggestions" autocomplete="off" required placeholder="พิมพ์ชื่อประเทศภาษาไทยเพื่อค้นหา" /></div>
+        </div>
         <div class="exchange-trio">
           <div class="form-field"><label>Exchange semester</label><select name="exchangeTerm" required><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option></select></div>
           <div class="form-field"><label>Academic year (B.E.)</label><input type="number" name="exchangeAcademicYear" min="2500" max="2700" value="${rememberedAcademicYear()}" required /></div>
@@ -1256,18 +1263,17 @@
       <div class="form-field"><label>Request option</label><select name="requestRuleOverride" data-request-rule="new"><option value="six_months">+6 months</option><option value="one_year">+1 year</option><option value="manual">Manual Date</option></select></div>
       <div class="form-field manual-request-field hidden"><label>Manual request until</label><input type="date" name="manualRequestUntil" /></div>`;
     const form = el('studentForm');
-    form.querySelector('#newCaseCategory').addEventListener('change', event => {
-      const target = event.target.value;
-      const hasData = [...form.querySelectorAll('input')].some(input =>
+    typePanel.querySelectorAll('[data-entry-category]').forEach(button => button.addEventListener('click', () => {
+      const next = button.dataset.entryCategory;
+      if (next === category) return;
+      const entered = [...form.querySelectorAll('input, textarea')].some(input =>
         ['documentNo', 'nationalityThai', 'passportNo', 'fullName', 'studentId',
-          'passportExpiry', 'currentStayUntil', 'registeredCredits'].includes(input.name)
-        && Boolean(input.value.trim()));
-      if (hasData && !confirm('Switching case type clears the current form. Continue?')) {
-        event.target.value = category;
-        return;
-      }
-      renderStudentForm(target);
-    });
+         'passportExpiry', 'currentStayUntil', 'registeredCredits',
+         'exchangeUniversity', 'exchangeCountryThai'].includes(input.name) && Boolean(input.value.trim()));
+      if (entered && !confirm('Switching case type will clear the information you entered in this form. Continue?')) return;
+      renderStudentForm(next);
+      form.scrollTop = 0;
+    }));
     arrangeCaseFields(form, false);
     bindLockedFields(form);
     updateAutomaticStudyFields(form);
