@@ -50,6 +50,8 @@
           </div>
         </div>
         <div class="topbar-actions">
+          <span id="hubReferenceStatus" role="status" aria-live="polite" title="Reference-data source" style="font-size:12px;max-width:220px;color:#64748b">Bundled references · checking Hub…</span>
+          <button class="btn subtle" id="refreshHubReferencesBtn" type="button" title="Refresh public academic and nationality reference data only">↻ Refresh references</button>
           <button class="btn subtle" id="restoreBtn">Restore</button>
           <button class="btn subtle" id="backupBtn">Backup data</button>
           <button class="btn primary" id="addStudentBtn">＋ Add student</button>
@@ -278,7 +280,8 @@
   <script src="builtin-templates.js"></script>
   <script src="docx-engine.js?v=036"></script>
   <script src="excel-export.js"></script>
-  <script src="app.js?v=036"></script>
+  <script src="hub-reference.js?v=037"></script>
+  <script src="app.js?v=037"></script>
   <script src="ui-enhancements.js?v=036"></script>
   <script>
     if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(console.warn));

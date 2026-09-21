@@ -704,6 +704,44 @@
     if (state.nationalities.length !== 250) throw new Error(`Nationality reference data incomplete: ${state.nationalities.length}/250 records loaded`);
   }
 
+  let hubRefreshInProgress = false;
+  function hubStatus(message, isError = false) {
+    const node = el('hubReferenceStatus');
+    if (node) {
+      node.textContent = message;
+      node.title = message;
+      node.style.color = isError ? '#b45309' : '';
+    }
+  }
+  async function syncHubReferences(force = false) {
+    if (hubRefreshInProgress || !window.BUICReferenceHub) return;
+    hubRefreshInProgress = true;
+    const button = el('refreshHubReferencesBtn');
+    if (button) button.disabled = true;
+    try {
+      const result = await window.BUICReferenceHub.update(state.programs, state.nationalities, force);
+      if (result.status === 'updated') {
+        state.programs = result.programs;
+        state.nationalities = result.nationalities;
+        ensureNationalityDatalist();
+        el('partnerCountrySuggestions').innerHTML = countryOptions();
+        renderProgramTable();
+        // Student cases, imported Word templates, history and local settings are untouched.
+        hubStatus('Hub v' + result.version + ' · reference data updated');
+      } else if (result.status === 'unchanged') {
+        hubStatus('Hub v' + result.version + ' · up to date');
+      } else {
+        hubStatus('Hub: no published dataset · bundled references active');
+      }
+    } catch (error) {
+      console.warn('Central Hub reference refresh failed; retaining current local references', error);
+      hubStatus('Hub unavailable · existing references preserved', true);
+    } finally {
+      hubRefreshInProgress = false;
+      if (button) button.disabled = false;
+    }
+  }
+
   function ensureNationalityDatalist() {
     const list = el('nationalitySuggestions');
     if (!list) return;
@@ -1904,6 +1942,7 @@
       addStudentFromForm(e.currentTarget);
     });
     el('programSearch').addEventListener('input', renderProgramTable);
+    el('refreshHubReferencesBtn')?.addEventListener('click', () => { void syncHubReferences(true); });
     el('signatoryInput').addEventListener('change', (e) => {
       state.settings.signatory = normalizeSignatoryKey(e.target.value);
       el('settingsSignaturePreview').innerHTML = signatoryPreview(state.settings.signatory);
@@ -1964,6 +2003,16 @@
       renderWorkspace();
       renderProgramTable();
       renderBatchHistory();
+
+      // Check the public reference API only after local workspace loading has completed.
+      // Never send cases, student identifiers or imported templates to the Hub.
+      void syncHubReferences(true);
+      setInterval(() => {
+        if (document.visibilityState === 'visible') void syncHubReferences();
+      }, 5 * 60 * 1000);
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') void syncHubReferences();
+      });
 
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js').catch((err) => console.warn('Service worker registration failed', err));
