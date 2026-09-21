@@ -599,3 +599,59 @@ body { font-size: 16px; }
 .case-move-button {margin-top:8px;}
 .case-passport-warning {grid-column:1 / -1;}
 @media(max-width:650px){.exchange-trio{grid-template-columns:1fr;}}
+
+
+/* v0.3.5: separate case-type panel to the left of the Add Student form */
+.student-entry-modal { width:min(1420px, calc(100vw - 24px)); max-height:min(95vh, 1020px); }
+.student-entry-layout { min-width:0; min-height:0; display:grid; grid-template-columns:224px minmax(0,1fr); background:#fff; }
+.student-entry-type-panel { padding:20px 13px; background:#f5f8ff; border-right:1px solid #dce5f3; min-width:0; overflow-y:auto; overscroll-behavior:contain; }
+.student-entry-type-panel .type-panel-eyebrow {margin:0 0 5px; font-size:10px; font-weight:850; letter-spacing:.09em; color:#657795;}
+.student-entry-type-panel h3 {margin:0 0 17px; font-size:16px; color:#132545; line-height:1.3;}
+.student-entry-type-panel .type-option-list {display:grid; gap:9px;}
+.student-entry-type-panel .type-option {display:flex; align-items:center; gap:10px; width:100%; padding:13px 11px; text-align:left; background:#fff; border:1px solid #d7e1ee; border-radius:11px; color:#263954; font:inherit; font-size:12px; font-weight:750; cursor:pointer; transition:border-color .15s, background .15s, box-shadow .15s;}
+.student-entry-type-panel .type-option:hover {border-color:#9cb6e6; background:#f9fbff;}
+.student-entry-type-panel .type-option[aria-pressed="true"] {background:#e6efff; color:#1649a5; border-color:#7399e2; box-shadow:inset 3px 0 #245ac2;}
+.student-entry-type-panel .type-option .type-option-icon {display:inline-flex; justify-content:center; align-items:center; border-radius:8px; background:#eff4fc; flex:0 0 27px; height:27px; font-size:15px;}
+.student-entry-type-panel .type-option[aria-pressed="true"] .type-option-icon {background:#ccddfc;}
+.student-entry-type-panel .type-panel-help {margin:17px 3px 0; font-size:11px; line-height:1.55; color:#566982;}
+.student-entry-layout #studentForm {min-width:0; min-height:0; overflow-y:auto; align-content:start; padding:18px 22px 30px; scrollbar-gutter:stable;}
+/* Five document/passport fields in one row; second row is title/name/ID. */
+.ordered-case-grid.personal-case-grid {grid-template-columns:repeat(15,minmax(0,1fr));}
+.ordered-case-grid > .case-col-3 {grid-column:span 3;}
+.ordered-case-grid > .case-col-7 {grid-column:span 7;}
+.ordered-case-grid > .case-col-4 {grid-column:span 4;}
+.student-entry-layout .form-field.full {grid-column:1 / -1;}
+.student-entry-layout .exchange-partners {grid-column:1 / -1; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; min-width:0;}
+.exchange-partners > .form-field {min-width:0;}
+.student-entry-layout .entry-order-grid {grid-column:1 / -1;}
+.student-entry-layout .student-id-field input[name="studentId"] {width:100%; min-width:0;}
+@media(max-width:1100px) {
+  .student-entry-layout {grid-template-columns:185px minmax(0,1fr);}
+  .student-entry-type-panel {padding:14px 9px;}
+  .ordered-case-grid.personal-case-grid {grid-template-columns:repeat(6,minmax(0,1fr));}
+  .personal-case-grid > .case-col-3 {grid-column:span 3;}
+  .personal-case-grid > .case-col-2 {grid-column:span 2;}
+  .personal-case-grid > .case-col-7 {grid-column:span 4;}
+  .personal-case-grid > .case-col-6 {grid-column:span 6;}
+}
+@media(max-width:760px) {
+  .student-entry-modal {width:calc(100vw - 12px); max-height:calc(100vh - 12px);}
+  .student-entry-layout {display:flex; flex-direction:column; overflow:hidden;}
+  .student-entry-type-panel {flex:none; overflow-y:visible; padding:10px 13px; border-right:0; border-bottom:1px solid #dce5f3;}
+  .student-entry-type-panel h3,.student-entry-type-panel .type-panel-help {display:none;}
+  .student-entry-type-panel .type-panel-eyebrow {margin-bottom:7px;}
+  .student-entry-type-panel .type-option-list {display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px;}
+  .student-entry-type-panel .type-option {padding:9px 6px; justify-content:center; font-size:10px; text-align:center; gap:5px;}
+  .student-entry-type-panel .type-option-icon {display:none!important;}
+  .student-entry-layout #studentForm {flex:1; min-height:0; padding:14px;}
+  .student-entry-layout .exchange-partners {grid-template-columns:1fr;}
+}
+@media(max-width:470px) {
+  .student-entry-layout .type-option-list {grid-template-columns:1fr 1fr 1fr;}
+  .student-entry-layout .ordered-case-grid.personal-case-grid {grid-template-columns:repeat(2,minmax(0,1fr));}
+  .student-entry-layout .personal-case-grid > .case-col-2,
+  .student-entry-layout .personal-case-grid > .case-col-3,
+  .student-entry-layout .personal-case-grid > .case-col-6,
+  .student-entry-layout .personal-case-grid > .case-col-7 {grid-column:span 2;}
+  .student-entry-layout .ordered-case-grid > .case-col-4 {grid-column:span 2;}
+}

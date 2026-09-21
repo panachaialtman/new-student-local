@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#101d35" />
   <link rel="manifest" href="manifest.webmanifest" />
   <title>BU Visa Case Workspace</title>
-  <link rel="stylesheet" href="styles.css?v=034" />
+  <link rel="stylesheet" href="styles.css?v=035" />
 </head>
 <body>
   <div class="app-shell">
@@ -36,7 +36,7 @@
         <button class="nav-item nav-settings" data-view="settings">
           <span class="nav-icon">⚙</span><span>Workspace settings</span>
         </button>
-        <div class="version-row"><span>Visa Workspace</span><span>v0.3.4 Web</span></div>
+        <div class="version-row"><span>Visa Workspace</span><span>v0.3.5 Web</span></div>
       </div>
     </aside>
 
@@ -218,7 +218,10 @@
       <div><div class="eyebrow">NEW CASE</div><h2 id="studentModalTitle">Add student</h2></div>
       <button class="icon-btn modal-close" data-close="studentModal">×</button>
     </div>
-    <form id="studentForm" class="modal-body form-grid"></form>
+    <div class="student-entry-layout">
+      <aside class="student-entry-type-panel" id="studentCaseTypePanel" aria-label="Choose student case type"></aside>
+      <form id="studentForm" class="modal-body form-grid"></form>
+    </div>
     <div class="modal-footer">
       <button class="btn subtle modal-close" data-close="studentModal">Cancel</button>
       <button class="btn primary" type="submit" form="studentForm">Add student</button>
@@ -275,8 +278,8 @@
   <script src="builtin-templates.js"></script>
   <script src="docx-engine.js"></script>
   <script src="excel-export.js"></script>
-  <script src="app.js?v=034"></script>
-  <script src="ui-enhancements.js?v=034"></script>
+  <script src="app.js?v=035"></script>
+  <script src="ui-enhancements.js?v=035"></script>
   <script>
     if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(console.warn));
   </script>
