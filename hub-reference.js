@@ -12,6 +12,21 @@
     return response.json();
   }
 
+  // The public reference aliases include formal Thai state names alongside
+  // short country names, capitals and demonyms. Only explicit formal names
+  // qualify for Partner country (Thai); never guess one from a place name.
+  const OFFICIAL_COUNTRY_PREFIX = /^(?:สหพันธ์|สหพันธรัฐ|สหรัฐ|สหราชอาณาจักร|สหภาพ|สาธารณรัฐ|ราชอาณาจักร|ราชรัฐ|รัฐพหุชนชาติ|รัฐเอกราช|รัฐสุลต่าน|เครือรัฐ|สมาพันธรัฐ|จักรวรรดิ|ราชาธิปไตย|เนการา|รัฐอิสระ)/;
+  function officialThaiCountry(row) {
+    const shortName=String(row.thai||'').trim();
+    if(!shortName || !/[ก-๙]/.test(shortName))return shortName;
+    const provided=String(row.countryOfficialThai||'').trim();
+    if(provided&&/[ก-๙]/.test(provided)&&!/[A-Za-z]/.test(provided))return provided;
+    const aliases=Array.isArray(row.aliases)?row.aliases:[];
+    return aliases.find(alias=>typeof alias==='string' &&
+      alias!==shortName && OFFICIAL_COUNTRY_PREFIX.test(alias) &&
+      /[ก-๙]/.test(alias) && !/[A-Za-z]/.test(alias))||shortName;
+  }
+
   function checkRows(rows, expected, label, key) {
     if (!Array.isArray(rows) || rows.length !== expected) {
       throw new Error(label + ' record count changed; existing references were kept');
@@ -91,6 +106,7 @@
           english: remote.english,
           countryThai: remote.thai,
           countryEnglish: remote.english,
+          countryOfficialThai: officialThaiCountry(remote),
           nationalityThai: thaiNationality,
           nationalityEnglish: String(remote.nationalityEnglish || '').trim(),
           aliases: [...new Set([...(local.aliases || []), ...(remote.aliases || [])])]

@@ -584,22 +584,21 @@
   function countryOptions() {
     const records = new Map();
     for (const item of state.nationalities) {
-      // This is an exchange PARTNER COUNTRY field, not the student
-      // nationality field. Do not use the nationalityThai display label here.
-      const countryThai=item.countryThai||item.thai;
-      if (countryThai) records.set(String(countryThai).trim(),
-        String(item.countryEnglish||item.english||'').trim());
+      // Partner country is a COUNTRY, not a student's nationality. Prefer
+      // the full official Thai country name supplied by the public reference
+      // dataset, falling back to the country name where no full form exists.
+      const shortName=String(item.countryThai||item.thai||'').trim();
+      const fullName=String(item.countryOfficialThai||shortName).trim();
+      if(!fullName)continue;
+      const english=String(item.countryEnglish||item.english||'').trim();
+      // The visible/selected datalist value must be the FULL country name.
+      // Keep English and short Thai names only as search hints, not as
+      // competing short-form choices.
+      const hint=[english,shortName!==fullName?shortName:''].filter(Boolean).join(' · ');
+      records.set(fullName,hint);
     }
-    // The supplied nationality reference uses shortened labels for some
-    // countries. Include familiar full country names as searchable alternatives.
-    for (const [thai, english] of [
-      ['ประเทศไทย', 'Thailand'], ['สหรัฐอเมริกา', 'United States'],
-      ['สหราชอาณาจักร', 'United Kingdom'], ['สาธารณรัฐประชาชนจีน', 'China'],
-      ['สาธารณรัฐเกาหลี', 'South Korea'], ['เกาหลีใต้', 'South Korea'],
-      ['สาธารณรัฐแห่งสหภาพเมียนมา', 'Myanmar']
-    ]) records.set(thai, english);
-    return [...records.entries()].map(([thai, english]) =>
-      '<option value="' + escapeHtml(thai) + '" label="' + escapeHtml(english) + '"></option>').join('');
+    return [...records.entries()].map(([fullName,hint]) =>
+      '<option value="' + escapeHtml(fullName) + '" label="' + escapeHtml(hint) + '"></option>').join('');
   }
 
   function inferredAcademicYearFields(studentId, programType) {
@@ -957,6 +956,9 @@
       ...item,
       countryThai:item.thai,
       countryEnglish:item.english,
+      // Bundled countryOfficialThai comes from approved public Hub aliases.
+      // It allows full-name suggestions even when the Hub is unreachable.
+      countryOfficialThai:item.countryOfficialThai||item.thai,
       thai:OFFLINE_THAI_NATIONALITIES[item.english]||item.thai,
       nationalityThai:OFFLINE_THAI_NATIONALITIES[item.english]||item.thai
     }));

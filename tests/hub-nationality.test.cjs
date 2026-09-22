@@ -15,13 +15,13 @@ const localNationalities=[
 ];
 const remoteNationalities=[
   {recordId:'C001',english:'Germany',thai:'เยอรมนี',nationalityThai:'เยอรมัน',
-    nationalityEnglish:'German',aliases:['German']},
+    nationalityEnglish:'German',aliases:['German','สหพันธ์สาธารณรัฐเยอรมนี','เบอร์ลิน']},
   {recordId:'C002',english:'United Kingdom',thai:'สหราชอาณาจักร',
-    nationalityThai:'บริติช / อังกฤษ',nationalityEnglish:'British',aliases:['Briton']},
+    nationalityThai:'บริติช / อังกฤษ',nationalityEnglish:'British',aliases:['Briton','สหราชอาณาจักรบริเตนใหญ่และไอร์แลนด์เหนือ']},
   {recordId:'C003',english:'United States',thai:'สหรัฐอเมริกา',
     nationalityThai:'อเมริกัน',nationalityEnglish:'American',aliases:['USA']},
   {recordId:'C004',english:'Myanmar',thai:'เมียนมา',
-    nationalityThai:'เมียนมา',nationalityEnglish:'Myanmar / Burmese',aliases:['พม่า']}
+    nationalityThai:'เมียนมา',nationalityEnglish:'Myanmar / Burmese',aliases:['พม่า','สาธารณรัฐแห่งสหภาพเมียนมา']}
 ];
 async function run(rows) {
   const api={
@@ -46,6 +46,13 @@ async function run(rows) {
   const find=name=>result.nationalities.find(row=>row.english===name);
   assert.equal(find('Germany').thai,'เยอรมัน');
   assert.equal(find('Germany').countryThai,'เยอรมนี');
+  assert.equal(find('Germany').countryOfficialThai,'สหพันธ์สาธารณรัฐเยอรมนี',
+    'Partner country must use the complete formal country name');
+  assert.equal(find('United Kingdom').countryOfficialThai,'สหราชอาณาจักรบริเตนใหญ่และไอร์แลนด์เหนือ');
+  assert.equal(find('Myanmar').countryOfficialThai,'สาธารณรัฐแห่งสหภาพเมียนมา');
+  assert.equal(find('United States').countryOfficialThai,'สหรัฐอเมริกา',
+    'When the source supplies no fuller name, use the published country name');
+
   assert.equal(find('Germany').nationalityEnglish,'German');
   assert.equal(find('United Kingdom').thai,'บริติช / อังกฤษ');
   assert.equal(find('United Kingdom').countryThai,'สหราชอาณาจักร');
@@ -58,5 +65,5 @@ async function run(rows) {
     row.english==='Germany'?{...row,nationalityThai:''}:row)),/Missing Thai nationality/);
   assert.equal(localNationalities[0].thai,'เยอรมนี',
     'Bad Hub nationality data must not rewrite existing references');
-  console.log('Hub Thai-nationality tests passed (country/nationality distinction, aliases, missing-value rollback).');
+  console.log('Hub nationality and official Thai country-name tests passed (full names, short-name fallback, no student data).');
 })().catch(err=>{console.error(err);process.exitCode=1;});
