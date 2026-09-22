@@ -1500,6 +1500,56 @@
     toast('Student added', 'Faculty and major were linked to the supplied reference data.');
   }
 
+  // Group assignment is a local-only action: never touches student data or the Hub.
+  let groupAssignmentIds=[];
+  function openGroupAssignmentModal() {
+    const items=selectedCases();
+    if (!items.length) return;
+    groupAssignmentIds=items.map(item=>item.id);
+    const first=items[0].labelId||'';
+    const shared=items.every(item=>(item.labelId||'')===first);
+    el('groupAssignSummary').textContent=items.length+' selected case'+(items.length===1?'':'s')+
+      ' · Set one group for these cases without changing their visa information.';
+    const root=el('groupAssignCaseList');
+    root.innerHTML=items.slice(0,8).map(item=>{
+      const group=labelForCase(item);
+      return `<div class="group-assign-case"><strong>${escapeHtml(item.fullName||'Unnamed student')}</strong>
+        <span>${escapeHtml(group?'Group '+caseGroupNumber(item)+' · '+group.name:'Unlabeled')}</span></div>`;
+    }).join('')+(items.length>8?
+      '<div class="group-assign-extra">+ '+(items.length-8)+' more selected cases</div>':'');
+    const select=el('groupAssignSelect');
+    select.innerHTML=(shared?'':'<option value="__choose__">Choose a group…</option>')+
+      '<option value="">Unlabeled · remove assignment</option>'+
+      caseLabels().map((group,index)=>`<option value="${escapeHtml(group.id)}">Group ${index+1} · ${escapeHtml(group.name)}</option>`).join('');
+    select.value=shared?first:'__choose__';
+    openModal('groupAssignModal');
+    select.focus();
+  }
+  function saveGroupAssignment() {
+    const id=el('groupAssignSelect').value;
+    if (id==='__choose__' || (id && !caseLabels().some(group=>group.id===id))) {
+      toast('Choose a group','Select a named group or Unlabeled before saving.',true);
+      return;
+    }
+    const ids=new Set(groupAssignmentIds.filter(caseId=>state.selected.has(caseId)));
+    const items=state.cases.filter(item=>ids.has(item.id) && item.caseCategory===state.activeCategory);
+    if (!items.length) {
+      closeModal('groupAssignModal');
+      toast('Selection changed','Select the cases again and reopen Edit group assign.',true);
+      return;
+    }
+    items.forEach(item=>{item.labelId=id;});
+    persist();
+    groupAssignmentIds=[];
+    closeModal('groupAssignModal');
+    state.selected.clear();
+    renderWorkspace();
+    renderCaseLabelSettings();
+    if (state.activeCaseId && !state.editing && el('detailDrawer').classList.contains('open'))renderDrawer();
+    toast('Group assignment saved',items.length+' case'+(items.length===1?'':'s')+
+      ' updated locally. No student or visa information was changed.');
+  }
+
   function openModal(id) {
     el('modalBackdrop').classList.remove('hidden');
     el(id).classList.remove('hidden');
@@ -1507,7 +1557,7 @@
 
   function closeModal(id) {
     el(id).classList.add('hidden');
-    const anyOpen = ['studentModal', 'batchModal', 'individualModal', 'departmentModal'].some((modalId) => !el(modalId).classList.contains('hidden'));
+    const anyOpen = ['studentModal', 'batchModal', 'individualModal', 'departmentModal', 'groupAssignModal'].some((modalId) => !el(modalId).classList.contains('hidden'));
     if (!anyOpen) el('modalBackdrop').classList.add('hidden');
   }
 
@@ -2057,6 +2107,8 @@
     });
     el('clearSelectionBtn').addEventListener('click', () => { state.selected.clear(); renderCaseList(); renderSelectionBar(); });
     el('deleteSelectedBtn').addEventListener('click', deleteSelectedCases);
+    el('editGroupAssignBtn').addEventListener('click',openGroupAssignmentModal);
+    el('saveGroupAssignBtn').addEventListener('click',saveGroupAssignment);
     el('departmentTableBtn').addEventListener('click', () => { renderDepartmentModal(); openModal('departmentModal'); });
     el('copyDepartmentBtn').addEventListener('click', copyDepartmentTable);
     el('downloadDepartmentBtn').addEventListener('click', downloadDepartmentExcel);
@@ -2088,6 +2140,7 @@
       closeModal('batchModal');
       closeModal('individualModal');
       closeModal('departmentModal');
+      closeModal('groupAssignModal');
     });
     el('studentForm').addEventListener('submit', (e) => {
       e.preventDefault();
