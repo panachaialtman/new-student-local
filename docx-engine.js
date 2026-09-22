@@ -435,12 +435,16 @@
       .replace(/<w:tblW\b[^>]*\/>/, '<w:tblW w:w="' + width + '" w:type="dxa"/>');
     const props = /<w:tblPr\b[^>]*>([\s\S]*?)<\/w:tblPr>/.exec(updated);
     if (!props) throw new Error('Student-list table properties are missing');
+    // OOXML property order matters: jc belongs after tblW; tblLayout goes
+    // before tblLook, not after the final property (Word may otherwise repair it).
     const centred = /<w:jc\b[^>]*\/>/.test(props[1])
       ? props[1].replace(/<w:jc\b[^>]*\/>/, '<w:jc w:val="center"/>')
-      : props[1] + '<w:jc w:val="center"/>';
+      : props[1].replace(/(<w:tblW\b[^>]*\/>)/, '$1<w:jc w:val="center"/>');
     const fixedLayout = /<w:tblLayout\b[^>]*\/>/.test(centred)
       ? centred.replace(/<w:tblLayout\b[^>]*\/>/, '<w:tblLayout w:type="fixed"/>')
-      : centred + '<w:tblLayout w:type="fixed"/>';
+      : /<w:tblLook\b/.test(centred)
+        ? centred.replace(/<w:tblLook\b/, '<w:tblLayout w:type="fixed"/><w:tblLook')
+        : centred + '<w:tblLayout w:type="fixed"/>';
     updated = updated.replace(props[0], '<w:tblPr>' + fixedLayout + '</w:tblPr>');
     return {table:updated, fixed, extras};
   }
@@ -458,7 +462,9 @@
     if (match) {
       const aligned = /<w:jc\b[^>]*\/>/.test(match[1])
         ? match[1].replace(/<w:jc\b[^>]*\/>/, '<w:jc w:val="left"/>')
-        : match[1] + '<w:jc w:val="left"/>';
+        : /<w:rPr\b/.test(match[1])
+          ? match[1].replace(/<w:rPr\b/, '<w:jc w:val="left"/><w:rPr')
+          : match[1] + '<w:jc w:val="left"/>';
       return updated.slice(0,after)+tail.replace(match[0], '<w:pPr>'+aligned+'</w:pPr>');
     }
     return updated.slice(0,after)+'<w:pPr><w:jc w:val="left"/></w:pPr>'+tail;

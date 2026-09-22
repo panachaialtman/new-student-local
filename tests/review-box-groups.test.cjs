@@ -74,6 +74,19 @@ assert.deepEqual(Array.from(layout.fixed),[680,1375,634,3330],
 assert.equal(layout.extras.reduce((sum,w)=>sum+w,0),4891,
   'Remaining width must be reserved for longer letter-checker columns');
 assert.equal(layout.extras.length,3);
+
+// WordprocessingML requires the table/paragraph properties in schema order.
+const tableWithoutCenter=templateTable.replace('<w:jc w:val="left"/>',
+  '<w:tblLook w:val="04A0"/>');
+const ordered=fn.listTableGrid(tableWithoutCenter,3).table;
+assert(ordered.indexOf('<w:tblW w:w="10910" w:type="dxa"/>') <
+  ordered.indexOf('<w:jc w:val="center"/>') &&
+  ordered.indexOf('<w:jc w:val="center"/>') <
+  ordered.indexOf('<w:tblLayout w:type="fixed"/>') &&
+  ordered.indexOf('<w:tblLayout w:type="fixed"/>') <
+  ordered.indexOf('<w:tblLook w:val="04A0"/>'),
+  'Word table layout and centering properties must precede tblLook');
+
 const layoutEmpty=fn.listTableGrid(templateTable,0);
 assert.equal(layoutEmpty.extras.length,0);
 assert(layoutEmpty.table.includes('<w:tblW w:w="6019" w:type="dxa"/>'));
@@ -88,6 +101,12 @@ const aligned=fn.topLeftListCell(fn.listCellWidth(syntheticCell,3330));
 assert(aligned.includes('<w:tcW w:w="3330" w:type="dxa"/>'));
 assert(aligned.includes('<w:vAlign w:val="top"/>') &&
   !aligned.includes('<w:vAlign w:val="center"/>'));
+const withRunProperties=syntheticCell.replace('<w:jc w:val="center"/>',
+  '<w:rPr><w:sz w:val="32"/></w:rPr>');
+const orderedCell=fn.topLeftListCell(withRunProperties);
+assert(orderedCell.indexOf('<w:jc w:val="left"/>') <
+  orderedCell.indexOf('<w:rPr>'),
+  'Left paragraph alignment must precede paragraph run properties');
 assert(aligned.includes('<w:jc w:val="left"/>') &&
   !aligned.includes('<w:jc w:val="center"/>'));
 assert(aligned.includes('TESTER long enough to wrap to another line'));
