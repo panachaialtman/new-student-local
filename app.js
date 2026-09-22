@@ -1141,6 +1141,7 @@
             ${editableSelect('Request option', 'requestRuleOverride', rule, [['six_months','+6 months'],['one_year','+1 year'],['manual','Manual Date']], 'data-request-rule="drawer"')}
             <div class="drawer-field manual-request-field ${rule === 'manual' ? '' : 'hidden'}"><label>Manual request until</label><input data-edit-field="manualRequestUntil" type="date" value="${escapeHtml(item.manualRequestUntil || '')}" /></div>
             ${editableSelect('Case type · move to another section', 'caseCategory', item.caseCategory, [['normal','Normal cases'],['exchange','Exchange students'],['non_o','Non-O → ED transfer']], 'id="editCaseCategory"')}
+            ${editableSelect('Case group', 'labelId', item.labelId || '', [['','Unlabeled'],...caseLabels().map((group,index)=>[group.id,(index+1)+' · '+group.name])])}
             <div class="case-move-hint">Change the case type and save to move this student. The new letter template will be used.</div>
           </div>
         </div>
@@ -1229,6 +1230,7 @@
         <div class="drawer-section"><div class="drawer-section-head"><h3>Visa request</h3></div>
           <div class="field-grid">
             ${fieldItem('Current stay', formatDate(item.currentStayUntil))}
+            ${fieldItem('Case group', labelForCase(item) ? 'Group '+caseGroupNumber(item)+' · '+labelForCase(item).name : 'Unlabeled')}
             ${fieldItem('Request option', ruleLabel(item))}
             <div class="field-item"><label>Case type</label><div class="field-value">${escapeHtml(({normal:'Normal cases',exchange:'Exchange students',non_o:'Non-O → ED transfer'})[item.caseCategory] || 'Normal cases')}</div><button type="button" class="btn subtle case-move-button" id="moveCaseTypeBtn">Move to another case type →</button></div>
             ${fieldItem(isPassportCapped(item) ? 'Extend until (passport cap)' : 'Request until', item.requestUntil ? formatDate(item.requestUntil) : '—', true)}
