@@ -834,6 +834,7 @@
     const q = state.search.trim().toLowerCase();
     return state.cases.filter((item) => {
       if (item.caseCategory !== state.activeCategory) return false;
+      if (state.activeLabelId !== 'all' && (labelForCase(item)?.id || 'unlabeled') !== state.activeLabelId) return false;
       if (!q) return true;
       return [item.fullName, item.studentId, item.documentNo, item.passportNo, item.programKey]
         .some((v) => String(v || '').toLowerCase().includes(q));
@@ -880,18 +881,46 @@
     return `<span class="status-chip ${meta.className || 'status-draft'}">${escapeHtml(meta.label)}</span>`;
   }
 
+  function renderCaseGroupFilter() {
+    const select=el('caseLabelFilter');if(!select)return;
+    const labels=caseLabels();
+    const options=[['all','All groups'],['unlabeled','Unlabeled'],
+      ...labels.map(label=>[label.id,label.name+' ('+state.cases.filter(c=>c.labelId===label.id&&c.caseCategory===state.activeCategory).length+')'])];
+    if(!options.some(([value])=>value===state.activeLabelId))state.activeLabelId='all';
+    select.innerHTML=options.map(([value,name])=>`<option value="${escapeHtml(value)}" ${state.activeLabelId===value?'selected':''}>${escapeHtml(name)}</option>`).join('');
+    if(el('groupCasesToggle')) el('groupCasesToggle').checked=state.groupByLabel;
+  }
+  function caseGroupBadge(item) {
+    const label=labelForCase(item);
+    const options=['<option value="">Unlabeled</option>',...caseLabels().map(group=>
+      `<option value="${escapeHtml(group.id)}" ${group.id===(label?.id||'')?'selected':''}>${escapeHtml(group.name)}</option>`)];
+    return `<select class="case-row-group-select" data-case-group aria-label="Assign group to ${escapeHtml(item.fullName || 'student')}" title="Case group (stored locally)">${options.join('')}</select>`;
+  }
+  function groupedCaseRows(items) {
+    if(!state.groupByLabel)return items.map(renderCaseRow).join('');
+    const buckets=new Map(caseLabels().map(label=>[label.id,[]]));
+    buckets.set('unlabeled',[]);
+    items.forEach(item=>(buckets.get(labelForCase(item)?.id||'unlabeled')||buckets.get('unlabeled')).push(item));
+    return [...caseLabels().map(l=>[l.id,l.name,l.color]),['unlabeled','Unlabeled','#94a3b8']].map(([id,name,color])=>{
+      const group=buckets.get(id)||[];if(!group.length)return'';
+      return `<div class="case-group-heading" role="heading" aria-level="3" style="--case-label-color:${color}"><span class="case-group-heading-swatch"></span><strong>${escapeHtml(name)}</strong><span>${group.length} case${group.length===1?'':'s'}</span></div>${group.map(renderCaseRow).join('')}`;
+    }).join('');
+  }
+
   function renderCaseRow(item) {
     const selected = state.selected.has(item.id);
     const requestUntil = calculateRequestUntil(item);
     const capped = isPassportCapped(item);
     const program = programByKey(item.programKey);
     const programName = displayProgramName(item, program);
+    const group = labelForCase(item);
     return `
-      <div class="case-row ${selected ? 'selected' : ''}" data-case-id="${item.id}">
+      <div class="case-row ${selected ? 'selected' : ''} ${group ? 'has-case-label' : ''}" data-case-id="${escapeHtml(item.id)}" style="--case-label-color:${group?.color || '#e2e8f0'}">
         <div><input class="case-check" type="checkbox" ${selected ? 'checked' : ''} aria-label="Select ${escapeHtml(item.fullName)}" /></div>
         <div class="case-click student-cell">
           <div class="student-name">${escapeHtml(item.fullName || 'Unnamed student')}</div>
           <div class="student-meta"><span class="meta-strong">${escapeHtml(item.studentId || 'No ID')}</span><span>•</span><span>Doc ${escapeHtml(item.documentNo || '—')}</span></div>
+          <div class="case-group-meta">${group ? `<span class="case-group-chip" style="--case-label-color:${group.color}">${escapeHtml(group.name)}</span>` : ''}${caseGroupBadge(item)}</div>
         </div>
         <div class="case-click program-cell">
           <div class="program-name">${escapeHtml(programName)}</div>
@@ -906,12 +935,23 @@
   }
 
   function renderCaseList() {
+    renderCaseGroupFilter();
     const items = filteredCases();
-    el('caseList').innerHTML = items.map(renderCaseRow).join('');
+    el('caseList').innerHTML = groupedCaseRows(items);
     el('emptyState').classList.toggle('hidden', items.length > 0);
     items.forEach((item) => {
       const row = el('caseList').querySelector(`[data-case-id="${CSS.escape(item.id)}"]`);
       const check = row.querySelector('.case-check');
+      const picker=row.querySelector('[data-case-group]');
+      picker?.addEventListener('click', event => event.stopPropagation());
+      picker?.addEventListener('keydown', event => event.stopPropagation());
+      picker?.addEventListener('change', event => {
+        event.stopPropagation();
+        const id=picker.value;
+        if(id && !caseLabels().some(label=>label.id===id))return;
+        item.labelId=id;
+        persist();renderCaseList();renderCaseLabelSettings();
+      });
       check.addEventListener('click', (event) => {
         event.stopPropagation();
         toggleSelection(item.id, check.checked);
@@ -1806,6 +1846,7 @@
       el('settingsSignaturePreview').innerHTML = signatoryPreview(state.settings.signatory);
       if (el('newStudentPrefixesInput')) el('newStudentPrefixesInput').value = state.settings.newStudentPrefixes;
       renderListColumnSettings();
+      renderCaseLabelSettings();
       showPartnerUniversitySuggestions();
       renderSavedUniversities();
       state.selected.clear();
@@ -1975,6 +2016,10 @@
     });
 
     el('searchInput').addEventListener('input', (e) => { state.search = e.target.value; renderCaseList(); });
+    el('caseLabelFilter')?.addEventListener('change', e => { state.activeLabelId=e.target.value;renderCaseList(); });
+    el('groupCasesToggle')?.addEventListener('change', e => { state.groupByLabel=e.target.checked;renderCaseList(); });
+    el('manageCaseLabelsBtn')?.addEventListener('click', () => switchView('settings'));
+    bindCaseLabelSettings();
     el('selectAll').addEventListener('change', (e) => {
       filteredCases().forEach((item) => e.target.checked ? state.selected.add(item.id) : state.selected.delete(item.id));
       renderCaseList();
@@ -2074,6 +2119,7 @@
       el('settingsSignaturePreview').innerHTML = signatoryPreview(state.settings.signatory);
       if (el('newStudentPrefixesInput')) el('newStudentPrefixesInput').value = state.settings.newStudentPrefixes;
       renderListColumnSettings();
+      renderCaseLabelSettings();
       renderSavedUniversities();
 
       bindEvents();
