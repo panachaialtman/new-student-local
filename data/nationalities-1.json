@@ -1,1 +1,393 @@
-[{"thai":"อัฟกานิสถาน","english":"Afghanistan","aliases":[]},{"thai":"แอลเบเนีย","english":"Albania","aliases":[]},{"thai":"แอลจีเรีย","english":"Algeria","aliases":[]},{"thai":"อเมริกันซามัว","english":"American Samoa","aliases":[]},{"thai":"อันดอร์รา","english":"Andorra","aliases":[]},{"thai":"แองโกลา","english":"Angola","aliases":[]},{"thai":"แองกวิลลา","english":"Anguilla","aliases":[]},{"thai":"แอนตาร์กติกา","english":"Antarctica","aliases":[]},{"thai":"แอนติกาและบาร์บูดา","english":"Antigua and Barbuda","aliases":[]},{"thai":"อาร์เจนตินา","english":"Argentina","aliases":["Argentinean"]},{"thai":"อาร์เมเนีย","english":"Armenia","aliases":[]},{"thai":"อารูบา","english":"Aruba","aliases":[]},{"thai":"ออสเตรเลีย","english":"Australia","aliases":[]},{"thai":"ออสเตรีย","english":"Austria","aliases":[]},{"thai":"อาเซอร์ไบจาน","english":"Azerbaijan","aliases":[]},{"thai":"บาฮามาส","english":"Bahamas","aliases":[]},{"thai":"บาห์เรน","english":"Bahrain","aliases":[]},{"thai":"บังกลาเทศ","english":"Bangladesh","aliases":[]},{"thai":"บาร์เบโดส","english":"Barbados","aliases":[]},{"thai":"เบลารุส","english":"Belarus","aliases":[]},{"thai":"เบลเยียม","english":"Belgium","aliases":[]},{"thai":"เบลีซ","english":"Belize","aliases":[]},{"thai":"เบนิน","english":"Benin","aliases":[]},{"thai":"เบอร์มิวดา","english":"Bermuda","aliases":[]},{"thai":"ภูฏาน","english":"Bhutan","aliases":[]},{"thai":"โบลิเวีย","english":"Bolivia","aliases":["Bolivia, Plurinational State of"]},{"thai":"เนเธอร์แลนด์แคริบเบียน","english":"Bonaire, Sint Eustatius and Saba","aliases":[]},{"thai":"บอสเนียและเฮอร์เซโกวีนา","english":"Bosnia and Herzegovina","aliases":[]},{"thai":"บอตสวานา","english":"Botswana","aliases":[]},{"thai":"เกาะบูเว","english":"Bouvet Island","aliases":[]},{"thai":"บราซิล","english":"Brazil","aliases":[]},{"thai":"บริติชอินเดียนโอเชียนเทร์ริทอรี","english":"British Indian Ocean Territory","aliases":[]},{"thai":"หมู่เกาะบริติชเวอร์จิน","english":"British Virgin Islands","aliases":["Virgin Islands, British"]},{"thai":"บรูไน","english":"Brunei","aliases":[]},{"thai":"บัลแกเรีย","english":"Bulgaria","aliases":[]},{"thai":"บูร์กินาฟาโซ","english":"Burkina Faso","aliases":[]},{"thai":"บุรุนดี","english":"Burundi","aliases":[]},{"thai":"เคปเวิร์ด","english":"Cabo Verde","aliases":["Cape Verde"]},{"thai":"กัมพูชา","english":"Cambodia","aliases":[]},{"thai":"แคเมอรูน","english":"Cameroon","aliases":[]},{"thai":"แคนาดา","english":"Canada","aliases":[]},{"thai":"หมู่เกาะเคย์แมน","english":"Cayman Islands","aliases":[]},{"thai":"สาธารณรัฐแอฟริกากลาง","english":"Central African Republic","aliases":[]},{"thai":"ชาด","english":"Chad","aliases":[]},{"thai":"ชิลี","english":"Chile","aliases":[]},{"thai":"จีน","english":"China","aliases":[]},{"thai":"เกาะคริสต์มาส","english":"Christmas Island","aliases":[]},{"thai":"หมู่เกาะโคโคส (คีลิง)","english":"Cocos (Keeling) Islands","aliases":[]},{"thai":"โคลอมเบีย","english":"Colombia","aliases":[]},{"thai":"คอโมโรส","english":"Comoros","aliases":[]},{"thai":"หมู่เกาะคุก","english":"Cook Islands","aliases":[]},{"thai":"คอสตาริกา","english":"Costa Rica","aliases":[]},{"thai":"โครเอเชีย","english":"Croatia","aliases":[]},{"thai":"คิวบา","english":"Cuba","aliases":[]},{"thai":"คูราเซา","english":"Curaçao","aliases":[]},{"thai":"ไซปรัส","english":"Cyprus","aliases":[]},{"thai":"เช็ก","english":"Czechia","aliases":[]},{"thai":"โกตดิวัวร์","english":"Côte d’Ivoire","aliases":["Côte d'Ivoire"]},{"thai":"เดนมาร์ก","english":"Denmark","aliases":[]},{"thai":"จิบูตี","english":"Djibouti","aliases":[]},{"thai":"โดมินิกา","english":"Dominica","aliases":[]},{"thai":"สาธารณรัฐโดมินิกัน","english":"Dominican Republic","aliases":[]},{"thai":"คองโก","english":"DR Congo","aliases":["Congo, The Democratic Republic of the","Democratic Republic of Congo"]}]
+[
+  {
+    "thai": "อัฟกานิสถาน",
+    "english": "Afghanistan",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐอิสลามอัฟกานิสถาน"
+  },
+  {
+    "thai": "แอลเบเนีย",
+    "english": "Albania",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐแอลเบเนีย"
+  },
+  {
+    "thai": "แอลจีเรีย",
+    "english": "Algeria",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐประชาธิปไตยประชาชนแอลจีเรีย"
+  },
+  {
+    "thai": "อเมริกันซามัว",
+    "english": "American Samoa",
+    "aliases": [],
+    "countryOfficialThai": "อเมริกันซามัว"
+  },
+  {
+    "thai": "อันดอร์รา",
+    "english": "Andorra",
+    "aliases": [],
+    "countryOfficialThai": "ราชรัฐอันดอร์รา"
+  },
+  {
+    "thai": "แองโกลา",
+    "english": "Angola",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐแองโกลา"
+  },
+  {
+    "thai": "แองกวิลลา",
+    "english": "Anguilla",
+    "aliases": [],
+    "countryOfficialThai": "แองกวิลลา"
+  },
+  {
+    "thai": "แอนตาร์กติกา",
+    "english": "Antarctica",
+    "aliases": [],
+    "countryOfficialThai": "แอนตาร์กติกา"
+  },
+  {
+    "thai": "แอนติกาและบาร์บูดา",
+    "english": "Antigua and Barbuda",
+    "aliases": [],
+    "countryOfficialThai": "แอนติกาและบาร์บูดา"
+  },
+  {
+    "thai": "อาร์เจนตินา",
+    "english": "Argentina",
+    "aliases": [
+      "Argentinean"
+    ],
+    "countryOfficialThai": "สาธารณรัฐอาร์เจนตินา"
+  },
+  {
+    "thai": "อาร์เมเนีย",
+    "english": "Armenia",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐอาร์มีเนีย"
+  },
+  {
+    "thai": "อารูบา",
+    "english": "Aruba",
+    "aliases": [],
+    "countryOfficialThai": "อารูบา"
+  },
+  {
+    "thai": "ออสเตรเลีย",
+    "english": "Australia",
+    "aliases": [],
+    "countryOfficialThai": "เครือรัฐออสเตรเลีย"
+  },
+  {
+    "thai": "ออสเตรีย",
+    "english": "Austria",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐออสเตรีย"
+  },
+  {
+    "thai": "อาเซอร์ไบจาน",
+    "english": "Azerbaijan",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐอาเซอร์ไบจาน"
+  },
+  {
+    "thai": "บาฮามาส",
+    "english": "Bahamas",
+    "aliases": [],
+    "countryOfficialThai": "เครือรัฐบาฮามาส"
+  },
+  {
+    "thai": "บาห์เรน",
+    "english": "Bahrain",
+    "aliases": [],
+    "countryOfficialThai": "ราชอาณาจักรบาห์เรน"
+  },
+  {
+    "thai": "บังกลาเทศ",
+    "english": "Bangladesh",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐประชาชนบังกลาเทศ"
+  },
+  {
+    "thai": "บาร์เบโดส",
+    "english": "Barbados",
+    "aliases": [],
+    "countryOfficialThai": "บาร์เบโดส"
+  },
+  {
+    "thai": "เบลารุส",
+    "english": "Belarus",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐเบลารุส"
+  },
+  {
+    "thai": "เบลเยียม",
+    "english": "Belgium",
+    "aliases": [],
+    "countryOfficialThai": "ราชอาณาจักรเบลเยียม"
+  },
+  {
+    "thai": "เบลีซ",
+    "english": "Belize",
+    "aliases": [],
+    "countryOfficialThai": "เบลีซ"
+  },
+  {
+    "thai": "เบนิน",
+    "english": "Benin",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐเบนิน"
+  },
+  {
+    "thai": "เบอร์มิวดา",
+    "english": "Bermuda",
+    "aliases": [],
+    "countryOfficialThai": "เบอร์มิวดา"
+  },
+  {
+    "thai": "ภูฏาน",
+    "english": "Bhutan",
+    "aliases": [],
+    "countryOfficialThai": "ราชอาณาจักรภูฏาน"
+  },
+  {
+    "thai": "โบลิเวีย",
+    "english": "Bolivia",
+    "aliases": [
+      "Bolivia, Plurinational State of"
+    ],
+    "countryOfficialThai": "รัฐพหุชนชาติแห่งโบลิเวีย"
+  },
+  {
+    "thai": "เนเธอร์แลนด์แคริบเบียน",
+    "english": "Bonaire, Sint Eustatius and Saba",
+    "aliases": [],
+    "countryOfficialThai": "เนเธอร์แลนด์แคริบเบียน"
+  },
+  {
+    "thai": "บอสเนียและเฮอร์เซโกวีนา",
+    "english": "Bosnia and Herzegovina",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐบอสเนียและเฮอร์เซโกวีนา"
+  },
+  {
+    "thai": "บอตสวานา",
+    "english": "Botswana",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐบอตสวานา"
+  },
+  {
+    "thai": "เกาะบูเว",
+    "english": "Bouvet Island",
+    "aliases": [],
+    "countryOfficialThai": "เกาะบูเว"
+  },
+  {
+    "thai": "บราซิล",
+    "english": "Brazil",
+    "aliases": [],
+    "countryOfficialThai": "สหพันธ์สาธารณรัฐบราซิล"
+  },
+  {
+    "thai": "บริติชอินเดียนโอเชียนเทร์ริทอรี",
+    "english": "British Indian Ocean Territory",
+    "aliases": [],
+    "countryOfficialThai": "บริติชอินเดียนโอเชียนเทร์ริทอรี"
+  },
+  {
+    "thai": "หมู่เกาะบริติชเวอร์จิน",
+    "english": "British Virgin Islands",
+    "aliases": [
+      "Virgin Islands, British"
+    ],
+    "countryOfficialThai": "หมู่เกาะบริติชเวอร์จิน"
+  },
+  {
+    "thai": "บรูไน",
+    "english": "Brunei",
+    "aliases": [],
+    "countryOfficialThai": "เนการาบรูไนดารุสซาลาม"
+  },
+  {
+    "thai": "บัลแกเรีย",
+    "english": "Bulgaria",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐบัลแกเรีย"
+  },
+  {
+    "thai": "บูร์กินาฟาโซ",
+    "english": "Burkina Faso",
+    "aliases": [],
+    "countryOfficialThai": "บูร์กินาฟาโซ"
+  },
+  {
+    "thai": "บุรุนดี",
+    "english": "Burundi",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐบุรุนดี"
+  },
+  {
+    "thai": "เคปเวิร์ด",
+    "english": "Cabo Verde",
+    "aliases": [
+      "Cape Verde"
+    ],
+    "countryOfficialThai": "สาธารณรัฐเคปเวิร์ด"
+  },
+  {
+    "thai": "กัมพูชา",
+    "english": "Cambodia",
+    "aliases": [],
+    "countryOfficialThai": "ราชอาณาจักรกัมพูชา"
+  },
+  {
+    "thai": "แคเมอรูน",
+    "english": "Cameroon",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐแคเมอรูน"
+  },
+  {
+    "thai": "แคนาดา",
+    "english": "Canada",
+    "aliases": [],
+    "countryOfficialThai": "แคนาดา"
+  },
+  {
+    "thai": "หมู่เกาะเคย์แมน",
+    "english": "Cayman Islands",
+    "aliases": [],
+    "countryOfficialThai": "หมู่เกาะเคย์แมน"
+  },
+  {
+    "thai": "สาธารณรัฐแอฟริกากลาง",
+    "english": "Central African Republic",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐแอฟริกากลาง"
+  },
+  {
+    "thai": "ชาด",
+    "english": "Chad",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐชาด"
+  },
+  {
+    "thai": "ชิลี",
+    "english": "Chile",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐชิลี"
+  },
+  {
+    "thai": "จีน",
+    "english": "China",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐประชาชนจีน"
+  },
+  {
+    "thai": "เกาะคริสต์มาส",
+    "english": "Christmas Island",
+    "aliases": [],
+    "countryOfficialThai": "เกาะคริสต์มาส"
+  },
+  {
+    "thai": "หมู่เกาะโคโคส (คีลิง)",
+    "english": "Cocos (Keeling) Islands",
+    "aliases": [],
+    "countryOfficialThai": "หมู่เกาะโคโคส (คีลิง)"
+  },
+  {
+    "thai": "โคลอมเบีย",
+    "english": "Colombia",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐโคลอมเบีย"
+  },
+  {
+    "thai": "คอโมโรส",
+    "english": "Comoros",
+    "aliases": [],
+    "countryOfficialThai": "สหภาพคอโมโรส"
+  },
+  {
+    "thai": "หมู่เกาะคุก",
+    "english": "Cook Islands",
+    "aliases": [],
+    "countryOfficialThai": "หมู่เกาะคุก"
+  },
+  {
+    "thai": "คอสตาริกา",
+    "english": "Costa Rica",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐคอสตาริกา"
+  },
+  {
+    "thai": "โครเอเชีย",
+    "english": "Croatia",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐโครเอเชีย"
+  },
+  {
+    "thai": "คิวบา",
+    "english": "Cuba",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐคิวบา"
+  },
+  {
+    "thai": "คูราเซา",
+    "english": "Curaçao",
+    "aliases": [],
+    "countryOfficialThai": "คูราเซา"
+  },
+  {
+    "thai": "ไซปรัส",
+    "english": "Cyprus",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐไซปรัส นิโคเซีย"
+  },
+  {
+    "thai": "เช็ก",
+    "english": "Czechia",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐเช็ก"
+  },
+  {
+    "thai": "โกตดิวัวร์",
+    "english": "Côte d’Ivoire",
+    "aliases": [
+      "Côte d'Ivoire"
+    ],
+    "countryOfficialThai": "สาธารณรัฐโกตดิวัวร์"
+  },
+  {
+    "thai": "เดนมาร์ก",
+    "english": "Denmark",
+    "aliases": [],
+    "countryOfficialThai": "ราชอาณาจักรเดนมาร์ก"
+  },
+  {
+    "thai": "จิบูตี",
+    "english": "Djibouti",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐจิบูตี"
+  },
+  {
+    "thai": "โดมินิกา",
+    "english": "Dominica",
+    "aliases": [],
+    "countryOfficialThai": "เครือรัฐดอมินีกา"
+  },
+  {
+    "thai": "สาธารณรัฐโดมินิกัน",
+    "english": "Dominican Republic",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐโดมินิกัน"
+  },
+  {
+    "thai": "คองโก",
+    "english": "DR Congo",
+    "aliases": [
+      "Congo, The Democratic Republic of the",
+      "Democratic Republic of Congo"
+    ],
+    "countryOfficialThai": "คองโก"
+  }
+]
