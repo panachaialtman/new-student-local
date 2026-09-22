@@ -36,7 +36,7 @@
         <button class="nav-item nav-settings" data-view="settings">
           <span class="nav-icon">⚙</span><span>Workspace settings</span>
         </button>
-        <div class="version-row"><span>Visa Workspace</span><span>v0.3.14 Web</span></div>
+        <div class="version-row"><span>Visa Workspace</span><span>v0.3.15 Web</span></div>
       </div>
     </aside>
 
@@ -169,15 +169,15 @@
   <section class="settings-panel" data-settings-panel="documents" id="settingsPanel_documents" role="tabpanel" aria-label="Document settings" hidden><div class="settings-panel-head"><h3>Document settings</h3><p>Configure reviewer names, student lists and optional Word templates.</p></div><div class="settings-grid">
 <div class="content-card setting-card template-setting-card list-columns-card">
             <div class="setting-icon">≡</div>
-            <h3>Student List columns</h3>
-            <p>These columns appear after Document no., Student ID, Title, and Name. Add, rename, delete, or reorder columns here; all changes are saved locally.</p>
+            <h3>Letter checkers</h3>
+            <p>These are the names of staff checking the letters, not student data. The same names label the checker columns in Student Lists and the optional top-right review table on visa letters. Add, rename, delete, or reorder the checkers here; changes stay in this browser.</p>
             <div id="studentListColumnsEditor" class="list-column-editor"></div>
             <div class="list-columns-actions">
-              <button type="button" class="btn subtle" id="addStudentListColumnBtn">+ Add column</button>
+              <button type="button" class="btn subtle" id="addStudentListColumnBtn">+ Add checker</button>
               <button type="button" class="btn subtle" id="resetStudentListColumnsBtn">Restore defaults</button>
               <span id="studentListColumnCount" class="list-columns-count"></span>
             </div>
-            <div class="rule-summary">Default: หน.บน. | ผศ.ดร.ธรรญธร | อ.เนาวกานต์. Extra cells remain blank for handwritten notes or signatures. More than three columns may appear narrow in portrait Word documents.</div>
+            <div class="rule-summary">Default letter checkers: หน.บน. | ผศ.ดร.ธรรญธร | อ.เนาวกานต์. The list remains centered on A4 and the wide checker columns may extend past the ordinary text margins. Their cells remain blank for handwritten notes and signatures. The optional letter review box uses the first three checkers.</div>
           </div>
 <div class="content-card setting-card template-setting-card">
             <div class="setting-icon">W</div>
@@ -340,10 +340,10 @@
   <script src="db.js"></script>
   <script src="zip.js"></script>
   <script src="builtin-templates.js"></script>
-  <script src="docx-engine.js?v=043"></script>
+  <script src="docx-engine.js?v=045"></script>
   <script src="excel-export.js"></script>
   <script src="hub-reference.js?v=037"></script>
-  <script src="app.js?v=044"></script>
+  <script src="app.js?v=045"></script>
   <script src="ui-enhancements.js?v=036"></script>
   <script>
     if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(console.warn));
