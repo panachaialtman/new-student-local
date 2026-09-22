@@ -21,4 +21,6 @@ jobs:
           node --check ui-enhancements.js
           node --check sw.js
       - name: Run generated-document and case-group regression checks
-        run: node tests/review-box-groups.test.cjs
+        run: |
+          node tests/review-box-groups.test.cjs
+          node tests/hub-nationality.test.cjs
