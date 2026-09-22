@@ -256,12 +256,12 @@
       throw new Error('For the fixed-size review table, shorten the first three Student List column names to 28 characters or fewer.');
     }
     const cell = (value, width) =>
-      '<w:tc><w:tcPr><w:tcW w:w="'+width+'" w:type="dxa"/>'+
+      '<w:tc><w:tcPr><w:tcW w:w="'+width+'" w:type="dxa"/><w:vAlign w:val="center"/>'+ 
       '<w:tcMar><w:top w:w="0" w:type="dxa"/><w:bottom w:w="0" w:type="dxa"/>'+
       '<w:left w:w="60" w:type="dxa"/><w:right w:w="60" w:type="dxa"/></w:tcMar></w:tcPr>'+
-      '<w:p><w:pPr><w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="exact"/></w:pPr>'+
+      '<w:p><w:pPr><w:jc w:val="left"/><w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/></w:pPr>'+ 
       '<w:r><w:rPr><w:rFonts w:ascii="TH SarabunPSK" w:hAnsi="TH SarabunPSK" w:cs="TH SarabunPSK"/>'+
-      '<w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr><w:t>'+escapeXml(value)+'</w:t></w:r></w:p></w:tc>';
+      '<w:sz w:val="32"/><w:szCs w:val="32"/></w:rPr><w:t>'+escapeXml(value)+'</w:t></w:r></w:p></w:tc>';
     const rows = Array.from({length:3},(_,i) =>
       '<w:tr><w:trPr><w:trHeight w:val="440" w:hRule="exact"/></w:trPr>'+
       cell(names[i] || '',1900)+cell('',1700)+'</w:tr>').join('');
