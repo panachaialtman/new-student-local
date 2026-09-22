@@ -73,7 +73,47 @@ assert(html.includes('id="editGroupAssignBtn"') && html.includes('id="groupAssig
   'The dedicated batch group editor must be present');
 console.log('Numbered rail spacing, select-all button, and dedicated group editor UI checks passed.');
 
+// Workspace settings are the sole home for administrative reference and backup controls.
+const topbar=html.slice(html.indexOf('<header class="topbar">'),html.indexOf('</header>'));
+const settings=html.slice(html.indexOf('<section class="view" id="settingsView">'),
+  html.indexOf('</section>\n    </main>'));
+const casesToolbar=html.slice(html.indexOf('<div class="cases-toolbar'),html.indexOf('<div class="list-header'));
+for (const id of ['hubReferenceStatus','refreshHubReferencesBtn','backupBtn','restoreBtn']) {
+  assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,
+    id+' must occur once (within Settings, not a duplicate topbar control)');
+  assert(settings.includes('id="'+id+'"'),'Moved control '+id+' must live in Settings');
+  assert(!topbar.includes('id="'+id+'"'),'Moved control '+id+' must not appear in the topbar');
+}
+assert(!casesToolbar.includes('manageCaseLabelsBtn'),
+  'Manage groups must not appear beside the case-list filters');
+assert(settings.includes('<strong>Manage groups</strong>'),
+  'Group management must be accessible in the left settings categories');
+const categories=['general','groups','documents','data','tools'];
+for (const category of categories) {
+  assert(settings.includes('data-settings-tab="'+category+'"'));
+  assert(settings.includes('data-settings-panel="'+category+'"'));
+}
+assert((settings.match(/data-settings-tab=/g)||[]).length===5,
+  'All five settings categories must be present');
+assert(settings.includes('id="addTesterBtn"'),
+  'Add Tester is available under Tools & testing');
+assert(/\.settings-shell\s*\{[^}]*grid-template-columns:220px/.test(css),
+  'Settings should have a left sidebar on desktop');
+assert(/\.settings-panel\[hidden\]\s*\{display:none!important/.test(css),
+  'Inactive settings panels must be hidden');
+console.log('Settings tab layout, control relocation, and Tester UI checks passed.');
+
 const app=fs.readFileSync('app.js','utf8');
+assert(app.includes("function switchSettingsTab(tab)")&&
+  app.includes("function bindSettingsTabs()")&&app.includes("button.setAttribute('aria-selected'")&&
+  app.includes('panel.hidden=!active'),
+  'Setting tabs must update their ARIA state and visible panel');
+const testerSource=app.slice(app.indexOf('  function addTesterCase() {'),
+  app.indexOf('  function switchView(',app.indexOf('  function addTesterCase() {')));
+assert(testerSource.includes("isTestCase:true")&&testerSource.includes('TESTER [SAMPLE CASE]')&&
+  testerSource.includes('state.cases.push(item)')&&testerSource.includes("persist();")&&
+  !testerSource.includes('fetch('),
+  'Tester action must create a visibly fictional local case only');
 const needle="  boot();\n})();";
 assert(app.endsWith(needle+'\n')||app.endsWith(needle));
 const appContext={window:{},document:{},console,Date,Math,Set,Map,Intl,Number,String,Array,RegExp};
