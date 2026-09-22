@@ -46,7 +46,11 @@ console.log('Word reviewer-box tests passed (position, rows, labels, page break,
 
 const css=fs.readFileSync('styles.css','utf8');
 assert(/\.case-row\.has-case-label::before\s*\{[^}]*width:54px;/.test(css),
-  'Desktop group band must fill the checkbox column');
+  'Desktop color rail must fill the checkbox column');
+assert(/\.case-row\.has-case-label::before\s*\{[^}]*linear-gradient\(to right,[\s\S]*?\s10%,#fff\)/.test(css),
+  'Checkbox-area rail must use a subtle 10% group color tint, not a solid block');
+assert(/\.case-row\.has-case-label::before\s*\{[^}]*var\(--case-label-color,#94a3b8\) 0 4px/.test(css),
+  'Slim saturated 4px accent must still identify the group');
 assert(/\.case-row\.has-case-label > :first-child\s*\{[^}]*z-index:1;/.test(css),
   'Checkbox column must sit above the full-width colored band');
 assert(/\.case-row\.has-case-label \.case-check\s*\{[^}]*z-index:2;/.test(css),
