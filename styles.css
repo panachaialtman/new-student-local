@@ -664,23 +664,6 @@ body { font-size: 16px; }
 .case-group-toggle {display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);white-space:nowrap}
 .case-group-toggle input {width:15px;height:15px}
 .case-row {position:relative}
-/* Soft full-height color rail: legible on both light and selected rows. */
-.case-row.has-case-label::before {
-  content:"";
-  position:absolute;
-  inset:0 auto 0 0;
-  width:54px;
-  background:linear-gradient(to right,
-    var(--case-label-color,#94a3b8) 0 4px,
-    color-mix(in srgb,var(--case-label-color,#94a3b8) 10%,#fff) 4px 100%);
-  border-right:1px solid color-mix(in srgb,var(--case-label-color,#94a3b8) 16%,#fff);
-  box-sizing:border-box;
-  pointer-events:none;
-}
-.case-row.has-case-label > :first-child {position:relative;z-index:1;display:flex;align-items:center;justify-content:center}
-.case-row.has-case-label .case-check {position:relative;z-index:2;flex:none;background:#fff;border-radius:3px;cursor:pointer}
-@media(max-width:760px){.case-row.has-case-label::before{width:43px}}
-@media(max-width:470px){.case-row.has-case-label::before{width:40px}}
 .case-group-meta {display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:5px}
 .case-group-chip {font-size:10px;font-weight:750;border-radius:999px;border:1px solid var(--case-label-color);background:color-mix(in srgb,var(--case-label-color) 11%,white);padding:1px 7px;color:var(--ink)}
 .case-row-group-select {max-width:145px;padding:2px 5px;border:1px solid var(--line);border-radius:7px;font-size:10px;color:var(--muted);background:#fff;cursor:pointer}
@@ -699,3 +682,130 @@ body { font-size: 16px; }
 .review-box-option span {display:grid;gap:4px;font-size:12px}
 .review-box-option small {font-size:11px;color:var(--muted);line-height:1.5}
 @media(max-width:780px){.case-group-tools{width:100%}.case-group-filter-label{flex:1}.case-group-filter-label select{width:100%}.case-label-count{display:none}}
+
+
+/* v0.3.11 — full-height numbered case selector, replacing the checkbox.
+   Reserve its own grid track AND a gap: the rail never touches student text. */
+.list-header,
+.case-row {
+  grid-template-columns: 56px minmax(240px, 1.35fr) minmax(260px, 1.4fr) minmax(190px, .9fr) 28px;
+  column-gap: 16px;
+  padding-left: 0;
+}
+.case-row {position:relative}
+.case-select-rail {
+  appearance:none;
+  border:0;
+  border-right:1px solid #e1e8f2;
+  border-radius:0;
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  align-self:stretch;
+  width:56px;
+  min-height:62px;
+  margin-block:-10px;
+  padding:0;
+  background:#f3f6fa;
+  cursor:pointer;
+  color:#617086;
+  transition:background .15s ease,box-shadow .15s ease;
+}
+.case-row.has-case-label .case-select-rail {
+  border-right:1px solid color-mix(in srgb,var(--case-label-color) 23%,white);
+  background:linear-gradient(to right,var(--case-label-color) 0 4px,
+    color-mix(in srgb,var(--case-label-color) 12%,white) 4px 100%);
+}
+.case-select-rail:hover {
+  background:#e9eef7;
+}
+.case-row.has-case-label .case-select-rail:hover {
+  background:linear-gradient(to right,var(--case-label-color) 0 4px,
+    color-mix(in srgb,var(--case-label-color) 22%,white) 4px 100%);
+}
+.case-select-rail:focus-visible {
+  outline:2px solid #2b5ac9;
+  outline-offset:-3px;
+  z-index:2;
+}
+.case-rail-number {
+  display:grid;
+  place-items:center;
+  width:29px;
+  height:29px;
+  border-radius:9px;
+  border:1px solid #d7e0eb;
+  background:#fff;
+  color:#627087;
+  font-size:13px;
+  font-weight:850;
+  line-height:1;
+  box-shadow:0 1px 3px rgba(20,35,60,.06);
+}
+.case-row.has-case-label .case-rail-number {
+  color:var(--case-label-color);
+  border-color:color-mix(in srgb,var(--case-label-color) 32%,white);
+}
+.case-select-rail[aria-pressed="true"] {
+  background:#e5ebf6;
+  box-shadow:inset 0 0 0 2px #617aa1;
+}
+.case-row.has-case-label .case-select-rail[aria-pressed="true"] {
+  background:linear-gradient(to right,var(--case-label-color) 0 4px,
+    color-mix(in srgb,var(--case-label-color) 21%,white) 4px 100%);
+  box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--case-label-color) 45%,white);
+}
+.case-select-rail[aria-pressed="true"] .case-rail-number {
+  border-color:var(--case-label-color,#334766);
+  color:#fff;
+  background:var(--case-label-color,#334766);
+}
+.case-select-rail[aria-pressed="true"]::after {
+  content:"✓";
+  position:absolute;
+  top:5px;
+  right:5px;
+  font-size:10px;
+  font-weight:900;
+  color:var(--case-label-color,#334766);
+}
+.case-select-all {
+  display:block;
+  width:56px;
+  min-height:32px;
+  background:transparent;
+  border:0;
+  border-right:1px solid #e8ecf3;
+  color:#5b6a83;
+  font-size:11px;
+  font-weight:800;
+  text-transform:none;
+  letter-spacing:0;
+  cursor:pointer;
+}
+.case-select-all:hover,.case-select-all:focus-visible {background:#e9eef8;outline-offset:-2px}
+.case-select-all[aria-pressed="true"] {color:#2056bd;background:#e8effe}
+.group-assign-modal {width:min(520px,calc(100vw - 28px))}
+.group-assign-intro {margin:0 0 12px;font-size:13px;color:#54647a;line-height:1.5}
+.group-assign-case-list {display:grid;gap:7px;margin:0 0 18px;max-height:180px;overflow-y:auto}
+.group-assign-case {display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 11px;border:1px solid var(--line);border-radius:9px;font-size:12px}
+.group-assign-case strong {min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.group-assign-case span,.group-assign-extra,.group-assign-note {color:var(--muted);font-size:11px}
+.group-assign-field {display:grid;gap:7px;font-size:12px;font-weight:750;color:var(--ink)}
+.group-assign-field select {width:100%;min-height:42px;padding:8px 11px;border:1px solid var(--line-strong);border-radius:10px;background:#fff;color:var(--ink);font:inherit}
+.group-assign-field select:focus-visible {outline:2px solid #3976ce;outline-offset:2px}
+.group-assign-note {line-height:1.5}
+@media(max-width:1100px) {
+  .list-header,.case-row {grid-template-columns:52px minmax(210px,1.25fr) minmax(210px,1fr) minmax(170px,.85fr) 20px;column-gap:14px}
+  .case-select-rail,.case-select-all {width:52px}
+}
+@media(max-width:880px) {
+  .case-row {grid-template-columns:48px minmax(0,1fr) 18px;column-gap:12px}
+  .case-select-rail {width:48px}
+}
+@media(max-width:580px) {
+  .case-row {grid-template-columns:46px minmax(0,1fr) 15px;column-gap:12px}
+  .case-select-rail {width:46px}
+  .selection-actions {flex-wrap:wrap}
+}
