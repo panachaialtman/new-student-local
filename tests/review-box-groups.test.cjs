@@ -114,6 +114,11 @@ console.log('Wide, centered Student List, title punctuation and top-left cell ch
 
 const css=fs.readFileSync('styles.css','utf8');
 const html=fs.readFileSync('index.html','utf8');
+assert(/\.toast-stack\s*\{[^}]*top:18px;left:50%;right:auto;bottom:auto;[^}]*transform:translateX\(-50%\)/.test(css),
+  'All in-app notifications must appear at viewport top center');
+assert(/\.toast\s*\{[^}]*pointer-events:auto/.test(css),
+  'Top-center notifications must still support their close button');
+
 assert(/\.case-row\s*\{[^}]*grid-template-columns: 56px/.test(css),
   'Desktop row reserves a full 56px clickable selector rail');
 assert(/\.case-row\s*\{[^}]*column-gap: 16px/.test(css),
