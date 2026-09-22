@@ -42,6 +42,8 @@
 
   const DEFAULT_STUDENT_LIST_COLUMNS = ['หน.บน.', 'ผศ.ดร.ธรรญธร', 'อ.เนาวกานต์'];
   const MAX_STUDENT_LIST_COLUMNS = 6;
+  const CASE_LABEL_COLORS = ['#2563eb','#0f766e','#e58a16','#be3a46','#8b5cf6','#0f8ba7','#64748b','#db4a91'];
+  const MAX_CASE_LABELS = CASE_LABEL_COLORS.length;
 
   const state = {
     programs: [],
@@ -51,6 +53,8 @@
     selected: new Set(),
     activeCategory: 'normal',
     activeStatus: 'all',
+    activeLabelId: 'all',
+    groupByLabel: false,
     search: '',
     programTypeFilter: 'all',
     activeCaseId: null,
@@ -59,6 +63,8 @@
       signatory: 'somyot',
       newStudentPrefixes: '169, 769, 869, 969',
       studentListColumns: [...DEFAULT_STUDENT_LIST_COLUMNS],
+      letterReviewBoxEnabled: false,
+      caseLabels: [],
       exchangeUniversities: [],
       lastExchangeAcademicYear: null,
     },
@@ -300,6 +306,75 @@
     });
   }
 
+
+  function caseLabels() {
+    if (!Array.isArray(state.settings.caseLabels)) state.settings.caseLabels = [];
+    const usedColors = new Set(), usedIds = new Set();
+    state.settings.caseLabels = state.settings.caseLabels.slice(0, MAX_CASE_LABELS).filter(entry => {
+      if (!entry || typeof entry !== 'object') return false;
+      const id = String(entry.id || '');
+      const color = String(entry.color || '').toLowerCase();
+      if (!/^label_[a-z0-9_-]{4,50}$/.test(id) || usedIds.has(id) ||
+          !CASE_LABEL_COLORS.includes(color) || usedColors.has(color)) return false;
+      usedIds.add(id); usedColors.add(color); return true;
+    }).map(entry => ({ id:String(entry.id), color:String(entry.color).toLowerCase(),
+      name:String(entry.name || '').trim().slice(0, 42) || 'Untitled group' }));
+    return state.settings.caseLabels;
+  }
+  function labelForCase(item) {
+    return caseLabels().find(label => label.id === item.labelId) || null;
+  }
+  function renderCaseLabelSettings() {
+    const root = el('caseLabelSettings');
+    if (!root) return;
+    root.innerHTML = caseLabels().map(label => `
+      <div class="case-label-setting" data-label-id="${escapeHtml(label.id)}">
+        <span class="case-label-swatch" style="--case-label-color:${label.color}"></span>
+        <input class="case-label-name" maxlength="42" value="${escapeHtml(label.name)}" aria-label="Group name for ${escapeHtml(label.color)}" />
+        <span class="case-label-count">${state.cases.filter(c => c.labelId === label.id).length} cases</span>
+        <button type="button" class="btn subtle case-label-remove" data-remove-case-label="${escapeHtml(label.id)}">Remove</button>
+      </div>`).join('') || '<div class="small-muted">No custom groups. Create a named color to organize cases.</div>';
+    const picker = el('newCaseLabelColor');
+    if (picker) picker.innerHTML = CASE_LABEL_COLORS.map(color =>
+      `<option value="${color}" ${caseLabels().some(label => label.color === color) ? 'disabled' : ''}>${({
+        '#2563eb':'Blue','#0f766e':'Teal','#e58a16':'Amber','#be3a46':'Red','#8b5cf6':'Purple',
+        '#0f8ba7':'Cyan','#64748b':'Slate','#db4a91':'Pink'
+      })[color]}</option>`).join('');
+    if (el('addCaseLabelBtn')) el('addCaseLabelBtn').disabled = caseLabels().length >= MAX_CASE_LABELS;
+    if (picker) picker.value = CASE_LABEL_COLORS.find(c => !caseLabels().some(label => label.color === c)) || '';
+  }
+  function bindCaseLabelSettings() {
+    el('addCaseLabelBtn')?.addEventListener('click', () => {
+      const name = el('newCaseLabelName').value.trim().slice(0,42);
+      const color = el('newCaseLabelColor').value;
+      if (!name || !CASE_LABEL_COLORS.includes(color) || caseLabels().some(l => l.color===color)) {
+        toast('Group not created', 'Enter a name and select an unused color.', true); return;
+      }
+      caseLabels().push({id:uid('label'),name,color});
+      el('newCaseLabelName').value = '';
+      persist();renderCaseLabelSettings();renderCaseList();
+    });
+    el('caseLabelSettings')?.addEventListener('change', event => {
+      const input = event.target.closest('.case-label-name');
+      if (!input) return;
+      const label = caseLabels().find(l => l.id === input.closest('[data-label-id]').dataset.labelId);
+      if (!label) return;
+      const name=input.value.trim().slice(0,42);
+      if (!name) {input.value=label.name; toast('Group name required','Enter a group name.',true);return;}
+      label.name=name;input.value=name;persist();renderCaseList();
+    });
+    el('caseLabelSettings')?.addEventListener('click', event => {
+      const button=event.target.closest('[data-remove-case-label]');if(!button)return;
+      const id=button.dataset.removeCaseLabel;
+      const label=caseLabels().find(l=>l.id===id);if(!label)return;
+      const count=state.cases.filter(item=>item.labelId===id).length;
+      if(count && !confirm('Remove group "'+label.name+'"? Its '+count+' case(s) will become Unlabeled; no student cases are deleted.'))return;
+      state.settings.caseLabels=caseLabels().filter(l=>l.id!==id);
+      state.cases.forEach(item=>{if(item.labelId===id)item.labelId='';});
+      if(state.activeLabelId===id)state.activeLabelId='all';
+      persist();renderCaseLabelSettings();renderCaseList();
+    });
+  }
 
   function normalizeExchangeUniversities(value) {
     if (!Array.isArray(value)) return [];
@@ -658,6 +733,7 @@
       state.settings.signatory = normalizeSignatoryKey(state.settings.signatory);
       state.settings.newStudentPrefixes = cleanNewStudentPrefixes(state.settings.newStudentPrefixes) || '169, 769, 869, 969';
       studentListColumns();
+      caseLabels();
       state.settings.exchangeUniversities = normalizeExchangeUniversities(state.settings.exchangeUniversities);
     } catch (err) {
       console.warn('Could not load browser state', err);
@@ -1720,6 +1796,7 @@
       state.settings.signatory = normalizeSignatoryKey(state.settings.signatory);
       state.settings.newStudentPrefixes = cleanNewStudentPrefixes(state.settings.newStudentPrefixes) || '169, 769, 869, 969';
       studentListColumns();
+      caseLabels();
       state.settings.exchangeUniversities = normalizeExchangeUniversities(state.settings.exchangeUniversities);
       if (payload.templates) await VisaDB.importTemplatesBase64(payload.templates);
       persist();
