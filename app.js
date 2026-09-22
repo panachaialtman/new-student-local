@@ -926,7 +926,7 @@
           <span class="case-rail-number" aria-hidden="true">${caseGroupNumber(item)}</span>
         </button>
         <div class="case-click student-cell">
-          <div class="student-name">${escapeHtml(item.fullName || 'Unnamed student')}</div>
+          <div class="student-name">${escapeHtml(item.fullName || 'Unnamed student')}${item.isTestCase ? ' <span class="tester-case-pill" title="Fictional demonstration case">TEST ONLY</span>' : ''}</div>
           <div class="student-meta"><span class="meta-strong">${escapeHtml(item.studentId || 'No ID')}</span><span>•</span><span>Doc ${escapeHtml(item.documentNo || '—')}</span></div>
         </div>
         <div class="case-click program-cell">
