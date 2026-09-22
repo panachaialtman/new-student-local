@@ -20,6 +20,16 @@ assert(withBox.includes('margin-left:393pt;margin-top:19pt'));
 assert.equal((withBox.match(/<w:tr>/g)||[]).length,3);
 assert.equal((withBox.match(/<w:tc>/g)||[]).length,6);
 assert.equal((withBox.match(/<w:t>หน.บน.<\/w:t>/g)||[]).length,1);
+assert.equal((withBox.match(/<w:sz w:val="32"\/><w:szCs w:val="32"\/>/g)||[]).length,6,
+  'All six cells must use 16 pt for both Western and Thai text');
+assert.equal((withBox.match(/<w:vAlign w:val="center"\/>/g)||[]).length,6,
+  'Every reviewer cell must be vertically centered');
+assert.equal((withBox.match(/<w:jc w:val="left"\/>/g)||[]).length -
+  (xml.match(/<w:jc w:val="left"\/>/g)||[]).length,6,
+  'Every reviewer paragraph must be left aligned');
+assert.equal((withBox.match(/w:lineRule="auto"/g)||[]).length,6,
+  'Automatic line spacing avoids clipping 16 pt text');
+
 assert.equal(fn.insertReviewerBox(withBox,['หน.บน.']),withBox,'No duplicate anchor');
 assert.throws(()=>fn.insertReviewerBox(xml,['Too long reviewer label more than twenty eight chars']),/shorten/i);
 const firstPara=withBox.slice(withBox.indexOf('<w:p>'),withBox.indexOf('<w:sectPr/>'));
@@ -33,6 +43,15 @@ const disabled=new Map([['word/document.xml',{name:'word/document.xml',data:new 
 fn.addReviewerBoxToFiles(disabled,{reviewBox:false,columnNames:['First']});
 assert.equal(new TextDecoder().decode(disabled.get('word/document.xml').data),xml);
 console.log('Word reviewer-box tests passed (position, rows, labels, page break, opt-out).');
+
+const css=fs.readFileSync('styles.css','utf8');
+assert(/\.case-row\.has-case-label::before\s*\{[^}]*width:54px;/.test(css),
+  'Desktop group band must fill the checkbox column');
+assert(/\.case-row\.has-case-label > :first-child\s*\{[^}]*z-index:1;/.test(css),
+  'Checkbox column must sit above the full-width colored band');
+assert(/\.case-row\.has-case-label \.case-check\s*\{[^}]*z-index:2;/.test(css),
+  'Checkbox remains visible and clickable');
+console.log('Case label band geometry and interactive checkbox CSS checks passed.');
 
 const app=fs.readFileSync('app.js','utf8');
 const needle="  boot();\n})();";
