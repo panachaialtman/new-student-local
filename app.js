@@ -1630,6 +1630,26 @@
     return item.programType === 'graduate' ? 'letter76' : 'letter16';
   }
 
+  function reviewerBoxOptionMarkup(id) {
+    const names=studentListColumns().slice(0,3);
+    return `<label class="review-box-option">
+      <input type="checkbox" id="${id}" ${state.settings.letterReviewBoxEnabled?'checked':''} ${names.length?'':'disabled'} />
+      <span><strong>Add review table at top-right of Word letter</strong>
+        <small>Same labels as Student List columns (first three): ${escapeHtml(names.join(' | ') || 'No columns configured')}.
+        Right-hand cells stay blank for handwritten notes. Optional, and applied to each generated letter.</small></span>
+    </label>`;
+  }
+  function bindReviewerBoxChoice(id) {
+    el(id)?.addEventListener('change', event => {
+      state.settings.letterReviewBoxEnabled=event.target.checked;
+      persist();
+    });
+  }
+  function reviewerBoxGenerationOptions(id) {
+    return {reviewBox:Boolean(el(id)?.checked),
+      columnNames:[...studentListColumns().slice(0,3)]};
+  }
+
   function renderBatchModal() {
     const items = selectedCases();
     const letterValidCount = items.filter((item) => validationFor(item).valid).length;
@@ -1661,11 +1681,13 @@
           <div class="batch-setting"><label>Document date</label><input id="batchIssueDate" type="date" value="${issueDate}" /></div>
           ${lettersTemplatesReady && listTemplateReady ? '' : `<div class="template-warning"><strong>Template setup required</strong><br>${!lettersTemplatesReady ? 'Letter template missing. ' : ''}${!listTemplateReady ? 'Student-list template missing.' : ''} Open Workspace settings and import the approved DOCX file once.</div>`}
           <div class="rule-box"><strong>Student list date</strong><br>The selected date replaces <code>mmmm dd, 2026</code> in the list template automatically.<br><strong>Columns:</strong> ${escapeHtml(studentListColumns().join(' | ') || 'None')}. Manage them in Workspace settings.</div>
+          ${reviewerBoxOptionMarkup('batchReviewBox')}
           <div class="batch-setting"><label>Signatory — letters only</label><select id="batchSignatory">${signatoryOptions(state.settings.signatory)}</select></div>
           <div id="batchSignaturePreview">${signatoryPreview(state.settings.signatory)}</div>
           <div class="rule-box"><strong>Document numbers</strong><br>Each output uses the document number already saved on each student. No renumbering or sorting is applied.</div>
         </div>
       </div>`;
+    bindReviewerBoxChoice('batchReviewBox');
     const batchSigner = el('batchSignatory');
     batchSigner?.addEventListener('change', () => { el('batchSignaturePreview').innerHTML = signatoryPreview(batchSigner.value); });
     el('generateBatchBtn').disabled = !items.length || letterValidCount !== items.length || !lettersTemplatesReady;
@@ -1678,6 +1700,7 @@
     const body = {
       issueDate: el('batchIssueDate').value,
       signatory: el('batchSignatory').value,
+      reviewerBox: reviewerBoxGenerationOptions('batchReviewBox'),
       students: items.map((item) => ({ ...normalizeCase(item), status: deriveStatus(item) })),
     };
     const button = el('generateBatchBtn');
@@ -1685,7 +1708,7 @@
     button.disabled = true;
     button.textContent = 'Exporting…';
     try {
-      const blob = await BrowserDocx.generateBatch(body.students, body.issueDate, body.signatory);
+      const blob = await BrowserDocx.generateBatch(body.students, body.issueDate, body.signatory, body.reviewerBox);
       const filename = `Visa_Extension_Letters_${body.students.length}_Students_${body.issueDate.replaceAll('-', '')}.docx`;
       downloadBlob(blob, filename);
       const generatedAt = new Date().toISOString();
@@ -1696,6 +1719,7 @@
         students: historyStudentSnapshot(items),
         count: items.length, signatory: body.signatory,
         outputType: 'letters', category: state.activeCategory, filename,
+        reviewerBox:body.reviewerBox.reviewBox, reviewerColumns:body.reviewerBox.reviewBox?body.reviewerBox.columnNames:[],
       });
       persist();
       closeModal('batchModal');
@@ -1755,9 +1779,11 @@
       ${validation.valid ? '' : `<div class="validation-summary bad"><strong>Needs attention:</strong> ${escapeHtml(validation.missing.join(', '))}</div>`}
       <div class="batch-setting"><label>Letter date</label><input id="individualIssueDate" type="date" value="${todayIso()}" /></div>
       <div class="rule-box"><strong>Document ${escapeHtml(item.documentNo || "—")}</strong><br>The letter uses the document number already saved on this student case.</div>
+      ${reviewerBoxOptionMarkup('individualReviewBox')}
       <div class="batch-setting"><label>Signatory</label><select id="individualSignatory">${signatoryOptions(state.settings.signatory)}</select></div>
       <div id="individualSignaturePreview">${signatoryPreview(state.settings.signatory)}</div>
       <div class="rule-box">This creates one Word letter for this student. Open the downloaded DOCX in Word to print.</div>`;
+    bindReviewerBoxChoice('individualReviewBox');
     const signer = el('individualSignatory');
     signer?.addEventListener('change', () => { el('individualSignaturePreview').innerHTML = signatoryPreview(signer.value); });
     const templateReady = Boolean(state.templates[templateKeyForCase(item)]);
@@ -1772,13 +1798,14 @@
       student: normalizeCase(item),
       issueDate: el('individualIssueDate').value,
       signatory: el('individualSignatory').value,
+      reviewerBox:reviewerBoxGenerationOptions('individualReviewBox'),
     };
     const button = el('generateIndividualBtn');
     const old = button.textContent;
     button.disabled = true;
     button.textContent = 'Creating…';
     try {
-      const blob = await BrowserDocx.generateIndividual(body.student, body.issueDate, body.signatory);
+      const blob = await BrowserDocx.generateIndividual(body.student, body.issueDate, body.signatory, body.reviewerBox);
       const filename = `Visa_Extension_Letter_${item.studentId || 'student'}.docx`;
       downloadBlob(blob, filename);
       item.generatedAt = new Date().toISOString();
