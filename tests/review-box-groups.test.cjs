@@ -179,8 +179,8 @@ const needle="  boot();\n})();";
 assert(app.endsWith(needle+'\n')||app.endsWith(needle));
 const appContext={window:{},document:{},console,Date,Math,Set,Map,Intl,Number,String,Array,RegExp};
 vm.runInNewContext(app.replace(needle,
-  "  window.__groupTest={state,caseLabels,labelForCase,caseGroupNumber,caseGroupSelectLabel,filteredCases,nationalityMatches,nationalityField,nationalitySelectionValid,normalizeDrafts};\n})();"),appContext);
-const {state,caseLabels,labelForCase,caseGroupNumber,caseGroupSelectLabel,filteredCases,nationalityMatches,nationalityField,nationalitySelectionValid,normalizeDrafts}=appContext.window.__groupTest;
+  "  window.__groupTest={state,caseLabels,labelForCase,caseGroupNumber,caseGroupSelectLabel,filteredCases,nationalityMatches,nationalityField,nationalitySelectionValid,normalizeDrafts,valuesForSwitchedCaseType};\n})();"),appContext);
+const {state,caseLabels,labelForCase,caseGroupNumber,caseGroupSelectLabel,filteredCases,nationalityMatches,nationalityField,nationalitySelectionValid,normalizeDrafts,valuesForSwitchedCaseType}=appContext.window.__groupTest;
 // Nationality: search can be English/Thai country or demonym, selected value Thai only.
 state.nationalities=[
  {thai:'เมียนมา',english:'Myanmar',aliases:['Burma','พม่า']},
@@ -284,6 +284,57 @@ assert(app.includes("function restoreDraftValues(form,values)")&&
   app.includes("nationality.dataset.confirmedThai="),
   'Draft reopening must restore partial form values and the Thai nationality picker');
 console.log('Local Drafts tests passed (unfinished entry, reopen, isolated storage, backup, explicit promotion).');
+
+// Switching case type must not discard halfway-completed data or show the
+// old destructive confirmation. All tests use fictional fields only.
+const enteredNormal={
+ caseCategory:'normal',documentNo:'TEST-4504',nationalityThai:'อเมริกัน',
+ passportNo:'TEST-PASSPORT',fullName:'TEST PERSON',studentId:'',
+ registeredCredits:'15',programType:'international',facultyKey:'BU International',
+ programKey:'EXAMPLE-MAJOR',totalCredits:'129',passportExpiry:'',currentStayUntil:'',
+ requestRuleOverride:'manual',manualRequestUntil:'2027-04-07',
+ studyYearOverride:'6',graduationYearOverride:'2568',
+ enabledOverrides:{studyYearOverride:true,graduationYearOverride:true},
+ currentStudent:true
+};
+const switchedToExchange=valuesForSwitchedCaseType(enteredNormal,'exchange',{});
+assert.equal(switchedToExchange.caseCategory,'exchange');
+for(const key of ['documentNo','nationalityThai','passportNo','fullName','studentId',
+ 'registeredCredits','programType','facultyKey','programKey','totalCredits',
+ 'manualRequestUntil','studyYearOverride','graduationYearOverride','currentStudent']){
+ assert.equal(switchedToExchange[key],enteredNormal[key],
+  'Preserve shared student field '+key);
+}
+const exchangeFilled={...switchedToExchange,exchangeUniversity:'EXAMPLE UNIVERSITY',
+ exchangeCountryThai:'ญี่ปุ่น',exchangeAcademicYear:'2569',
+ exchangeTerm:'3',exchangeDurationSemesters:'2'};
+const snapshots={normal:enteredNormal,exchange:exchangeFilled};
+const backToNormal=valuesForSwitchedCaseType(exchangeFilled,'normal',snapshots);
+assert.equal(backToNormal.fullName,'TEST PERSON');
+assert.equal(backToNormal.registeredCredits,'15');
+assert.equal(backToNormal.caseCategory,'normal');
+const changedNormal={...backToNormal,fullName:'EDITED TEST PERSON',passportNo:'UPDATED-PASSPORT'};
+const returnToExchange=valuesForSwitchedCaseType(changedNormal,'exchange',snapshots);
+assert.equal(returnToExchange.fullName,'EDITED TEST PERSON');
+assert.equal(returnToExchange.passportNo,'UPDATED-PASSPORT');
+for(const key of ['exchangeUniversity','exchangeCountryThai','exchangeAcademicYear',
+ 'exchangeTerm','exchangeDurationSemesters']){
+ assert.equal(returnToExchange[key],exchangeFilled[key],
+  'Restore category-specific Exchange detail '+key);
+}
+const nonO={...returnToExchange,nonOVisaPurpose:'ติดตามธุรกิจ',programDurationYears:'4'};
+const backFromNonO=valuesForSwitchedCaseType(nonO,'exchange',
+ {normal:changedNormal,exchange:exchangeFilled,non_o:nonO});
+assert.equal(backFromNonO.nonOVisaPurpose,'ติดตามธุรกิจ');
+assert.equal(backFromNonO.exchangeUniversity,'EXAMPLE UNIVERSITY');
+assert(!app.includes('Switching case type will clear the information you entered in this form'),
+ 'The destructive switch confirmation must be removed');
+assert(app.includes('switchEntryCaseType(form,button.dataset.entryCategory,category)'),
+ 'Case-type buttons must call the non-destructive switch handler');
+assert(app.includes('resetEntryCategorySnapshots(draft.values.caseTypeSnapshots)') &&
+ app.includes('values.caseTypeSnapshots={...entryCategorySnapshots,'),
+ 'The remembered type-specific inputs must survive saving and resuming drafts');
+console.log('Non-destructive case-type switching tests passed (shared values, category details, draft persistence).');
 
 state.settings.caseLabels=[
  {id:'label_blue_1234',name:'Waiting for document',color:'#2563eb'},
