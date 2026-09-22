@@ -261,7 +261,7 @@
       '<w:left w:w="60" w:type="dxa"/><w:right w:w="60" w:type="dxa"/></w:tcMar></w:tcPr>'+
       '<w:p><w:pPr><w:jc w:val="left"/><w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/></w:pPr>'+ 
       '<w:r><w:rPr><w:rFonts w:ascii="TH SarabunPSK" w:hAnsi="TH SarabunPSK" w:cs="TH SarabunPSK"/>'+
-      '<w:sz w:val="32"/><w:szCs w:val="32"/></w:rPr><w:t>'+escapeXml(value)+'</w:t></w:r></w:p></w:tc>';
+      '<w:sz w:val="36"/><w:szCs w:val="36"/></w:rPr><w:t xml:space="preserve">'+(value ? escapeXml(' '+String(value).trimStart()) : '')+'</w:t></w:r></w:p></w:tc>';
     const rows = Array.from({length:3},(_,i) =>
       '<w:tr><w:trPr><w:trHeight w:val="440" w:hRule="exact"/></w:trPr>'+
       cell(names[i] || '',1900)+cell('',1700)+'</w:tr>').join('');
