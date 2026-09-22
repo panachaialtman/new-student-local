@@ -24,7 +24,8 @@ assert.equal((withBox.match(/<w:sz w:val="32"\/><w:szCs w:val="32"\/>/g)||[]).le
   'All six cells must use 16 pt for both Western and Thai text');
 assert.equal((withBox.match(/<w:vAlign w:val="center"\/>/g)||[]).length,6,
   'Every reviewer cell must be vertically centered');
-assert.equal((withBox.match(/<w:jc w:val="left"\/>/g)||[]).length,6,
+assert.equal((withBox.match(/<w:jc w:val="left"\/>/g)||[]).length -
+  (xml.match(/<w:jc w:val="left"\/>/g)||[]).length,6,
   'Every reviewer paragraph must be left aligned');
 assert.equal((withBox.match(/w:lineRule="auto"/g)||[]).length,6,
   'Automatic line spacing avoids clipping 16 pt text');
