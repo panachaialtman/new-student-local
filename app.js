@@ -176,6 +176,9 @@
         entryCategorySnapshots[category]={...values};
     }
   }
+  function valuesForSwitchedCaseType(current,nextCategory,snapshots) {
+    return {...(snapshots[nextCategory]||{}),...current,caseCategory:nextCategory};
+  }
   function switchEntryCaseType(form,nextCategory,currentCategory) {
     if(nextCategory===currentCategory)return;
     const current=readDraftValues(form);
@@ -183,10 +186,10 @@
     entryCategorySnapshots[currentCategory]=current;
     // The currently visible shared fields take precedence, but form fields
     // belonging only to the destination category are loaded from its snapshot.
-    const nextValues={...(entryCategorySnapshots[nextCategory]||{}),...current,
-      caseCategory:nextCategory};
+    const nextValues=valuesForSwitchedCaseType(current,nextCategory,entryCategorySnapshots);
     renderStudentForm(nextCategory);
     restoreDraftValues(el('studentForm'),nextValues);
+    if(state.activeDraftId)el('studentModalTitle').textContent='Edit draft · Add student';
     const restored=el('studentForm').querySelector('[data-nationality-input]');
     if(restored)restored.dataset.confirmedThai=confirmedThai;
     // Avoid resetting the scroll position or displaying a destructive warning.
