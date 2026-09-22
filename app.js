@@ -890,11 +890,17 @@
     select.innerHTML=options.map(([value,name])=>`<option value="${escapeHtml(value)}" ${state.activeLabelId===value?'selected':''}>${escapeHtml(name)}</option>`).join('');
     if(el('groupCasesToggle')) el('groupCasesToggle').checked=state.groupByLabel;
   }
-  function caseGroupBadge(item) {
-    const label=labelForCase(item);
-    const options=['<option value="">Unlabeled</option>',...caseLabels().map(group=>
-      `<option value="${escapeHtml(group.id)}" ${group.id===(label?.id||'')?'selected':''}>${escapeHtml(group.name)}</option>`)];
-    return `<select class="case-row-group-select" data-case-group aria-label="Assign group to ${escapeHtml(item.fullName || 'student')}" title="Case group (stored locally)">${options.join('')}</select>`;
+  // Group numbers follow the order of the existing named color groups.
+  // Stable group IDs, not display numbers, remain the value stored on cases.
+  function caseGroupNumber(item) {
+    const group=labelForCase(item);
+    if (!group) return '—';
+    return String(caseLabels().findIndex(label=>label.id===group.id)+1);
+  }
+  function caseGroupSelectLabel(item,selected) {
+    const group=labelForCase(item);
+    return (selected?'Deselect ':'Select ')+(item.fullName||'student')+
+      '. '+(group?'Group '+caseGroupNumber(item)+': '+group.name:'Unlabeled')+'.';
   }
   function groupedCaseRows(items) {
     if(!state.groupByLabel)return items.map(renderCaseRow).join('');
@@ -916,11 +922,12 @@
     const group = labelForCase(item);
     return `
       <div class="case-row ${selected ? 'selected' : ''} ${group ? 'has-case-label' : ''}" data-case-id="${escapeHtml(item.id)}" style="--case-label-color:${group?.color || '#e2e8f0'}">
-        <div><input class="case-check" type="checkbox" ${selected ? 'checked' : ''} aria-label="Select ${escapeHtml(item.fullName)}" /></div>
+        <button class="case-select-rail" type="button" data-case-select aria-pressed="${selected}" aria-label="${escapeHtml(caseGroupSelectLabel(item,selected))}" title="${escapeHtml((group?'Group '+caseGroupNumber(item)+' · '+group.name:'Unlabeled')+' · click to '+(selected?'deselect':'select')+' case')}">
+          <span class="case-rail-number" aria-hidden="true">${caseGroupNumber(item)}</span>
+        </button>
         <div class="case-click student-cell">
           <div class="student-name">${escapeHtml(item.fullName || 'Unnamed student')}</div>
           <div class="student-meta"><span class="meta-strong">${escapeHtml(item.studentId || 'No ID')}</span><span>•</span><span>Doc ${escapeHtml(item.documentNo || '—')}</span></div>
-          <div class="case-group-meta">${group ? `<span class="case-group-chip" style="--case-label-color:${group.color}">${escapeHtml(group.name)}</span>` : ''}${caseGroupBadge(item)}</div>
         </div>
         <div class="case-click program-cell">
           <div class="program-name">${escapeHtml(programName)}</div>
@@ -941,26 +948,18 @@
     el('emptyState').classList.toggle('hidden', items.length > 0);
     items.forEach((item) => {
       const row = el('caseList').querySelector(`[data-case-id="${CSS.escape(item.id)}"]`);
-      const check = row.querySelector('.case-check');
-      const picker=row.querySelector('[data-case-group]');
-      picker?.addEventListener('click', event => event.stopPropagation());
-      picker?.addEventListener('keydown', event => event.stopPropagation());
-      picker?.addEventListener('change', event => {
+      row.querySelector('[data-case-select]').addEventListener('click', event => {
         event.stopPropagation();
-        const id=picker.value;
-        if(id && !caseLabels().some(label=>label.id===id))return;
-        item.labelId=id;
-        persist();renderCaseList();renderCaseLabelSettings();
-      });
-      check.addEventListener('click', (event) => {
-        event.stopPropagation();
-        toggleSelection(item.id, check.checked);
+        toggleSelection(item.id,!state.selected.has(item.id));
       });
       row.querySelectorAll('.case-click').forEach((cell) => cell.addEventListener('click', () => openDrawer(item.id)));
     });
     const allVisible = items.length > 0 && items.every((i) => state.selected.has(i.id));
-    el('selectAll').checked = allVisible;
-    el('selectAll').indeterminate = items.some((i) => state.selected.has(i.id)) && !allVisible;
+    const selectAll=el('selectAll');
+    selectAll.setAttribute('aria-pressed',String(allVisible));
+    selectAll.textContent=allVisible?'None':'All';
+    selectAll.setAttribute('aria-label',allVisible?'Deselect all visible cases':'Select all visible cases');
+    selectAll.title=selectAll.getAttribute('aria-label');
   }
 
   function renderWorkspace() {
@@ -2047,8 +2046,10 @@
     el('groupCasesToggle')?.addEventListener('change', e => { state.groupByLabel=e.target.checked;renderCaseList(); });
     el('manageCaseLabelsBtn')?.addEventListener('click', () => switchView('settings'));
     bindCaseLabelSettings();
-    el('selectAll').addEventListener('change', (e) => {
-      filteredCases().forEach((item) => e.target.checked ? state.selected.add(item.id) : state.selected.delete(item.id));
+    el('selectAll').addEventListener('click', () => {
+      const items=filteredCases();
+      const allSelected=items.length>0 && items.every(item=>state.selected.has(item.id));
+      items.forEach(item=>allSelected?state.selected.delete(item.id):state.selected.add(item.id));
       renderCaseList();
       renderSelectionBar();
     });
