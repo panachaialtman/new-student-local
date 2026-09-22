@@ -550,7 +550,11 @@
   function countryOptions() {
     const records = new Map();
     for (const item of state.nationalities) {
-      if (item.thai) records.set(String(item.thai).trim(), String(item.english || '').trim());
+      // This is an exchange PARTNER COUNTRY field, not the student
+      // nationality field. Do not use the nationalityThai display label here.
+      const countryThai=item.countryThai||item.thai;
+      if (countryThai) records.set(String(countryThai).trim(),
+        String(item.countryEnglish||item.english||'').trim());
     }
     // The supplied nationality reference uses shortened labels for some
     // countries. Include familiar full country names as searchable alternatives.
@@ -876,6 +880,18 @@
     });
   }
 
+  // Offline-only fallback for the eight country/nationality distinctions in
+  // published Hub V3. Online Hub data always overrides this small snapshot.
+  const OFFLINE_THAI_NATIONALITIES=Object.freeze({
+    'DR Congo':'คองโก',
+    Germany:'เยอรมัน',
+    'Hong Kong':'จีน',
+    Macao:'จีน',
+    Netherlands:'ดัตช์ / เนเธอร์แลนด์',
+    'Republic of the Congo':'คองโก',
+    'United Kingdom':'บริติช / อังกฤษ',
+    'United States':'อเมริกัน'
+  });
   async function loadReferenceData() {
     const programFiles = [
       'data/programs-1.json',
@@ -903,6 +919,13 @@
     ]);
     if (state.programs.length !== 86) throw new Error(`Program reference data incomplete: ${state.programs.length}/86 records loaded`);
     if (state.nationalities.length !== 250) throw new Error(`Nationality reference data incomplete: ${state.nationalities.length}/250 records loaded`);
+    state.nationalities=state.nationalities.map(item=>({
+      ...item,
+      countryThai:item.thai,
+      countryEnglish:item.english,
+      thai:OFFLINE_THAI_NATIONALITIES[item.english]||item.thai,
+      nationalityThai:OFFLINE_THAI_NATIONALITIES[item.english]||item.thai
+    }));
   }
 
   let hubRefreshInProgress = false;
