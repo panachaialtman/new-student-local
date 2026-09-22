@@ -164,7 +164,35 @@
     if(nationality)nationality.dataset.confirmedThai=
       state.nationalities.some(row=>row.thai===nationality.value)?nationality.value:'';
   }
+  // Snapshots belong to the currently open Add Student dialog, not active
+  // student cases. They retain category-specific fields while shared details
+  // follow the user across each case-type switch.
+  let entryCategorySnapshots={};
+  function resetEntryCategorySnapshots(saved={}) {
+    entryCategorySnapshots={};
+    for(const category of ['normal','exchange','non_o']){
+      const values=saved[category];
+      if(values && typeof values==='object' && !Array.isArray(values))
+        entryCategorySnapshots[category]={...values};
+    }
+  }
+  function switchEntryCaseType(form,nextCategory,currentCategory) {
+    if(nextCategory===currentCategory)return;
+    const current=readDraftValues(form);
+    const confirmedThai=form.querySelector('[data-nationality-input]')?.dataset.confirmedThai||'';
+    entryCategorySnapshots[currentCategory]=current;
+    // The currently visible shared fields take precedence, but form fields
+    // belonging only to the destination category are loaded from its snapshot.
+    const nextValues={...(entryCategorySnapshots[nextCategory]||{}),...current,
+      caseCategory:nextCategory};
+    renderStudentForm(nextCategory);
+    restoreDraftValues(el('studentForm'),nextValues);
+    const restored=el('studentForm').querySelector('[data-nationality-input]');
+    if(restored)restored.dataset.confirmedThai=confirmedThai;
+    // Avoid resetting the scroll position or displaying a destructive warning.
+  }
   function openNewStudentForm() {
+    resetEntryCategorySnapshots();
     state.activeDraftId=null;
     renderStudentForm();
     el('saveStudentDraftBtn').textContent='Save draft';
@@ -175,6 +203,7 @@
     if(!draft)return;
     closeModal('draftsModal');
     state.activeDraftId=draft.id;
+    resetEntryCategorySnapshots(draft.values.caseTypeSnapshots);
     renderStudentForm(draft.values.caseCategory);
     restoreDraftValues(el('studentForm'),draft.values);
     el('studentModalTitle').textContent='Edit draft · Add student';
@@ -183,6 +212,8 @@
   }
   async function saveStudentDraft() {
     const values=readDraftValues(el('studentForm'));
+    values.caseTypeSnapshots={...entryCategorySnapshots,
+      [values.caseCategory]:{...values}};
     const now=new Date().toISOString();
     const existing=state.drafts.find(draft=>draft.id===state.activeDraftId);
     if(existing){existing.values=values;existing.updatedAt=now;}
@@ -1700,15 +1731,7 @@
       <div class="form-field manual-request-field hidden"><label>Manual request until</label><input type="date" name="manualRequestUntil" /></div>`;
     const form = el('studentForm');
     typePanel.querySelectorAll('[data-entry-category]').forEach(button => button.addEventListener('click', () => {
-      const next = button.dataset.entryCategory;
-      if (next === category) return;
-      const entered = [...form.querySelectorAll('input, textarea')].some(input =>
-        ['documentNo', 'nationalityThai', 'passportNo', 'fullName', 'studentId',
-         'passportExpiry', 'currentStayUntil', 'registeredCredits',
-         'exchangeUniversity', 'exchangeCountryThai'].includes(input.name) && Boolean(input.value.trim()));
-      if (entered && !confirm('Switching case type will clear the information you entered in this form. Continue?')) return;
-      renderStudentForm(next);
-      form.scrollTop = 0;
+      switchEntryCaseType(form,button.dataset.entryCategory,category);
     }));
     arrangeCaseFields(form, false);
     bindNationalityPicker(form);
