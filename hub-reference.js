@@ -79,8 +79,20 @@
       });
       const newNationalities = localNationalities.map(local => {
         const remote = nationalityByEnglish.get(normalize(local.english));
+        const thaiNationality = String(remote.nationalityThai || '').trim();
+        if (!thaiNationality || !/[ก-๙]/.test(thaiNationality) || /[A-Za-z]/.test(thaiNationality)) {
+          throw new Error('Missing Thai nationality for ' + local.english + '; existing references were kept');
+        }
         return {
-          ...local, thai: remote.thai, english: remote.english,
+          ...local,
+          // Only nationalityThai can enter the student nationality field.
+          // Keep the distinct country labels and demonym for bilingual search.
+          thai: thaiNationality,
+          english: remote.english,
+          countryThai: remote.thai,
+          countryEnglish: remote.english,
+          nationalityThai: thaiNationality,
+          nationalityEnglish: String(remote.nationalityEnglish || '').trim(),
           aliases: [...new Set([...(local.aliases || []), ...(remote.aliases || [])])]
         };
       });
