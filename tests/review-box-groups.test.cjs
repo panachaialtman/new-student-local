@@ -19,16 +19,22 @@ assert(withBox.includes('id="BUIC_review_box"'));
 assert(withBox.includes('margin-left:393pt;margin-top:19pt'));
 assert.equal((withBox.match(/<w:tr>/g)||[]).length,3);
 assert.equal((withBox.match(/<w:tc>/g)||[]).length,6);
-assert.equal((withBox.match(/<w:t>หน.บน.<\/w:t>/g)||[]).length,1);
-assert.equal((withBox.match(/<w:sz w:val="32"\/><w:szCs w:val="32"\/>/g)||[]).length,6,
-  'All six cells must use 16 pt for both Western and Thai text');
+assert.equal((withBox.match(/<w:t xml:space="preserve"> [^<]+<\/w:t>/g)||[]).length,3,
+  'Only the three populated first-column cells receive one preserved leading space');
+assert.equal((withBox.match(/<w:t xml:space="preserve"><\/w:t>/g)||[]).length,3,
+  'All blank second-column cells stay blank');
+assert(!withBox.includes('<w:t xml:space="preserve">  '),'No double leading spaces');
+
+assert.equal((withBox.match(/<w:t xml:space="preserve"> หน.บน.<\/w:t>/g)||[]).length,1);
+assert.equal((withBox.match(/<w:sz w:val="36"\/><w:szCs w:val="36"\/>/g)||[]).length,6,
+  'All six cells must use 18 pt for both Western and Thai text');
 assert.equal((withBox.match(/<w:vAlign w:val="center"\/>/g)||[]).length,6,
   'Every reviewer cell must be vertically centered');
 assert.equal((withBox.match(/<w:jc w:val="left"\/>/g)||[]).length -
   (xml.match(/<w:jc w:val="left"\/>/g)||[]).length,6,
   'Every reviewer paragraph must be left aligned');
 assert.equal((withBox.match(/w:lineRule="auto"/g)||[]).length,6,
-  'Automatic line spacing avoids clipping 16 pt text');
+  'Automatic line spacing avoids clipping 18 pt text');
 
 assert.equal(fn.insertReviewerBox(withBox,['หน.บน.']),withBox,'No duplicate anchor');
 assert.throws(()=>fn.insertReviewerBox(xml,['Too long reviewer label more than twenty eight chars']),/shorten/i);
@@ -38,7 +44,7 @@ assert(next.indexOf('<w:pageBreakBefore/>')<next.indexOf('BUIC_review_box'),'New
 const example=new Map([['word/document.xml',{name:'word/document.xml',data:new TextEncoder().encode(xml)}]]);
 fn.addReviewerBoxToFiles(example,{reviewBox:true,columnNames:['First','Second','Third']});
 const updated=new TextDecoder().decode(example.get('word/document.xml').data);
-assert(updated.includes('<w:t>First</w:t>')&&updated.includes('<w:t>Third</w:t>'));
+assert(updated.includes('<w:t xml:space="preserve"> First</w:t>')&&updated.includes('<w:t xml:space="preserve"> Third</w:t>'));
 const disabled=new Map([['word/document.xml',{name:'word/document.xml',data:new TextEncoder().encode(xml)}]]);
 fn.addReviewerBoxToFiles(disabled,{reviewBox:false,columnNames:['First']});
 assert.equal(new TextDecoder().decode(disabled.get('word/document.xml').data),xml);
