@@ -267,10 +267,10 @@
       cell(names[i] || '',1900)+cell('',1700)+'</w:tr>').join('');
     return '<w:r><w:pict xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'+
       '<v:shape id="BUIC_review_box" type="#_x0000_t202" '+
-      'style="position:absolute;margin-left:393pt;margin-top:19pt;width:180pt;height:66pt;z-index:251659264;'+
+      'style="position:absolute;margin-left:393pt;margin-top:19pt;width:196pt;height:82pt;z-index:251659264;'+
       'mso-position-horizontal-relative:page;mso-position-vertical-relative:page" filled="f" stroked="f">'+
       '<v:textbox inset="0,0,0,0" style="mso-fit-shape-to-text:f"><w:txbxContent><w:tbl>'+
-      '<w:tblPr><w:tblW w:w="3600" w:type="dxa"/><w:tblBorders>'+
+      '<w:tblPr><w:tblW w:w="3600" w:type="dxa"/><w:tblLayout w:type="fixed"/><w:tblBorders>'+
       ['top','left','bottom','right','insideH','insideV'].map(side=>'<w:'+side+' w:val="single" w:sz="4"/>').join('')+
       '</w:tblBorders><w:tblCellMar><w:top w:w="0" w:type="dxa"/><w:bottom w:w="0" w:type="dxa"/>'+
       '<w:left w:w="60" w:type="dxa"/><w:right w:w="60" w:type="dxa"/></w:tblCellMar></w:tblPr>'+

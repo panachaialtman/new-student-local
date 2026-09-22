@@ -17,6 +17,12 @@ const xml='<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessing
 const withBox=fn.insertReviewerBox(xml,['หน.บน.','ผศ.ดร.ธรรญธร','อ.เนาวกานต์']);
 assert(withBox.includes('id="BUIC_review_box"'));
 assert(withBox.includes('margin-left:393pt;margin-top:19pt'));
+assert(withBox.includes('width:196pt;height:82pt'),
+  'Floating textbox must allow extra room for its outer right/bottom table borders');
+assert(withBox.includes('<w:tblW w:w="3600" w:type="dxa"/><w:tblLayout w:type="fixed"/>'),
+  'Visible reviewer table stays 180 pt wide and uses fixed columns');
+assert(!withBox.includes('width:180pt;height:66pt'),
+  'Do not size the floating textbox exactly to its visible table');
 assert.equal((withBox.match(/<w:tr>/g)||[]).length,3);
 assert.equal((withBox.match(/<w:tc>/g)||[]).length,6);
 assert.equal((withBox.match(/<w:t xml:space="preserve"> [^<]+<\/w:t>/g)||[]).length,3,
