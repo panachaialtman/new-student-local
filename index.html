@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#101d35" />
   <link rel="manifest" href="manifest.webmanifest" />
   <title>BU Visa Case Workspace</title>
-  <link rel="stylesheet" href="styles.css?v=035" />
+  <link rel="stylesheet" href="styles.css?v=038" />
 </head>
 <body>
   <div class="app-shell">
@@ -36,7 +36,7 @@
         <button class="nav-item nav-settings" data-view="settings">
           <span class="nav-icon">⚙</span><span>Workspace settings</span>
         </button>
-        <div class="version-row"><span>Visa Workspace</span><span>v0.3.6 Web</span></div>
+        <div class="version-row"><span>Visa Workspace</span><span>v0.3.8 Web</span></div>
       </div>
     </aside>
 
@@ -61,6 +61,11 @@
       <section class="view active" id="workspaceView">
         <div class="content-card cases-card">
           <div class="cases-toolbar search-only-toolbar">
+            <div class="case-group-tools">
+              <label class="case-group-filter-label">Case group <select id="caseLabelFilter" aria-label="Filter by case group"><option value="all">All groups</option></select></label>
+              <label class="case-group-toggle"><input type="checkbox" id="groupCasesToggle" /> Group rows by label</label>
+              <button class="btn subtle" type="button" id="manageCaseLabelsBtn">Manage groups</button>
+            </div>
             <div class="toolbar-right">
               <label class="search-box">
                 <span>⌕</span>
@@ -160,6 +165,18 @@
               <span id="studentListColumnCount" class="list-columns-count"></span>
             </div>
             <div class="rule-summary">Default: หน.บน. | ผศ.ดร.ธรรญธร | อ.เนาวกานต์. Extra cells remain blank for handwritten notes or signatures. More than three columns may appear narrow in portrait Word documents.</div>
+          </div>
+          <div class="content-card setting-card template-setting-card" id="caseGroupsSettingsCard">
+            <div class="setting-icon">●</div>
+            <h3>Named case groups</h3>
+            <p>Create up to eight color-coded groups (for example, Awaiting documents or Immigration follow-up). Assign a group to any local case, then filter or group the case list. Group names and assignments stay in this browser and are included in Backups.</p>
+            <div id="caseLabelSettings" class="case-label-settings"></div>
+            <div class="case-group-create">
+              <input id="newCaseLabelName" maxlength="42" placeholder="New group name" aria-label="New case group name" />
+              <select id="newCaseLabelColor" aria-label="Choose an unused group color"></select>
+              <button id="addCaseLabelBtn" class="btn subtle" type="button">+ Add group</button>
+            </div>
+            <div class="rule-summary">One group per case. Groups are independent of the case type and visa processing status; deleting a group does not delete student cases.</div>
           </div>
           <div class="content-card setting-card template-setting-card">
             <div class="setting-icon">W</div>
@@ -278,10 +295,10 @@
   <script src="db.js"></script>
   <script src="zip.js"></script>
   <script src="builtin-templates.js"></script>
-  <script src="docx-engine.js?v=036"></script>
+  <script src="docx-engine.js?v=038"></script>
   <script src="excel-export.js"></script>
   <script src="hub-reference.js?v=037"></script>
-  <script src="app.js?v=037"></script>
+  <script src="app.js?v=038"></script>
   <script src="ui-enhancements.js?v=036"></script>
   <script>
     if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(console.warn));

@@ -246,6 +246,73 @@
     return out;
   }
 
+  // A4 page-positioned, 3-row review box. The three labels share the existing
+  // Student List column setting. The second column is blank for handwritten notes.
+  // A VML textbox is used because an ordinary Word table would shift letter text.
+  function reviewerBoxDrawing(columnNames) {
+    const names = Array.isArray(columnNames) ? columnNames.slice(0,3).map(text) : [];
+    if (!names.length) throw new Error('Add at least one Student List column in Workspace settings before enabling the top-right review table.');
+    if (names.some(name => name.length > 28)) {
+      throw new Error('For the fixed-size review table, shorten the first three Student List column names to 28 characters or fewer.');
+    }
+    const cell = (value, width) =>
+      '<w:tc><w:tcPr><w:tcW w:w="'+width+'" w:type="dxa"/>'+
+      '<w:tcMar><w:top w:w="0" w:type="dxa"/><w:bottom w:w="0" w:type="dxa"/>'+
+      '<w:left w:w="60" w:type="dxa"/><w:right w:w="60" w:type="dxa"/></w:tcMar></w:tcPr>'+
+      '<w:p><w:pPr><w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="exact"/></w:pPr>'+
+      '<w:r><w:rPr><w:rFonts w:ascii="TH SarabunPSK" w:hAnsi="TH SarabunPSK" w:cs="TH SarabunPSK"/>'+
+      '<w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr><w:t>'+escapeXml(value)+'</w:t></w:r></w:p></w:tc>';
+    const rows = Array.from({length:3},(_,i) =>
+      '<w:tr><w:trPr><w:trHeight w:val="440" w:hRule="exact"/></w:trPr>'+
+      cell(names[i] || '',1900)+cell('',1700)+'</w:tr>').join('');
+    return '<w:r><w:pict xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'+
+      '<v:shape id="BUIC_review_box" type="#_x0000_t202" '+
+      'style="position:absolute;margin-left:393pt;margin-top:19pt;width:180pt;height:66pt;z-index:251659264;'+
+      'mso-position-horizontal-relative:page;mso-position-vertical-relative:page" filled="f" stroked="f">'+
+      '<v:textbox inset="0,0,0,0" style="mso-fit-shape-to-text:f"><w:txbxContent><w:tbl>'+
+      '<w:tblPr><w:tblW w:w="3600" w:type="dxa"/><w:tblBorders>'+
+      ['top','left','bottom','right','insideH','insideV'].map(side=>'<w:'+side+' w:val="single" w:sz="4"/>').join('')+
+      '</w:tblBorders><w:tblCellMar><w:top w:w="0" w:type="dxa"/><w:bottom w:w="0" w:type="dxa"/>'+
+      '<w:left w:w="60" w:type="dxa"/><w:right w:w="60" w:type="dxa"/></w:tblCellMar></w:tblPr>'+
+      '<w:tblGrid><w:gridCol w:w="1900"/><w:gridCol w:w="1700"/></w:tblGrid>'+
+      rows+'</w:tbl></w:txbxContent></v:textbox></v:shape></w:pict></w:r>';
+  }
+  function insertReviewerBox(xml, columnNames) {
+    if (xml.includes('id="BUIC_review_box"')) return xml;
+    // Imported templates containing the source table must not receive a duplicate.
+    if (xml.includes('wp:anchor') && xml.includes('ผศ.ดร.ธรรญธร') &&
+        xml.includes('อ.เนาวกานต์')) {
+      throw new Error('This imported Word template already contains the reviewer table. Disable the add-table option or import a clean letter template.');
+    }
+    const body = xml.indexOf('<w:body>');
+    if (body < 0) throw new Error('Word document body is missing');
+    const open = /<w:p(?:\s[^>]*)?>/g;
+    open.lastIndex = body + '<w:body>'.length;
+    const paragraph = open.exec(xml);
+    if (!paragraph) throw new Error('Word letter has no anchor paragraph');
+    const insertAt = paragraph.index + paragraph[0].length;
+    const next = xml.slice(insertAt);
+    const ppr = /^\s*<w:pPr\b[^>]*>/.exec(next);
+    let after = insertAt;
+    if (ppr) {
+      const pprEnd = xml.indexOf('</w:pPr>',insertAt);
+      if(pprEnd < 0) throw new Error('Invalid Word paragraph properties');
+      after = pprEnd + '</w:pPr>'.length;
+    } else {
+      const emptyPpr = /^\s*<w:pPr\b[^>]*\/>/.exec(next);
+      if(emptyPpr)after+=emptyPpr[0].length;
+    }
+    return xml.slice(0,after)+reviewerBoxDrawing(columnNames)+xml.slice(after);
+  }
+  function addReviewerBoxToFiles(files, options) {
+    if (!options?.reviewBox) return files;
+    const item = files.get('word/document.xml');
+    if (!item) throw new Error('Word document is missing');
+    const xml = insertReviewerBox(dec.decode(item.data),options.columnNames);
+    files.set('word/document.xml',{name:'word/document.xml',data:enc.encode(xml)});
+    return files;
+  }
+
   async function renderLetter(templateBuffer, st, issueDate, signatory) {
     const files = await bufferToFiles(templateBuffer);
     const doc = files.get('word/document.xml');
@@ -285,10 +352,20 @@
     if (close < 0) return content;
     const para = content.slice(start, close);
     if (para.includes('<w:pageBreakBefore')) return content;
-    const pprEnd = para.indexOf('</w:pPr>');
-    if (pprEnd >= 0) {
-      const insert = start + pprEnd;
-      return content.slice(0, insert) + '<w:pageBreakBefore/>' + content.slice(insert);
+    // Only inspect direct first-paragraph properties; a floating textbox can
+    // contain its own nested paragraphs and must never receive the page break.
+    const directPpr = /^\s*<w:pPr\b[^>]*>/.exec(content.slice(openEnd));
+    if (directPpr) {
+      const end = content.indexOf('</w:pPr>',openEnd);
+      if (end < 0) throw new Error('Invalid first-paragraph properties');
+      return content.slice(0,end) + '<w:pageBreakBefore/>' + content.slice(end);
+    }
+    const emptyPpr = /^\s*<w:pPr\b[^>]*\/>/.exec(content.slice(openEnd));
+    if (emptyPpr) {
+      const at = openEnd + emptyPpr[0].length;
+      return content.slice(0,openEnd)+
+        content.slice(openEnd,at).replace(/<w:pPr\b[^>]*\/>/,
+          '<w:pPr><w:pageBreakBefore/></w:pPr>')+content.slice(at);
     }
     return content.slice(0, openEnd) + '<w:pPr><w:pageBreakBefore/></w:pPr>' + content.slice(openEnd);
   }
@@ -521,21 +598,22 @@
     return st.programType === 'graduate' ? 'letter76' : 'letter16';
   }
 
-  async function renderCaseLetter(st, issueDate, signatory) {
+  async function renderCaseLetter(st, issueDate, signatory, options) {
     const key = letterTemplateKey(st);
     const tpl = await requireTemplate(key);
-    return key === 'exchange' || key === 'non_o'
-      ? renderSpecialLetter(tpl, st, issueDate, signatory, key)
-      : renderLetter(tpl, st, issueDate, signatory);
+    const files = key === 'exchange' || key === 'non_o'
+      ? await renderSpecialLetter(tpl, st, issueDate, signatory, key)
+      : await renderLetter(tpl, st, issueDate, signatory);
+    return addReviewerBoxToFiles(files, options);
   }
 
-  async function generateIndividual(st, issueDate, signatory) {
-    return filesToBlob(await renderCaseLetter(st, issueDate, signatory));
+  async function generateIndividual(st, issueDate, signatory, options = {}) {
+    return filesToBlob(await renderCaseLetter(st, issueDate, signatory, options));
   }
 
-  async function generateBatch(students, issueDate, signatory) {
+  async function generateBatch(students, issueDate, signatory, options = {}) {
     const rendered = [];
-    for (const st of students) rendered.push(await renderCaseLetter(st, issueDate, signatory));
+    for (const st of students) rendered.push(await renderCaseLetter(st, issueDate, signatory, options));
     return combineRendered(rendered);
   }
 

@@ -42,6 +42,8 @@
 
   const DEFAULT_STUDENT_LIST_COLUMNS = ['หน.บน.', 'ผศ.ดร.ธรรญธร', 'อ.เนาวกานต์'];
   const MAX_STUDENT_LIST_COLUMNS = 6;
+  const CASE_LABEL_COLORS = ['#2563eb','#0f766e','#e58a16','#be3a46','#8b5cf6','#0f8ba7','#64748b','#db4a91'];
+  const MAX_CASE_LABELS = CASE_LABEL_COLORS.length;
 
   const state = {
     programs: [],
@@ -51,6 +53,8 @@
     selected: new Set(),
     activeCategory: 'normal',
     activeStatus: 'all',
+    activeLabelId: 'all',
+    groupByLabel: false,
     search: '',
     programTypeFilter: 'all',
     activeCaseId: null,
@@ -59,6 +63,8 @@
       signatory: 'somyot',
       newStudentPrefixes: '169, 769, 869, 969',
       studentListColumns: [...DEFAULT_STUDENT_LIST_COLUMNS],
+      letterReviewBoxEnabled: false,
+      caseLabels: [],
       exchangeUniversities: [],
       lastExchangeAcademicYear: null,
     },
@@ -300,6 +306,75 @@
     });
   }
 
+
+  function caseLabels() {
+    if (!Array.isArray(state.settings.caseLabels)) state.settings.caseLabels = [];
+    const usedColors = new Set(), usedIds = new Set();
+    state.settings.caseLabels = state.settings.caseLabels.slice(0, MAX_CASE_LABELS).filter(entry => {
+      if (!entry || typeof entry !== 'object') return false;
+      const id = String(entry.id || '');
+      const color = String(entry.color || '').toLowerCase();
+      if (!/^label_[a-z0-9_-]{4,50}$/.test(id) || usedIds.has(id) ||
+          !CASE_LABEL_COLORS.includes(color) || usedColors.has(color)) return false;
+      usedIds.add(id); usedColors.add(color); return true;
+    }).map(entry => ({ id:String(entry.id), color:String(entry.color).toLowerCase(),
+      name:String(entry.name || '').trim().slice(0, 42) || 'Untitled group' }));
+    return state.settings.caseLabels;
+  }
+  function labelForCase(item) {
+    return caseLabels().find(label => label.id === item.labelId) || null;
+  }
+  function renderCaseLabelSettings() {
+    const root = el('caseLabelSettings');
+    if (!root) return;
+    root.innerHTML = caseLabels().map(label => `
+      <div class="case-label-setting" data-label-id="${escapeHtml(label.id)}">
+        <span class="case-label-swatch" style="--case-label-color:${label.color}"></span>
+        <input class="case-label-name" maxlength="42" value="${escapeHtml(label.name)}" aria-label="Group name for ${escapeHtml(label.color)}" />
+        <span class="case-label-count">${state.cases.filter(c => c.labelId === label.id).length} cases</span>
+        <button type="button" class="btn subtle case-label-remove" data-remove-case-label="${escapeHtml(label.id)}">Remove</button>
+      </div>`).join('') || '<div class="small-muted">No custom groups. Create a named color to organize cases.</div>';
+    const picker = el('newCaseLabelColor');
+    if (picker) picker.innerHTML = CASE_LABEL_COLORS.map(color =>
+      `<option value="${color}" ${caseLabels().some(label => label.color === color) ? 'disabled' : ''}>${({
+        '#2563eb':'Blue','#0f766e':'Teal','#e58a16':'Amber','#be3a46':'Red','#8b5cf6':'Purple',
+        '#0f8ba7':'Cyan','#64748b':'Slate','#db4a91':'Pink'
+      })[color]}</option>`).join('');
+    if (el('addCaseLabelBtn')) el('addCaseLabelBtn').disabled = caseLabels().length >= MAX_CASE_LABELS;
+    if (picker) picker.value = CASE_LABEL_COLORS.find(c => !caseLabels().some(label => label.color === c)) || '';
+  }
+  function bindCaseLabelSettings() {
+    el('addCaseLabelBtn')?.addEventListener('click', () => {
+      const name = el('newCaseLabelName').value.trim().slice(0,42);
+      const color = el('newCaseLabelColor').value;
+      if (!name || !CASE_LABEL_COLORS.includes(color) || caseLabels().some(l => l.color===color)) {
+        toast('Group not created', 'Enter a name and select an unused color.', true); return;
+      }
+      caseLabels().push({id:uid('label'),name,color});
+      el('newCaseLabelName').value = '';
+      persist();renderCaseLabelSettings();renderCaseList();
+    });
+    el('caseLabelSettings')?.addEventListener('change', event => {
+      const input = event.target.closest('.case-label-name');
+      if (!input) return;
+      const label = caseLabels().find(l => l.id === input.closest('[data-label-id]').dataset.labelId);
+      if (!label) return;
+      const name=input.value.trim().slice(0,42);
+      if (!name) {input.value=label.name; toast('Group name required','Enter a group name.',true);return;}
+      label.name=name;input.value=name;persist();renderCaseList();
+    });
+    el('caseLabelSettings')?.addEventListener('click', event => {
+      const button=event.target.closest('[data-remove-case-label]');if(!button)return;
+      const id=button.dataset.removeCaseLabel;
+      const label=caseLabels().find(l=>l.id===id);if(!label)return;
+      const count=state.cases.filter(item=>item.labelId===id).length;
+      if(count && !confirm('Remove group "'+label.name+'"? Its '+count+' case(s) will become Unlabeled; no student cases are deleted.'))return;
+      state.settings.caseLabels=caseLabels().filter(l=>l.id!==id);
+      state.cases.forEach(item=>{if(item.labelId===id)item.labelId='';});
+      if(state.activeLabelId===id)state.activeLabelId='all';
+      persist();renderCaseLabelSettings();renderCaseList();
+    });
+  }
 
   function normalizeExchangeUniversities(value) {
     if (!Array.isArray(value)) return [];
@@ -658,6 +733,7 @@
       state.settings.signatory = normalizeSignatoryKey(state.settings.signatory);
       state.settings.newStudentPrefixes = cleanNewStudentPrefixes(state.settings.newStudentPrefixes) || '169, 769, 869, 969';
       studentListColumns();
+      caseLabels();
       state.settings.exchangeUniversities = normalizeExchangeUniversities(state.settings.exchangeUniversities);
     } catch (err) {
       console.warn('Could not load browser state', err);
@@ -758,6 +834,7 @@
     const q = state.search.trim().toLowerCase();
     return state.cases.filter((item) => {
       if (item.caseCategory !== state.activeCategory) return false;
+      if (state.activeLabelId !== 'all' && (labelForCase(item)?.id || 'unlabeled') !== state.activeLabelId) return false;
       if (!q) return true;
       return [item.fullName, item.studentId, item.documentNo, item.passportNo, item.programKey]
         .some((v) => String(v || '').toLowerCase().includes(q));
@@ -804,18 +881,46 @@
     return `<span class="status-chip ${meta.className || 'status-draft'}">${escapeHtml(meta.label)}</span>`;
   }
 
+  function renderCaseGroupFilter() {
+    const select=el('caseLabelFilter');if(!select)return;
+    const labels=caseLabels();
+    const options=[['all','All groups'],['unlabeled','Unlabeled'],
+      ...labels.map(label=>[label.id,label.name+' ('+state.cases.filter(c=>c.labelId===label.id&&c.caseCategory===state.activeCategory).length+')'])];
+    if(!options.some(([value])=>value===state.activeLabelId))state.activeLabelId='all';
+    select.innerHTML=options.map(([value,name])=>`<option value="${escapeHtml(value)}" ${state.activeLabelId===value?'selected':''}>${escapeHtml(name)}</option>`).join('');
+    if(el('groupCasesToggle')) el('groupCasesToggle').checked=state.groupByLabel;
+  }
+  function caseGroupBadge(item) {
+    const label=labelForCase(item);
+    const options=['<option value="">Unlabeled</option>',...caseLabels().map(group=>
+      `<option value="${escapeHtml(group.id)}" ${group.id===(label?.id||'')?'selected':''}>${escapeHtml(group.name)}</option>`)];
+    return `<select class="case-row-group-select" data-case-group aria-label="Assign group to ${escapeHtml(item.fullName || 'student')}" title="Case group (stored locally)">${options.join('')}</select>`;
+  }
+  function groupedCaseRows(items) {
+    if(!state.groupByLabel)return items.map(renderCaseRow).join('');
+    const buckets=new Map(caseLabels().map(label=>[label.id,[]]));
+    buckets.set('unlabeled',[]);
+    items.forEach(item=>(buckets.get(labelForCase(item)?.id||'unlabeled')||buckets.get('unlabeled')).push(item));
+    return [...caseLabels().map(l=>[l.id,l.name,l.color]),['unlabeled','Unlabeled','#94a3b8']].map(([id,name,color])=>{
+      const group=buckets.get(id)||[];if(!group.length)return'';
+      return `<div class="case-group-heading" role="heading" aria-level="3" style="--case-label-color:${color}"><span class="case-group-heading-swatch"></span><strong>${escapeHtml(name)}</strong><span>${group.length} case${group.length===1?'':'s'}</span></div>${group.map(renderCaseRow).join('')}`;
+    }).join('');
+  }
+
   function renderCaseRow(item) {
     const selected = state.selected.has(item.id);
     const requestUntil = calculateRequestUntil(item);
     const capped = isPassportCapped(item);
     const program = programByKey(item.programKey);
     const programName = displayProgramName(item, program);
+    const group = labelForCase(item);
     return `
-      <div class="case-row ${selected ? 'selected' : ''}" data-case-id="${item.id}">
+      <div class="case-row ${selected ? 'selected' : ''} ${group ? 'has-case-label' : ''}" data-case-id="${escapeHtml(item.id)}" style="--case-label-color:${group?.color || '#e2e8f0'}">
         <div><input class="case-check" type="checkbox" ${selected ? 'checked' : ''} aria-label="Select ${escapeHtml(item.fullName)}" /></div>
         <div class="case-click student-cell">
           <div class="student-name">${escapeHtml(item.fullName || 'Unnamed student')}</div>
           <div class="student-meta"><span class="meta-strong">${escapeHtml(item.studentId || 'No ID')}</span><span>•</span><span>Doc ${escapeHtml(item.documentNo || '—')}</span></div>
+          <div class="case-group-meta">${group ? `<span class="case-group-chip" style="--case-label-color:${group.color}">${escapeHtml(group.name)}</span>` : ''}${caseGroupBadge(item)}</div>
         </div>
         <div class="case-click program-cell">
           <div class="program-name">${escapeHtml(programName)}</div>
@@ -830,12 +935,23 @@
   }
 
   function renderCaseList() {
+    renderCaseGroupFilter();
     const items = filteredCases();
-    el('caseList').innerHTML = items.map(renderCaseRow).join('');
+    el('caseList').innerHTML = groupedCaseRows(items);
     el('emptyState').classList.toggle('hidden', items.length > 0);
     items.forEach((item) => {
       const row = el('caseList').querySelector(`[data-case-id="${CSS.escape(item.id)}"]`);
       const check = row.querySelector('.case-check');
+      const picker=row.querySelector('[data-case-group]');
+      picker?.addEventListener('click', event => event.stopPropagation());
+      picker?.addEventListener('keydown', event => event.stopPropagation());
+      picker?.addEventListener('change', event => {
+        event.stopPropagation();
+        const id=picker.value;
+        if(id && !caseLabels().some(label=>label.id===id))return;
+        item.labelId=id;
+        persist();renderCaseList();renderCaseLabelSettings();
+      });
       check.addEventListener('click', (event) => {
         event.stopPropagation();
         toggleSelection(item.id, check.checked);
@@ -1514,6 +1630,26 @@
     return item.programType === 'graduate' ? 'letter76' : 'letter16';
   }
 
+  function reviewerBoxOptionMarkup(id) {
+    const names=studentListColumns().slice(0,3);
+    return `<label class="review-box-option">
+      <input type="checkbox" id="${id}" ${state.settings.letterReviewBoxEnabled?'checked':''} ${names.length?'':'disabled'} />
+      <span><strong>Add review table at top-right of Word letter</strong>
+        <small>Same labels as Student List columns (first three): ${escapeHtml(names.join(' | ') || 'No columns configured')}.
+        Right-hand cells stay blank for handwritten notes. Optional, and applied to each generated letter.</small></span>
+    </label>`;
+  }
+  function bindReviewerBoxChoice(id) {
+    el(id)?.addEventListener('change', event => {
+      state.settings.letterReviewBoxEnabled=event.target.checked;
+      persist();
+    });
+  }
+  function reviewerBoxGenerationOptions(id) {
+    return {reviewBox:Boolean(el(id)?.checked),
+      columnNames:[...studentListColumns().slice(0,3)]};
+  }
+
   function renderBatchModal() {
     const items = selectedCases();
     const letterValidCount = items.filter((item) => validationFor(item).valid).length;
@@ -1545,11 +1681,13 @@
           <div class="batch-setting"><label>Document date</label><input id="batchIssueDate" type="date" value="${issueDate}" /></div>
           ${lettersTemplatesReady && listTemplateReady ? '' : `<div class="template-warning"><strong>Template setup required</strong><br>${!lettersTemplatesReady ? 'Letter template missing. ' : ''}${!listTemplateReady ? 'Student-list template missing.' : ''} Open Workspace settings and import the approved DOCX file once.</div>`}
           <div class="rule-box"><strong>Student list date</strong><br>The selected date replaces <code>mmmm dd, 2026</code> in the list template automatically.<br><strong>Columns:</strong> ${escapeHtml(studentListColumns().join(' | ') || 'None')}. Manage them in Workspace settings.</div>
+          ${reviewerBoxOptionMarkup('batchReviewBox')}
           <div class="batch-setting"><label>Signatory — letters only</label><select id="batchSignatory">${signatoryOptions(state.settings.signatory)}</select></div>
           <div id="batchSignaturePreview">${signatoryPreview(state.settings.signatory)}</div>
           <div class="rule-box"><strong>Document numbers</strong><br>Each output uses the document number already saved on each student. No renumbering or sorting is applied.</div>
         </div>
       </div>`;
+    bindReviewerBoxChoice('batchReviewBox');
     const batchSigner = el('batchSignatory');
     batchSigner?.addEventListener('change', () => { el('batchSignaturePreview').innerHTML = signatoryPreview(batchSigner.value); });
     el('generateBatchBtn').disabled = !items.length || letterValidCount !== items.length || !lettersTemplatesReady;
@@ -1562,6 +1700,7 @@
     const body = {
       issueDate: el('batchIssueDate').value,
       signatory: el('batchSignatory').value,
+      reviewerBox: reviewerBoxGenerationOptions('batchReviewBox'),
       students: items.map((item) => ({ ...normalizeCase(item), status: deriveStatus(item) })),
     };
     const button = el('generateBatchBtn');
@@ -1569,7 +1708,7 @@
     button.disabled = true;
     button.textContent = 'Exporting…';
     try {
-      const blob = await BrowserDocx.generateBatch(body.students, body.issueDate, body.signatory);
+      const blob = await BrowserDocx.generateBatch(body.students, body.issueDate, body.signatory, body.reviewerBox);
       const filename = `Visa_Extension_Letters_${body.students.length}_Students_${body.issueDate.replaceAll('-', '')}.docx`;
       downloadBlob(blob, filename);
       const generatedAt = new Date().toISOString();
@@ -1580,6 +1719,7 @@
         students: historyStudentSnapshot(items),
         count: items.length, signatory: body.signatory,
         outputType: 'letters', category: state.activeCategory, filename,
+        reviewerBox:body.reviewerBox.reviewBox, reviewerColumns:body.reviewerBox.reviewBox?body.reviewerBox.columnNames:[],
       });
       persist();
       closeModal('batchModal');
@@ -1639,9 +1779,11 @@
       ${validation.valid ? '' : `<div class="validation-summary bad"><strong>Needs attention:</strong> ${escapeHtml(validation.missing.join(', '))}</div>`}
       <div class="batch-setting"><label>Letter date</label><input id="individualIssueDate" type="date" value="${todayIso()}" /></div>
       <div class="rule-box"><strong>Document ${escapeHtml(item.documentNo || "—")}</strong><br>The letter uses the document number already saved on this student case.</div>
+      ${reviewerBoxOptionMarkup('individualReviewBox')}
       <div class="batch-setting"><label>Signatory</label><select id="individualSignatory">${signatoryOptions(state.settings.signatory)}</select></div>
       <div id="individualSignaturePreview">${signatoryPreview(state.settings.signatory)}</div>
       <div class="rule-box">This creates one Word letter for this student. Open the downloaded DOCX in Word to print.</div>`;
+    bindReviewerBoxChoice('individualReviewBox');
     const signer = el('individualSignatory');
     signer?.addEventListener('change', () => { el('individualSignaturePreview').innerHTML = signatoryPreview(signer.value); });
     const templateReady = Boolean(state.templates[templateKeyForCase(item)]);
@@ -1656,13 +1798,14 @@
       student: normalizeCase(item),
       issueDate: el('individualIssueDate').value,
       signatory: el('individualSignatory').value,
+      reviewerBox:reviewerBoxGenerationOptions('individualReviewBox'),
     };
     const button = el('generateIndividualBtn');
     const old = button.textContent;
     button.disabled = true;
     button.textContent = 'Creating…';
     try {
-      const blob = await BrowserDocx.generateIndividual(body.student, body.issueDate, body.signatory);
+      const blob = await BrowserDocx.generateIndividual(body.student, body.issueDate, body.signatory, body.reviewerBox);
       const filename = `Visa_Extension_Letter_${item.studentId || 'student'}.docx`;
       downloadBlob(blob, filename);
       item.generatedAt = new Date().toISOString();
@@ -1720,6 +1863,7 @@
       state.settings.signatory = normalizeSignatoryKey(state.settings.signatory);
       state.settings.newStudentPrefixes = cleanNewStudentPrefixes(state.settings.newStudentPrefixes) || '169, 769, 869, 969';
       studentListColumns();
+      caseLabels();
       state.settings.exchangeUniversities = normalizeExchangeUniversities(state.settings.exchangeUniversities);
       if (payload.templates) await VisaDB.importTemplatesBase64(payload.templates);
       persist();
@@ -1729,6 +1873,7 @@
       el('settingsSignaturePreview').innerHTML = signatoryPreview(state.settings.signatory);
       if (el('newStudentPrefixesInput')) el('newStudentPrefixesInput').value = state.settings.newStudentPrefixes;
       renderListColumnSettings();
+      renderCaseLabelSettings();
       showPartnerUniversitySuggestions();
       renderSavedUniversities();
       state.selected.clear();
@@ -1898,6 +2043,10 @@
     });
 
     el('searchInput').addEventListener('input', (e) => { state.search = e.target.value; renderCaseList(); });
+    el('caseLabelFilter')?.addEventListener('change', e => { state.activeLabelId=e.target.value;renderCaseList(); });
+    el('groupCasesToggle')?.addEventListener('change', e => { state.groupByLabel=e.target.checked;renderCaseList(); });
+    el('manageCaseLabelsBtn')?.addEventListener('click', () => switchView('settings'));
+    bindCaseLabelSettings();
     el('selectAll').addEventListener('change', (e) => {
       filteredCases().forEach((item) => e.target.checked ? state.selected.add(item.id) : state.selected.delete(item.id));
       renderCaseList();
@@ -1997,6 +2146,7 @@
       el('settingsSignaturePreview').innerHTML = signatoryPreview(state.settings.signatory);
       if (el('newStudentPrefixesInput')) el('newStudentPrefixesInput').value = state.settings.newStudentPrefixes;
       renderListColumnSettings();
+      renderCaseLabelSettings();
       renderSavedUniversities();
 
       bindEvents();
