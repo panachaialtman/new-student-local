@@ -1,1 +1,396 @@
-[{"thai":"แซงปีแยร์และมีเกอลง","english":"Saint Pierre and Miquelon","aliases":[]},{"thai":"เซนต์วินเซนต์และเกรนาดีนส์","english":"Saint Vincent and the Grenadines","aliases":[]},{"thai":"ซามัว","english":"Samoa","aliases":[]},{"thai":"ซานมาริโน","english":"San Marino","aliases":[]},{"thai":"เซาตูเมและปรินซิปี","english":"Sao Tome and Principe","aliases":[]},{"thai":"ซาอุดีอาระเบีย","english":"Saudi Arabia","aliases":["Saudi Arabian"]},{"thai":"เซเนกัล","english":"Senegal","aliases":[]},{"thai":"เซอร์เบีย","english":"Serbia","aliases":[]},{"thai":"เซเชลส์","english":"Seychelles","aliases":[]},{"thai":"เซียร์ราลีโอน","english":"Sierra Leone","aliases":[]},{"thai":"สิงคโปร์","english":"Singapore","aliases":[]},{"thai":"ซินต์มาร์เทน","english":"Sint Maarten (Dutch part)","aliases":[]},{"thai":"สโลวะเกีย","english":"Slovakia","aliases":[]},{"thai":"สโลวีเนีย","english":"Slovenia","aliases":[]},{"thai":"หมู่เกาะโซโลมอน","english":"Solomon Islands","aliases":[]},{"thai":"โซมาเลีย","english":"Somalia","aliases":[]},{"thai":"แอฟริกาใต้","english":"South Africa","aliases":[]},{"thai":"เกาะเซาท์จอร์เจียและหมู่เกาะเซาท์แซนด์วิช","english":"South Georgia and the South Sandwich Islands","aliases":[]},{"thai":"เกาหลีใต้","english":"South Korea","aliases":["Korea, Republic of","Korea South"]},{"thai":"ซูดานใต้","english":"South Sudan","aliases":[]},{"thai":"สเปน","english":"Spain","aliases":[]},{"thai":"ศรีลังกา","english":"Sri Lanka","aliases":[]},{"thai":"ซูดาน","english":"Sudan","aliases":[]},{"thai":"ซูรินาเม","english":"Suriname","aliases":[]},{"thai":"สฟาลบาร์และยานไมเอน","english":"Svalbard and Jan Mayen","aliases":[]},{"thai":"สวีเดน","english":"Sweden","aliases":[]},{"thai":"สวิตเซอร์แลนด์","english":"Switzerland","aliases":[]},{"thai":"ซีเรีย","english":"Syria","aliases":[]},{"thai":"ไต้หวัน","english":"Taiwan","aliases":["Taiwan, Province of China","ROC"]},{"thai":"ทาจิกิสถาน","english":"Tajikistan","aliases":[]},{"thai":"แทนซาเนีย","english":"Tanzania","aliases":["Tanzania, United Republic of"]},{"thai":"ไทย","english":"Thailand","aliases":[]},{"thai":"ติมอร์-เลสเต","english":"Timor-Leste","aliases":[]},{"thai":"โตโก","english":"Togo","aliases":[]},{"thai":"โตเกเลา","english":"Tokelau","aliases":[]},{"thai":"ตองกา","english":"Tonga","aliases":[]},{"thai":"ตรินิแดดและโตเบโก","english":"Trinidad and Tobago","aliases":[]},{"thai":"ตูนิเซีย","english":"Tunisia","aliases":[]},{"thai":"เติร์กเมนิสถาน","english":"Turkmenistan","aliases":[]},{"thai":"หมู่เกาะเติกส์และหมู่เกาะเคคอส","english":"Turks and Caicos Islands","aliases":[]},{"thai":"ตูวาลู","english":"Tuvalu","aliases":[]},{"thai":"ตุรกี","english":"Türkiye","aliases":["Turkey"]},{"thai":"หมู่เกาะเวอร์จินของสหรัฐอเมริกา","english":"U.S. Virgin Islands","aliases":["Virgin Islands, U.S."]},{"thai":"ยูกันดา","english":"Uganda","aliases":[]},{"thai":"ยูเครน","english":"Ukraine","aliases":[]},{"thai":"สหรัฐอาหรับเอมิเรตส์","english":"United Arab Emirates","aliases":[]},{"thai":"อังกฤษ","english":"United Kingdom","aliases":["U.K.","Britain","England"]},{"thai":"อเมริกา","english":"United States","aliases":["U.S.A.","America"]},{"thai":"หมู่เกาะรอบนอกของสหรัฐอเมริกา","english":"United States Minor Outlying Islands","aliases":[]},{"thai":"อุรุกวัย","english":"Uruguay","aliases":[]},{"thai":"อุซเบกิสถาน","english":"Uzbekistan","aliases":[]},{"thai":"วานูอาตู","english":"Vanuatu","aliases":[]},{"thai":"นครรัฐวาติกัน","english":"Vatican City","aliases":["Holy See (Vatican City State)","Holy See"]},{"thai":"เวเนซุเอลา","english":"Venezuela","aliases":["Venezuela, Bolivarian Republic of"]},{"thai":"เวียดนาม","english":"Vietnam","aliases":["Viet Nam"]},{"thai":"วาลลิสและฟุตูนา","english":"Wallis and Futuna","aliases":[]},{"thai":"ซาฮาราตะวันตก","english":"Western Sahara","aliases":[]},{"thai":"เยเมน","english":"Yemen","aliases":[]},{"thai":"แซมเบีย","english":"Zambia","aliases":[]},{"thai":"ซิมบับเว","english":"Zimbabwe","aliases":[]},{"thai":"หมู่เกาะโอลันด์","english":"Åland Islands","aliases":[]}]
+[
+  {
+    "thai": "แซงปีแยร์และมีเกอลง",
+    "english": "Saint Pierre and Miquelon",
+    "aliases": [],
+    "countryOfficialThai": "แซงปีแยร์และมีเกอลง"
+  },
+  {
+    "thai": "เซนต์วินเซนต์และเกรนาดีนส์",
+    "english": "Saint Vincent and the Grenadines",
+    "aliases": [],
+    "countryOfficialThai": "เซนต์วินเซนต์และเกรนาดีนส์"
+  },
+  {
+    "thai": "ซามัว",
+    "english": "Samoa",
+    "aliases": [],
+    "countryOfficialThai": "รัฐเอกราชซามัว"
+  },
+  {
+    "thai": "ซานมาริโน",
+    "english": "San Marino",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐซานมารีโน"
+  },
+  {
+    "thai": "เซาตูเมและปรินซิปี",
+    "english": "Sao Tome and Principe",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐประชาธิปไตยเซาตูเมและปรินซีปี"
+  },
+  {
+    "thai": "ซาอุดีอาระเบีย",
+    "english": "Saudi Arabia",
+    "aliases": [
+      "Saudi Arabian"
+    ],
+    "countryOfficialThai": "ราชอาณาจักรซาอุดีอาระเบีย"
+  },
+  {
+    "thai": "เซเนกัล",
+    "english": "Senegal",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐเซเนกัล"
+  },
+  {
+    "thai": "เซอร์เบีย",
+    "english": "Serbia",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐเซอร์เบีย"
+  },
+  {
+    "thai": "เซเชลส์",
+    "english": "Seychelles",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐเซเชลส์"
+  },
+  {
+    "thai": "เซียร์ราลีโอน",
+    "english": "Sierra Leone",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐเซียร์ราลีโอน"
+  },
+  {
+    "thai": "สิงคโปร์",
+    "english": "Singapore",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐสิงคโปร์"
+  },
+  {
+    "thai": "ซินต์มาร์เทน",
+    "english": "Sint Maarten (Dutch part)",
+    "aliases": [],
+    "countryOfficialThai": "ซินต์มาร์เทน"
+  },
+  {
+    "thai": "สโลวะเกีย",
+    "english": "Slovakia",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐสโลวัก"
+  },
+  {
+    "thai": "สโลวีเนีย",
+    "english": "Slovenia",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐสโลวีเนีย"
+  },
+  {
+    "thai": "หมู่เกาะโซโลมอน",
+    "english": "Solomon Islands",
+    "aliases": [],
+    "countryOfficialThai": "หมู่เกาะโซโลมอน"
+  },
+  {
+    "thai": "โซมาเลีย",
+    "english": "Somalia",
+    "aliases": [],
+    "countryOfficialThai": "สหพันธ์สาธารณรัฐโซมาเลีย"
+  },
+  {
+    "thai": "แอฟริกาใต้",
+    "english": "South Africa",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐแอฟริกาใต้"
+  },
+  {
+    "thai": "เกาะเซาท์จอร์เจียและหมู่เกาะเซาท์แซนด์วิช",
+    "english": "South Georgia and the South Sandwich Islands",
+    "aliases": [],
+    "countryOfficialThai": "เกาะเซาท์จอร์เจียและหมู่เกาะเซาท์แซนด์วิช"
+  },
+  {
+    "thai": "เกาหลีใต้",
+    "english": "South Korea",
+    "aliases": [
+      "Korea, Republic of",
+      "Korea South"
+    ],
+    "countryOfficialThai": "สาธารณรัฐเกาหลี"
+  },
+  {
+    "thai": "ซูดานใต้",
+    "english": "South Sudan",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐซูดานใต้"
+  },
+  {
+    "thai": "สเปน",
+    "english": "Spain",
+    "aliases": [],
+    "countryOfficialThai": "ราชอาณาจักรสเปน"
+  },
+  {
+    "thai": "ศรีลังกา",
+    "english": "Sri Lanka",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐสังคมนิยมประชาธิปไตยศรีลังกา"
+  },
+  {
+    "thai": "ซูดาน",
+    "english": "Sudan",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐซูดาน"
+  },
+  {
+    "thai": "ซูรินาเม",
+    "english": "Suriname",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐซูรินาเม"
+  },
+  {
+    "thai": "สฟาลบาร์และยานไมเอน",
+    "english": "Svalbard and Jan Mayen",
+    "aliases": [],
+    "countryOfficialThai": "สฟาลบาร์และยานไมเอน"
+  },
+  {
+    "thai": "สวีเดน",
+    "english": "Sweden",
+    "aliases": [],
+    "countryOfficialThai": "ราชอาณาจักรสวีเดน"
+  },
+  {
+    "thai": "สวิตเซอร์แลนด์",
+    "english": "Switzerland",
+    "aliases": [],
+    "countryOfficialThai": "สมาพันธรัฐสวิส"
+  },
+  {
+    "thai": "ซีเรีย",
+    "english": "Syria",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐอาหรับซีเรีย"
+  },
+  {
+    "thai": "ไต้หวัน",
+    "english": "Taiwan",
+    "aliases": [
+      "Taiwan, Province of China",
+      "ROC"
+    ],
+    "countryOfficialThai": "สาธารณรัฐจีน (ไต้หวัน)"
+  },
+  {
+    "thai": "ทาจิกิสถาน",
+    "english": "Tajikistan",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐทาจิกิสถาน"
+  },
+  {
+    "thai": "แทนซาเนีย",
+    "english": "Tanzania",
+    "aliases": [
+      "Tanzania, United Republic of"
+    ],
+    "countryOfficialThai": "แทนซาเนีย"
+  },
+  {
+    "thai": "ไทย",
+    "english": "Thailand",
+    "aliases": [],
+    "countryOfficialThai": "ราชอาณาจักรไทย"
+  },
+  {
+    "thai": "ติมอร์-เลสเต",
+    "english": "Timor-Leste",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐประชาธิปไตยติมอร์–เลสเต"
+  },
+  {
+    "thai": "โตโก",
+    "english": "Togo",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐโตโก"
+  },
+  {
+    "thai": "โตเกเลา",
+    "english": "Tokelau",
+    "aliases": [],
+    "countryOfficialThai": "โตเกเลา"
+  },
+  {
+    "thai": "ตองกา",
+    "english": "Tonga",
+    "aliases": [],
+    "countryOfficialThai": "ราชอาณาจักรตองกา, ราชอาณาจักรตองงา"
+  },
+  {
+    "thai": "ตรินิแดดและโตเบโก",
+    "english": "Trinidad and Tobago",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐตรินิแดดและโตเบโก"
+  },
+  {
+    "thai": "ตูนิเซีย",
+    "english": "Tunisia",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐตูนิเซีย"
+  },
+  {
+    "thai": "เติร์กเมนิสถาน",
+    "english": "Turkmenistan",
+    "aliases": [],
+    "countryOfficialThai": "เติร์กเมนิสถาน"
+  },
+  {
+    "thai": "หมู่เกาะเติกส์และหมู่เกาะเคคอส",
+    "english": "Turks and Caicos Islands",
+    "aliases": [],
+    "countryOfficialThai": "หมู่เกาะเติกส์และหมู่เกาะเคคอส"
+  },
+  {
+    "thai": "ตูวาลู",
+    "english": "Tuvalu",
+    "aliases": [],
+    "countryOfficialThai": "ตูวาลู"
+  },
+  {
+    "thai": "ตุรกี",
+    "english": "Türkiye",
+    "aliases": [
+      "Turkey"
+    ],
+    "countryOfficialThai": "สาธารณรัฐตุรกี"
+  },
+  {
+    "thai": "หมู่เกาะเวอร์จินของสหรัฐอเมริกา",
+    "english": "U.S. Virgin Islands",
+    "aliases": [
+      "Virgin Islands, U.S."
+    ],
+    "countryOfficialThai": "หมู่เกาะเวอร์จินของสหรัฐอเมริกา"
+  },
+  {
+    "thai": "ยูกันดา",
+    "english": "Uganda",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐยูกันดา"
+  },
+  {
+    "thai": "ยูเครน",
+    "english": "Ukraine",
+    "aliases": [],
+    "countryOfficialThai": "ยูเครน"
+  },
+  {
+    "thai": "สหรัฐอาหรับเอมิเรตส์",
+    "english": "United Arab Emirates",
+    "aliases": [],
+    "countryOfficialThai": "สหรัฐอาหรับเอมิเรตส์"
+  },
+  {
+    "thai": "อังกฤษ",
+    "english": "United Kingdom",
+    "aliases": [
+      "U.K.",
+      "Britain",
+      "England"
+    ],
+    "countryOfficialThai": "สหราชอาณาจักรบริเตนใหญ่และไอร์แลนด์เหนือ"
+  },
+  {
+    "thai": "อเมริกา",
+    "english": "United States",
+    "aliases": [
+      "U.S.A.",
+      "America"
+    ],
+    "countryOfficialThai": "อเมริกา"
+  },
+  {
+    "thai": "หมู่เกาะรอบนอกของสหรัฐอเมริกา",
+    "english": "United States Minor Outlying Islands",
+    "aliases": [],
+    "countryOfficialThai": "หมู่เกาะรอบนอกของสหรัฐอเมริกา"
+  },
+  {
+    "thai": "อุรุกวัย",
+    "english": "Uruguay",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐบูรพาอุรุกวัย"
+  },
+  {
+    "thai": "อุซเบกิสถาน",
+    "english": "Uzbekistan",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐอุซเบกิสถาน"
+  },
+  {
+    "thai": "วานูอาตู",
+    "english": "Vanuatu",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐวานวาตู"
+  },
+  {
+    "thai": "นครรัฐวาติกัน",
+    "english": "Vatican City",
+    "aliases": [
+      "Holy See (Vatican City State)",
+      "Holy See"
+    ],
+    "countryOfficialThai": "นครรัฐวาติกัน"
+  },
+  {
+    "thai": "เวเนซุเอลา",
+    "english": "Venezuela",
+    "aliases": [
+      "Venezuela, Bolivarian Republic of"
+    ],
+    "countryOfficialThai": "สาธารณรัฐโบลีวาร์แห่งเวเนซุเอลา"
+  },
+  {
+    "thai": "เวียดนาม",
+    "english": "Vietnam",
+    "aliases": [
+      "Viet Nam"
+    ],
+    "countryOfficialThai": "สาธารณรัฐสังคมนิยมเวียดนาม"
+  },
+  {
+    "thai": "วาลลิสและฟุตูนา",
+    "english": "Wallis and Futuna",
+    "aliases": [],
+    "countryOfficialThai": "วาลลิสและฟุตูนา"
+  },
+  {
+    "thai": "ซาฮาราตะวันตก",
+    "english": "Western Sahara",
+    "aliases": [],
+    "countryOfficialThai": "ซาฮาราตะวันตก"
+  },
+  {
+    "thai": "เยเมน",
+    "english": "Yemen",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐเยเมน"
+  },
+  {
+    "thai": "แซมเบีย",
+    "english": "Zambia",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐแซมเบีย"
+  },
+  {
+    "thai": "ซิมบับเว",
+    "english": "Zimbabwe",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐซิมบับเว"
+  },
+  {
+    "thai": "หมู่เกาะโอลันด์",
+    "english": "Åland Islands",
+    "aliases": [],
+    "countryOfficialThai": "หมู่เกาะโอลันด์"
+  }
+]
