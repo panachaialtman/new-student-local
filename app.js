@@ -2384,7 +2384,28 @@
     document.querySelectorAll('.nav-item').forEach((item) => item.addEventListener('click',
       () => switchView(item.dataset.view, item.dataset.caseCategory || state.activeCategory)));
     el('menuToggle')?.addEventListener('click', () => el('sidebar').classList.toggle('open'));
-    el('addStudentBtn').addEventListener('click', () => { renderStudentForm(); openModal('studentModal'); });
+    el('addStudentBtn').addEventListener('click',openNewStudentForm);
+    el('draftsBtn').addEventListener('click',()=>{
+      renderDraftsModal();openModal('draftsModal');
+    });
+    el('newFromDraftsBtn').addEventListener('click',()=>{
+      closeModal('draftsModal');openNewStudentForm();
+    });
+    el('saveStudentDraftBtn').addEventListener('click',saveStudentDraft);
+    el('draftsList').addEventListener('click',event=>{
+      const edit=event.target.closest('[data-draft-open]');
+      if(edit){openDraft(edit.dataset.draftOpen);return;}
+      const remove=event.target.closest('[data-draft-delete]');
+      if(!remove)return;
+      const draft=state.drafts.find(item=>item.id===remove.dataset.draftDelete);
+      if(!draft)return;
+      const name=String(draft.values.fullName||'').trim()||'this draft';
+      if(!confirm('Delete draft "'+name+'"? No active student case will be removed.'))return;
+      state.drafts=state.drafts.filter(item=>item.id!==draft.id);
+      if(state.activeDraftId===draft.id)state.activeDraftId=null;
+      persist();renderDraftsModal();
+      toast('Draft deleted','Only the selected local draft was removed.');
+    });
     bindSettingsTabs();
     el('addTesterBtn')?.addEventListener('click',addTesterCase);
     el('openHistoryFromSettings').addEventListener('click', () => switchView('batches'));
