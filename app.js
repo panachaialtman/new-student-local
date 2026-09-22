@@ -998,6 +998,7 @@
     // An existing saved value is preserved until edited, without changing
     // historical student records or guessing a translation.
     input.dataset.confirmedThai=input.value;
+    input.dataset.originalThai=input.hasAttribute('data-edit-field')?input.value:'';
     let matches=[],active=0;
     const hide=()=>{
       popup.classList.add('hidden');input.setAttribute('aria-expanded','false');
@@ -1010,7 +1011,12 @@
       input.dispatchEvent(new Event('change',{bubbles:true}));
     };
     const open=()=>{
-      matches=state.nationalities.filter(item=>nationalityMatches(item,input.value)).slice(0,12);
+      // Several countries can share one nationality. Display each Thai
+      // nationality only once instead of repeating identical selectable labels.
+      const unique=new Map();
+      state.nationalities.filter(item=>nationalityMatches(item,input.value))
+        .forEach(item=>{if(!unique.has(item.thai))unique.set(item.thai,item);});
+      matches=[...unique.values()].slice(0,12);
       active=0;
       popup.innerHTML=matches.length?matches.map((item,i)=>
         `<button type="button" class="nationality-option${i===0?' active':''}"
@@ -1058,7 +1064,12 @@
     const input=root.querySelector('[data-nationality-input]');
     if(!input)return true;
     const thai=state.nationalities.find(item=>item.thai===input.value)?.thai;
-    if(input.value===input.dataset.confirmedThai&&thai){
+    // Preserve existing Thai-language legacy values (such as อังกฤษ) on
+    // unrelated edits; no stored student data is silently rewritten.
+    const unchangedLegacy=Boolean(input.hasAttribute('data-edit-field')&&
+      input.value&&input.value===input.dataset.originalThai&&
+      /[ก-๙]/.test(input.value)&&!/[A-Za-z]/.test(input.value));
+    if((input.value===input.dataset.confirmedThai&&thai)||unchangedLegacy){
       input.setCustomValidity('');return true;
     }
     input.setCustomValidity('Select a Thai nationality from the suggestions before saving.');
