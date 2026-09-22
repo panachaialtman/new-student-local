@@ -818,16 +818,133 @@
     }
   }
 
-  function ensureNationalityDatalist() {
-    const list = el('nationalitySuggestions');
-    if (!list) return;
-    const options = [];
-    state.nationalities.forEach((item) => {
-      const aliasText = item.aliases?.length ? ` · ${item.aliases.join(', ')}` : '';
-      options.push(`<option value="${escapeHtml(item.thai)}" label="${escapeHtml(item.english + aliasText)}"></option>`);
-      (item.aliases || []).forEach((alias) => options.push(`<option value="${escapeHtml(alias)}" label="${escapeHtml(item.english + ' · alias')}"></option>`));
+  // Thai is the only selectable nationality value. English and Thai country
+  // names, demonyms and source aliases are search terms, never form values.
+  const EXTRA_NATIONALITY_TERMS={
+    Myanmar:['Burmese','Burma','พม่า'],
+    Thailand:['Thai','ประเทศไทย'],
+    China:['Chinese','ประเทศจีน'],
+    Japan:['Japanese','ประเทศญี่ปุ่น'],
+    India:['Indian','ประเทศอินเดีย'],
+    Philippines:['Filipino','Filipina','Philippine'],
+    'United Kingdom':['British','Briton','UK','สหราชอาณาจักร'],
+    'United States':['American','USA','สหรัฐอเมริกา'],
+    Vietnam:['Vietnamese'],Cambodia:['Cambodian','Khmer'],
+    Laos:['Lao','Laotian'],Malaysia:['Malaysian'],
+    Indonesia:['Indonesian'],Singapore:['Singaporean'],
+    Australia:['Australian'],Canada:['Canadian'],
+    France:['French'],Germany:['German'],Russia:['Russian']
+  };
+  function nationalitySearchKey(value) {
+    return String(value??'').normalize('NFKC').toLocaleLowerCase()
+      .replace(/[^a-z0-9ก-๙]+/g,' ').trim().replace(/\s+/g,' ');
+  }
+  function nationalityMatches(item,search) {
+    const tokens=nationalitySearchKey(search).split(' ').filter(Boolean);
+    const terms=[
+      item.thai,item.english,item.countryThai,item.countryEnglish,
+      item.nationalityThai,item.nationalityEnglish,
+      ...(Array.isArray(item.aliases)?item.aliases:[]),
+      ...(EXTRA_NATIONALITY_TERMS[item.english]||[])
+    ].map(nationalitySearchKey).filter(Boolean);
+    return tokens.every(token=>terms.some(term=>term.includes(token)));
+  }
+  function nationalityField(value='',isDrawer=false) {
+    const id=isDrawer?'drawerNationality':'newNationality';
+    const field=isDrawer?'data-edit-field="nationalityThai"':'name="nationalityThai"';
+    return `<div class="${isDrawer?'drawer-field':'form-field'} nationality-field">
+      <label for="${id}">Nationality Thai</label>
+      <div class="nationality-combobox">
+        <input id="${id}" ${field} data-nationality-input type="text" required
+          value="${escapeHtml(value)}" autocomplete="off" spellcheck="false"
+          placeholder="Search country or nationality · ไทย / English"
+          role="combobox" aria-autocomplete="list" aria-expanded="false"
+          aria-controls="${id}Options" aria-haspopup="listbox" />
+        <div class="nationality-results hidden" id="${id}Options" role="listbox"
+          aria-label="Select Thai nationality"></div>
+      </div>
+      <small class="nationality-help">Search in Thai or English; choose the Thai nationality.</small>
+    </div>`;
+  }
+  function bindNationalityPicker(root) {
+    const input=root.querySelector('[data-nationality-input]');
+    if (!input) return;
+    const popup=root.querySelector('#'+input.getAttribute('aria-controls'));
+    // An existing saved value is preserved until edited, without changing
+    // historical student records or guessing a translation.
+    input.dataset.confirmedThai=input.value;
+    let matches=[],active=0;
+    const hide=()=>{
+      popup.classList.add('hidden');input.setAttribute('aria-expanded','false');
+      input.removeAttribute('aria-activedescendant');
+    };
+    const select=index=>{
+      const item=matches[index];if(!item)return;
+      input.value=item.thai;input.dataset.confirmedThai=item.thai;
+      input.setCustomValidity('');hide();input.focus();
+      input.dispatchEvent(new Event('change',{bubbles:true}));
+    };
+    const open=()=>{
+      matches=state.nationalities.filter(item=>nationalityMatches(item,input.value)).slice(0,12);
+      active=0;
+      popup.innerHTML=matches.length?matches.map((item,i)=>
+        `<button type="button" class="nationality-option${i===0?' active':''}"
+          role="option" aria-selected="${i===0}" id="${popup.id}Row${i}"
+          data-nationality-index="${i}">${escapeHtml(item.thai)}</button>`).join('')
+        :'<div class="nationality-empty">No matching nationality. Try another country or nationality name.</div>';
+      popup.classList.remove('hidden');input.setAttribute('aria-expanded','true');
+      if(matches.length)input.setAttribute('aria-activedescendant',popup.id+'Row0');
+      else input.removeAttribute('aria-activedescendant');
+    };
+    input.addEventListener('focus',open);
+    input.addEventListener('input',()=>{
+      input.dataset.confirmedThai='';input.setCustomValidity('');open();
     });
-    list.innerHTML = options.join('');
+    input.addEventListener('keydown',event=>{
+      if(event.key==='Escape'&&input.getAttribute('aria-expanded')==='true'){
+        event.preventDefault();hide();return;
+      }
+      if(event.key==='ArrowDown'||event.key==='ArrowUp'){
+        event.preventDefault();
+        if(input.getAttribute('aria-expanded')!=='true')open();
+        else if(matches.length){
+          active=(active+(event.key==='ArrowDown'?1:-1)+matches.length)%matches.length;
+          popup.querySelectorAll('[data-nationality-index]').forEach((button,i)=>{
+            const selected=i===active;button.classList.toggle('active',selected);
+            button.setAttribute('aria-selected',String(selected));
+            if(selected)button.scrollIntoView({block:'nearest'});
+          });
+          input.setAttribute('aria-activedescendant',popup.id+'Row'+active);
+        }
+      }else if(event.key==='Enter'&&input.getAttribute('aria-expanded')==='true'){
+        event.preventDefault();select(active);
+      }
+    });
+    popup.addEventListener('pointerdown',event=>{
+      if(event.target.closest('[data-nationality-index]'))event.preventDefault();
+    });
+    popup.addEventListener('click',event=>{
+      const choice=event.target.closest('[data-nationality-index]');
+      if(choice)select(Number(choice.dataset.nationalityIndex));
+    });
+    input.addEventListener('blur',hide);
+  }
+  function nationalitySelectionValid(root) {
+    const input=root.querySelector('[data-nationality-input]');
+    if(!input)return true;
+    const thai=state.nationalities.find(item=>item.thai===input.value)?.thai;
+    if(input.value===input.dataset.confirmedThai&&thai){
+      input.setCustomValidity('');return true;
+    }
+    input.setCustomValidity('Select a Thai nationality from the suggestions before saving.');
+    input.reportValidity();input.focus();
+    return false;
+  }
+  function ensureNationalityDatalist() {
+    // Compatibility with existing Hub refresh calls. Active pickers search
+    // state.nationalities directly; a datalist must never expose English options.
+    const list=el('nationalitySuggestions');
+    if(list)list.innerHTML='';
   }
 
   function filteredCases() {
@@ -1119,7 +1236,7 @@
                 <label class="current-student-check"><input data-edit-field="currentStudent" type="checkbox" ${item.currentStudent ? 'checked' : ''} /> <span>Current student</span></label>
               </div>
             </div>
-            ${editableField('Nationality Thai', 'nationalityThai', item.nationalityThai, 'text', 'list="nationalitySuggestions" autocomplete="off"')}
+            ${nationalityField(item.nationalityThai,true)}
             ${editableField('Passport no.', 'passportNo', item.passportNo)}
             ${editableField('Passport expiry', 'passportExpiry', item.passportExpiry, 'date')}
             ${editableField('Current stay until', 'currentStayUntil', item.currentStayUntil, 'date')}
@@ -1168,6 +1285,7 @@
         el('drawerContent').querySelector('.manual-request-field')?.classList.toggle('hidden', ruleSelect.value !== 'manual');
       });
       arrangeCaseFields(el('drawerContent'), true);
+      bindNationalityPicker(el('drawerContent'));
       const caseSelector = el('drawerContent').querySelector('#editCaseCategory');
       const updateCaseFields = () => {
         el('drawerContent').querySelectorAll('[data-case-specific]').forEach(section => {
@@ -1309,6 +1427,7 @@
   function saveDrawerChanges() {
     const item = getActiveCase();
     if (!item) return;
+    if(!nationalitySelectionValid(el('drawerContent')))return;
     const originalCategory = item.caseCategory;
     const category = el('drawerContent').querySelector('#editCaseCategory')?.value || item.caseCategory;
     if (category !== item.caseCategory &&
@@ -1405,7 +1524,7 @@
           <label class="current-student-check"><input type="checkbox" name="currentStudent" /> <span>Current student</span></label>
         </div>
       </div>
-      <div class="form-field"><label>Nationality Thai</label><input name="nationalityThai" required list="nationalitySuggestions" autocomplete="off" placeholder="Start typing เช่น เมียนมา" /></div>
+      ${nationalityField()}
       <div class="form-field"><label>Passport no.</label><input name="passportNo" /></div>
       <div class="form-field"><label>Passport expiry</label><input type="date" name="passportExpiry" /></div>
       <div class="form-field"><label>Current stay until</label><input type="date" name="currentStayUntil" required /></div>
@@ -1433,6 +1552,7 @@
       form.scrollTop = 0;
     }));
     arrangeCaseFields(form, false);
+    bindNationalityPicker(form);
     bindLockedFields(form);
     updateAutomaticStudyFields(form);
     form.elements.studentId.addEventListener('input', () => updateAutomaticStudyFields(form));
@@ -1466,6 +1586,7 @@
   }
 
   function addStudentFromForm(form) {
+    if(!nationalitySelectionValid(form))return;
     const fd = new FormData(form);
     const obj = Object.fromEntries(fd.entries());
     obj.currentStudent = Boolean(form.elements.currentStudent?.checked);
