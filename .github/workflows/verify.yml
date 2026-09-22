@@ -1,0 +1,24 @@
+name: New Student Local regression checks
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check JavaScript syntax
+        run: |
+          node --check app.js
+          node --check docx-engine.js
+          node --check ui-enhancements.js
+          node --check sw.js
+      - name: Run generated-document and case-group regression checks
+        run: node tests/review-box-groups.test.cjs
