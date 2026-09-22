@@ -1,1 +1,414 @@
-[{"thai":"ลิทัวเนีย","english":"Lithuania","aliases":[]},{"thai":"ลักเซมเบิร์ก","english":"Luxembourg","aliases":[]},{"thai":"มาเก๊า","english":"Macao","aliases":["Macau"]},{"thai":"มาดากัสการ์","english":"Madagascar","aliases":[]},{"thai":"มาลาวี","english":"Malawi","aliases":[]},{"thai":"มาเลเซีย","english":"Malaysia","aliases":[]},{"thai":"มัลดีฟส์","english":"Maldives","aliases":[]},{"thai":"มาลี","english":"Mali","aliases":[]},{"thai":"มอลตา","english":"Malta","aliases":[]},{"thai":"หมู่เกาะมาร์แชลล์","english":"Marshall Islands","aliases":[]},{"thai":"มาร์ตินีก","english":"Martinique","aliases":[]},{"thai":"มอริเตเนีย","english":"Mauritania","aliases":[]},{"thai":"มอริเชียส","english":"Mauritius","aliases":[]},{"thai":"มายอต","english":"Mayotte","aliases":[]},{"thai":"เม็กซิโก","english":"Mexico","aliases":[]},{"thai":"ไมโครนีเซีย","english":"Micronesia","aliases":["Micronesia, Federated States of"]},{"thai":"มอลโดวา","english":"Moldova","aliases":["Moldova, Republic of"]},{"thai":"โมนาโก","english":"Monaco","aliases":[]},{"thai":"มองโกเลีย","english":"Mongolia","aliases":[]},{"thai":"มอนเตเนโกร","english":"Montenegro","aliases":[]},{"thai":"มอนต์เซอร์รัต","english":"Montserrat","aliases":[]},{"thai":"โมร็อกโก","english":"Morocco","aliases":["morroco"]},{"thai":"โมซัมบิก","english":"Mozambique","aliases":[]},{"thai":"เมียนมา","english":"Myanmar","aliases":["Republic of Myanmar","Burma","พม่า"]},{"thai":"นามิเบีย","english":"Namibia","aliases":[]},{"thai":"นาอูรู","english":"Nauru","aliases":[]},{"thai":"เนปาล","english":"Nepal","aliases":[]},{"thai":"เนเธอร์แลนด์","english":"Netherlands","aliases":["nether land"]},{"thai":"นิวแคลิโดเนีย","english":"New Caledonia","aliases":[]},{"thai":"นิวซีแลนด์","english":"New Zealand","aliases":[]},{"thai":"นิการากัว","english":"Nicaragua","aliases":[]},{"thai":"ไนเจอร์","english":"Niger","aliases":["Republic of the Niger"]},{"thai":"ไนจีเรีย","english":"Nigeria","aliases":[]},{"thai":"นีอูเอ","english":"Niue","aliases":[]},{"thai":"เกาะนอร์ฟอล์ก","english":"Norfolk Island","aliases":[]},{"thai":"เกาหลีเหนือ","english":"North Korea","aliases":["Korea, Democratic People's Republic of","DPRK","Korea North"]},{"thai":"มาซิโดเนียเหนือ","english":"North Macedonia","aliases":["Macedonia"]},{"thai":"หมู่เกาะนอร์เทิร์นมาเรียนา","english":"Northern Mariana Islands","aliases":[]},{"thai":"นอร์เวย์","english":"Norway","aliases":[]},{"thai":"โอมาน","english":"Oman","aliases":[]},{"thai":"ปากีสถาน","english":"Pakistan","aliases":[]},{"thai":"ปาเลา","english":"Palau","aliases":[]},{"thai":"ปาเลสไตน์","english":"Palestine","aliases":["Palestine, State of","the State of Palestine"]},{"thai":"ปานามา","english":"Panama","aliases":[]},{"thai":"ปาปัวนิวกินี","english":"Papua New Guinea","aliases":[]},{"thai":"ปารากวัย","english":"Paraguay","aliases":[]},{"thai":"เปรู","english":"Peru","aliases":[]},{"thai":"ฟิลิปปินส์","english":"Philippines","aliases":["philipines","philinpine","Philippine"]},{"thai":"หมู่เกาะพิตแคร์น","english":"Pitcairn","aliases":[]},{"thai":"โปแลนด์","english":"Poland","aliases":[]},{"thai":"โปรตุเกส","english":"Portugal","aliases":[]},{"thai":"เปอร์โตริโก","english":"Puerto Rico","aliases":[]},{"thai":"กาตาร์","english":"Qatar","aliases":[]},{"thai":"คองโก","english":"Republic of the Congo","aliases":["คองโก (ไม่มีสาธารณรัฐ)","Congo"]},{"thai":"โรมาเนีย","english":"Romania","aliases":[]},{"thai":"รัสเซีย","english":"Russia","aliases":[]},{"thai":"รวันดา","english":"Rwanda","aliases":["Rwandese Republic"]},{"thai":"เรอูนียง","english":"Réunion","aliases":[]},{"thai":"เซนต์บาร์เธเลมี","english":"Saint Barthélemy","aliases":[]},{"thai":"เซนต์เฮเลนา","english":"Saint Helena, Ascension and Tristan da Cunha","aliases":[]},{"thai":"เซนต์คิตส์และเนวิส","english":"Saint Kitts and Nevis","aliases":[]},{"thai":"เซนต์ลูเซีย","english":"Saint Lucia","aliases":[]},{"thai":"เซนต์มาร์ติน","english":"Saint Martin (French part)","aliases":[]}]
+[
+  {
+    "thai": "ลิทัวเนีย",
+    "english": "Lithuania",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐลิทัวเนีย"
+  },
+  {
+    "thai": "ลักเซมเบิร์ก",
+    "english": "Luxembourg",
+    "aliases": [],
+    "countryOfficialThai": "ราชรัฐลักเซมเบิร์ก"
+  },
+  {
+    "thai": "มาเก๊า",
+    "english": "Macao",
+    "aliases": [
+      "Macau"
+    ],
+    "countryOfficialThai": "มาเก๊า"
+  },
+  {
+    "thai": "มาดากัสการ์",
+    "english": "Madagascar",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐมาดากัสการ์"
+  },
+  {
+    "thai": "มาลาวี",
+    "english": "Malawi",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐมาลาวี"
+  },
+  {
+    "thai": "มาเลเซีย",
+    "english": "Malaysia",
+    "aliases": [],
+    "countryOfficialThai": "มาเลเซีย"
+  },
+  {
+    "thai": "มัลดีฟส์",
+    "english": "Maldives",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐมัลดีฟส์"
+  },
+  {
+    "thai": "มาลี",
+    "english": "Mali",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐมาลี"
+  },
+  {
+    "thai": "มอลตา",
+    "english": "Malta",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐมอลตา"
+  },
+  {
+    "thai": "หมู่เกาะมาร์แชลล์",
+    "english": "Marshall Islands",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐหมู่เกาะมาร์แชลล์"
+  },
+  {
+    "thai": "มาร์ตินีก",
+    "english": "Martinique",
+    "aliases": [],
+    "countryOfficialThai": "มาร์ตินีก"
+  },
+  {
+    "thai": "มอริเตเนีย",
+    "english": "Mauritania",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐอิสลามมอริเตเนีย"
+  },
+  {
+    "thai": "มอริเชียส",
+    "english": "Mauritius",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐมอริเชียส"
+  },
+  {
+    "thai": "มายอต",
+    "english": "Mayotte",
+    "aliases": [],
+    "countryOfficialThai": "มายอต"
+  },
+  {
+    "thai": "เม็กซิโก",
+    "english": "Mexico",
+    "aliases": [],
+    "countryOfficialThai": "สหรัฐเม็กซิโก"
+  },
+  {
+    "thai": "ไมโครนีเซีย",
+    "english": "Micronesia",
+    "aliases": [
+      "Micronesia, Federated States of"
+    ],
+    "countryOfficialThai": "สหพันธรัฐไมโครนีเซีย"
+  },
+  {
+    "thai": "มอลโดวา",
+    "english": "Moldova",
+    "aliases": [
+      "Moldova, Republic of"
+    ],
+    "countryOfficialThai": "สาธารณรัฐมอลดอวา"
+  },
+  {
+    "thai": "โมนาโก",
+    "english": "Monaco",
+    "aliases": [],
+    "countryOfficialThai": "ราชรัฐโมนาโก"
+  },
+  {
+    "thai": "มองโกเลีย",
+    "english": "Mongolia",
+    "aliases": [],
+    "countryOfficialThai": "มองโกเลีย"
+  },
+  {
+    "thai": "มอนเตเนโกร",
+    "english": "Montenegro",
+    "aliases": [],
+    "countryOfficialThai": "มอนเตเนโกร"
+  },
+  {
+    "thai": "มอนต์เซอร์รัต",
+    "english": "Montserrat",
+    "aliases": [],
+    "countryOfficialThai": "มอนต์เซอร์รัต"
+  },
+  {
+    "thai": "โมร็อกโก",
+    "english": "Morocco",
+    "aliases": [
+      "morroco"
+    ],
+    "countryOfficialThai": "ราชอาณาจักรโมร็อกโก"
+  },
+  {
+    "thai": "โมซัมบิก",
+    "english": "Mozambique",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐโมซัมบิก"
+  },
+  {
+    "thai": "เมียนมา",
+    "english": "Myanmar",
+    "aliases": [
+      "Republic of Myanmar",
+      "Burma",
+      "พม่า"
+    ],
+    "countryOfficialThai": "สาธารณรัฐแห่งสหภาพเมียนมา"
+  },
+  {
+    "thai": "นามิเบีย",
+    "english": "Namibia",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐนามิเบีย"
+  },
+  {
+    "thai": "นาอูรู",
+    "english": "Nauru",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐนาอูรู"
+  },
+  {
+    "thai": "เนปาล",
+    "english": "Nepal",
+    "aliases": [],
+    "countryOfficialThai": "สหพันธ์สาธารณรัฐประชาธิปไตยเนปาล"
+  },
+  {
+    "thai": "เนเธอร์แลนด์",
+    "english": "Netherlands",
+    "aliases": [
+      "nether land"
+    ],
+    "countryOfficialThai": "ราชอาณาจักรเนเธอร์แลนด์"
+  },
+  {
+    "thai": "นิวแคลิโดเนีย",
+    "english": "New Caledonia",
+    "aliases": [],
+    "countryOfficialThai": "นิวแคลิโดเนีย"
+  },
+  {
+    "thai": "นิวซีแลนด์",
+    "english": "New Zealand",
+    "aliases": [],
+    "countryOfficialThai": "นิวซีแลนด์"
+  },
+  {
+    "thai": "นิการากัว",
+    "english": "Nicaragua",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐนิการากัว"
+  },
+  {
+    "thai": "ไนเจอร์",
+    "english": "Niger",
+    "aliases": [
+      "Republic of the Niger"
+    ],
+    "countryOfficialThai": "สาธารณรัฐไนเจอร์"
+  },
+  {
+    "thai": "ไนจีเรีย",
+    "english": "Nigeria",
+    "aliases": [],
+    "countryOfficialThai": "สหพันธ์สาธารณรัฐไนจีเรีย"
+  },
+  {
+    "thai": "นีอูเอ",
+    "english": "Niue",
+    "aliases": [],
+    "countryOfficialThai": "นีอูเอ"
+  },
+  {
+    "thai": "เกาะนอร์ฟอล์ก",
+    "english": "Norfolk Island",
+    "aliases": [],
+    "countryOfficialThai": "เกาะนอร์ฟอล์ก"
+  },
+  {
+    "thai": "เกาหลีเหนือ",
+    "english": "North Korea",
+    "aliases": [
+      "Korea, Democratic People's Republic of",
+      "DPRK",
+      "Korea North"
+    ],
+    "countryOfficialThai": "สาธารณรัฐประชาธิปไตยประชาชนเกาหลี"
+  },
+  {
+    "thai": "มาซิโดเนียเหนือ",
+    "english": "North Macedonia",
+    "aliases": [
+      "Macedonia"
+    ],
+    "countryOfficialThai": "สาธารณรัฐมาซิโดเนียเหนือ"
+  },
+  {
+    "thai": "หมู่เกาะนอร์เทิร์นมาเรียนา",
+    "english": "Northern Mariana Islands",
+    "aliases": [],
+    "countryOfficialThai": "หมู่เกาะนอร์เทิร์นมาเรียนา"
+  },
+  {
+    "thai": "นอร์เวย์",
+    "english": "Norway",
+    "aliases": [],
+    "countryOfficialThai": "ราชอาณาจักรนอร์เวย์"
+  },
+  {
+    "thai": "โอมาน",
+    "english": "Oman",
+    "aliases": [],
+    "countryOfficialThai": "รัฐสุลต่านโอมาน"
+  },
+  {
+    "thai": "ปากีสถาน",
+    "english": "Pakistan",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐอิสลามปากีสถาน"
+  },
+  {
+    "thai": "ปาเลา",
+    "english": "Palau",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐปาเลา"
+  },
+  {
+    "thai": "ปาเลสไตน์",
+    "english": "Palestine",
+    "aliases": [
+      "Palestine, State of",
+      "the State of Palestine"
+    ],
+    "countryOfficialThai": "ปาเลสไตน์"
+  },
+  {
+    "thai": "ปานามา",
+    "english": "Panama",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐปานามา"
+  },
+  {
+    "thai": "ปาปัวนิวกินี",
+    "english": "Papua New Guinea",
+    "aliases": [],
+    "countryOfficialThai": "รัฐเอกราชปาปัวนิวกินี"
+  },
+  {
+    "thai": "ปารากวัย",
+    "english": "Paraguay",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐปารากวัย"
+  },
+  {
+    "thai": "เปรู",
+    "english": "Peru",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐเปรู"
+  },
+  {
+    "thai": "ฟิลิปปินส์",
+    "english": "Philippines",
+    "aliases": [
+      "philipines",
+      "philinpine",
+      "Philippine"
+    ],
+    "countryOfficialThai": "สาธารณรัฐฟิลิปปินส์"
+  },
+  {
+    "thai": "หมู่เกาะพิตแคร์น",
+    "english": "Pitcairn",
+    "aliases": [],
+    "countryOfficialThai": "หมู่เกาะพิตแคร์น"
+  },
+  {
+    "thai": "โปแลนด์",
+    "english": "Poland",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐโปแลนด์"
+  },
+  {
+    "thai": "โปรตุเกส",
+    "english": "Portugal",
+    "aliases": [],
+    "countryOfficialThai": "สาธารณรัฐโปรตุเกส ลิสบอน"
+  },
+  {
+    "thai": "เปอร์โตริโก",
+    "english": "Puerto Rico",
+    "aliases": [],
+    "countryOfficialThai": "เปอร์โตริโก"
+  },
+  {
+    "thai": "กาตาร์",
+    "english": "Qatar",
+    "aliases": [],
+    "countryOfficialThai": "กาตาร์"
+  },
+  {
+    "thai": "คองโก",
+    "english": "Republic of the Congo",
+    "aliases": [
+      "คองโก (ไม่มีสาธารณรัฐ)",
+      "Congo"
+    ],
+    "countryOfficialThai": "คองโก"
+  },
+  {
+    "thai": "โรมาเนีย",
+    "english": "Romania",
+    "aliases": [],
+    "countryOfficialThai": "โรมาเนีย"
+  },
+  {
+    "thai": "รัสเซีย",
+    "english": "Russia",
+    "aliases": [],
+    "countryOfficialThai": "สหพันธรัฐรัสเซีย"
+  },
+  {
+    "thai": "รวันดา",
+    "english": "Rwanda",
+    "aliases": [
+      "Rwandese Republic"
+    ],
+    "countryOfficialThai": "สาธารณรัฐรวันดา"
+  },
+  {
+    "thai": "เรอูนียง",
+    "english": "Réunion",
+    "aliases": [],
+    "countryOfficialThai": "เรอูนียง"
+  },
+  {
+    "thai": "เซนต์บาร์เธเลมี",
+    "english": "Saint Barthélemy",
+    "aliases": [],
+    "countryOfficialThai": "เซนต์บาร์เธเลมี"
+  },
+  {
+    "thai": "เซนต์เฮเลนา",
+    "english": "Saint Helena, Ascension and Tristan da Cunha",
+    "aliases": [],
+    "countryOfficialThai": "เซนต์เฮเลนา"
+  },
+  {
+    "thai": "เซนต์คิตส์และเนวิส",
+    "english": "Saint Kitts and Nevis",
+    "aliases": [],
+    "countryOfficialThai": "เซนต์คิตส์และเนวิส"
+  },
+  {
+    "thai": "เซนต์ลูเซีย",
+    "english": "Saint Lucia",
+    "aliases": [],
+    "countryOfficialThai": "เซนต์ลูเซีย"
+  },
+  {
+    "thai": "เซนต์มาร์ติน",
+    "english": "Saint Martin (French part)",
+    "aliases": [],
+    "countryOfficialThai": "เซนต์มาร์ติน"
+  }
+]
