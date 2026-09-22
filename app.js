@@ -181,7 +181,7 @@
     el('saveStudentDraftBtn').textContent='Update draft';
     openModal('studentModal');
   }
-  function saveStudentDraft() {
+  async function saveStudentDraft() {
     const values=readDraftValues(el('studentForm'));
     const now=new Date().toISOString();
     const existing=state.drafts.find(draft=>draft.id===state.activeDraftId);
@@ -191,7 +191,12 @@
       state.drafts.push(draft);
       state.activeDraftId=draft.id;
     }
-    persist();renderDraftsButton();renderDraftsModal();
+    const saved=await persist();
+    if(!saved){
+      toast('Draft not saved','Browser storage is unavailable. Keep this window open and try again.',true);
+      return;
+    }
+    renderDraftsButton();renderDraftsModal();
     closeModal('studentModal');openModal('draftsModal');
     toast('Draft saved','This unfinished student is stored locally and is not an active case.');
   }
@@ -859,13 +864,16 @@
   }
 
   function persist() {
-    VisaDB.setState('workspace_v02', {
+    return VisaDB.setState('workspace_v02', {
       cases: state.cases,
       drafts: state.drafts,
       batches: state.batches,
       settings: state.settings,
       savedAt: new Date().toISOString(),
-    }).catch((err) => console.error('Autosave failed', err));
+    }).then(()=>true).catch((err) => {
+      console.error('Autosave failed',err);
+      return false;
+    });
   }
 
   async function loadReferenceData() {
