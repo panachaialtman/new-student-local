@@ -890,11 +890,17 @@
     select.innerHTML=options.map(([value,name])=>`<option value="${escapeHtml(value)}" ${state.activeLabelId===value?'selected':''}>${escapeHtml(name)}</option>`).join('');
     if(el('groupCasesToggle')) el('groupCasesToggle').checked=state.groupByLabel;
   }
-  function caseGroupBadge(item) {
-    const label=labelForCase(item);
-    const options=['<option value="">Unlabeled</option>',...caseLabels().map(group=>
-      `<option value="${escapeHtml(group.id)}" ${group.id===(label?.id||'')?'selected':''}>${escapeHtml(group.name)}</option>`)];
-    return `<select class="case-row-group-select" data-case-group aria-label="Assign group to ${escapeHtml(item.fullName || 'student')}" title="Case group (stored locally)">${options.join('')}</select>`;
+  // Group numbers follow the order of the existing named color groups.
+  // Stable group IDs, not display numbers, remain the value stored on cases.
+  function caseGroupNumber(item) {
+    const group=labelForCase(item);
+    if (!group) return '—';
+    return String(caseLabels().findIndex(label=>label.id===group.id)+1);
+  }
+  function caseGroupSelectLabel(item,selected) {
+    const group=labelForCase(item);
+    return (selected?'Deselect ':'Select ')+(item.fullName||'student')+
+      '. '+(group?'Group '+caseGroupNumber(item)+': '+group.name:'Unlabeled')+'.';
   }
   function groupedCaseRows(items) {
     if(!state.groupByLabel)return items.map(renderCaseRow).join('');
@@ -916,11 +922,12 @@
     const group = labelForCase(item);
     return `
       <div class="case-row ${selected ? 'selected' : ''} ${group ? 'has-case-label' : ''}" data-case-id="${escapeHtml(item.id)}" style="--case-label-color:${group?.color || '#e2e8f0'}">
-        <div><input class="case-check" type="checkbox" ${selected ? 'checked' : ''} aria-label="Select ${escapeHtml(item.fullName)}" /></div>
+        <button class="case-select-rail" type="button" data-case-select aria-pressed="${selected}" aria-label="${escapeHtml(caseGroupSelectLabel(item,selected))}" title="${escapeHtml((group?'Group '+caseGroupNumber(item)+' · '+group.name:'Unlabeled')+' · click to '+(selected?'deselect':'select')+' case')}">
+          <span class="case-rail-number" aria-hidden="true">${caseGroupNumber(item)}</span>
+        </button>
         <div class="case-click student-cell">
           <div class="student-name">${escapeHtml(item.fullName || 'Unnamed student')}</div>
           <div class="student-meta"><span class="meta-strong">${escapeHtml(item.studentId || 'No ID')}</span><span>•</span><span>Doc ${escapeHtml(item.documentNo || '—')}</span></div>
-          <div class="case-group-meta">${group ? `<span class="case-group-chip" style="--case-label-color:${group.color}">${escapeHtml(group.name)}</span>` : ''}${caseGroupBadge(item)}</div>
         </div>
         <div class="case-click program-cell">
           <div class="program-name">${escapeHtml(programName)}</div>
@@ -941,26 +948,18 @@
     el('emptyState').classList.toggle('hidden', items.length > 0);
     items.forEach((item) => {
       const row = el('caseList').querySelector(`[data-case-id="${CSS.escape(item.id)}"]`);
-      const check = row.querySelector('.case-check');
-      const picker=row.querySelector('[data-case-group]');
-      picker?.addEventListener('click', event => event.stopPropagation());
-      picker?.addEventListener('keydown', event => event.stopPropagation());
-      picker?.addEventListener('change', event => {
+      row.querySelector('[data-case-select]').addEventListener('click', event => {
         event.stopPropagation();
-        const id=picker.value;
-        if(id && !caseLabels().some(label=>label.id===id))return;
-        item.labelId=id;
-        persist();renderCaseList();renderCaseLabelSettings();
-      });
-      check.addEventListener('click', (event) => {
-        event.stopPropagation();
-        toggleSelection(item.id, check.checked);
+        toggleSelection(item.id,!state.selected.has(item.id));
       });
       row.querySelectorAll('.case-click').forEach((cell) => cell.addEventListener('click', () => openDrawer(item.id)));
     });
     const allVisible = items.length > 0 && items.every((i) => state.selected.has(i.id));
-    el('selectAll').checked = allVisible;
-    el('selectAll').indeterminate = items.some((i) => state.selected.has(i.id)) && !allVisible;
+    const selectAll=el('selectAll');
+    selectAll.setAttribute('aria-pressed',String(allVisible));
+    selectAll.textContent=allVisible?'None':'All';
+    selectAll.setAttribute('aria-label',allVisible?'Deselect all visible cases':'Select all visible cases');
+    selectAll.title=selectAll.getAttribute('aria-label');
   }
 
   function renderWorkspace() {
@@ -1142,6 +1141,7 @@
             ${editableSelect('Request option', 'requestRuleOverride', rule, [['six_months','+6 months'],['one_year','+1 year'],['manual','Manual Date']], 'data-request-rule="drawer"')}
             <div class="drawer-field manual-request-field ${rule === 'manual' ? '' : 'hidden'}"><label>Manual request until</label><input data-edit-field="manualRequestUntil" type="date" value="${escapeHtml(item.manualRequestUntil || '')}" /></div>
             ${editableSelect('Case type · move to another section', 'caseCategory', item.caseCategory, [['normal','Normal cases'],['exchange','Exchange students'],['non_o','Non-O → ED transfer']], 'id="editCaseCategory"')}
+            ${editableSelect('Case group', 'labelId', item.labelId || '', [['','Unlabeled'],...caseLabels().map((group,index)=>[group.id,(index+1)+' · '+group.name])])}
             <div class="case-move-hint">Change the case type and save to move this student. The new letter template will be used.</div>
           </div>
         </div>
@@ -1230,6 +1230,7 @@
         <div class="drawer-section"><div class="drawer-section-head"><h3>Visa request</h3></div>
           <div class="field-grid">
             ${fieldItem('Current stay', formatDate(item.currentStayUntil))}
+            ${fieldItem('Case group', labelForCase(item) ? 'Group '+caseGroupNumber(item)+' · '+labelForCase(item).name : 'Unlabeled')}
             ${fieldItem('Request option', ruleLabel(item))}
             <div class="field-item"><label>Case type</label><div class="field-value">${escapeHtml(({normal:'Normal cases',exchange:'Exchange students',non_o:'Non-O → ED transfer'})[item.caseCategory] || 'Normal cases')}</div><button type="button" class="btn subtle case-move-button" id="moveCaseTypeBtn">Move to another case type →</button></div>
             ${fieldItem(isPassportCapped(item) ? 'Extend until (passport cap)' : 'Request until', item.requestUntil ? formatDate(item.requestUntil) : '—', true)}
@@ -1499,6 +1500,56 @@
     toast('Student added', 'Faculty and major were linked to the supplied reference data.');
   }
 
+  // Group assignment is a local-only action: never touches student data or the Hub.
+  let groupAssignmentIds=[];
+  function openGroupAssignmentModal() {
+    const items=selectedCases();
+    if (!items.length) return;
+    groupAssignmentIds=items.map(item=>item.id);
+    const first=items[0].labelId||'';
+    const shared=items.every(item=>(item.labelId||'')===first);
+    el('groupAssignSummary').textContent=items.length+' selected case'+(items.length===1?'':'s')+
+      ' · Set one group for these cases without changing their visa information.';
+    const root=el('groupAssignCaseList');
+    root.innerHTML=items.slice(0,8).map(item=>{
+      const group=labelForCase(item);
+      return `<div class="group-assign-case"><strong>${escapeHtml(item.fullName||'Unnamed student')}</strong>
+        <span>${escapeHtml(group?'Group '+caseGroupNumber(item)+' · '+group.name:'Unlabeled')}</span></div>`;
+    }).join('')+(items.length>8?
+      '<div class="group-assign-extra">+ '+(items.length-8)+' more selected cases</div>':'');
+    const select=el('groupAssignSelect');
+    select.innerHTML=(shared?'':'<option value="__choose__">Choose a group…</option>')+
+      '<option value="">Unlabeled · remove assignment</option>'+
+      caseLabels().map((group,index)=>`<option value="${escapeHtml(group.id)}">Group ${index+1} · ${escapeHtml(group.name)}</option>`).join('');
+    select.value=shared?first:'__choose__';
+    openModal('groupAssignModal');
+    select.focus();
+  }
+  function saveGroupAssignment() {
+    const id=el('groupAssignSelect').value;
+    if (id==='__choose__' || (id && !caseLabels().some(group=>group.id===id))) {
+      toast('Choose a group','Select a named group or Unlabeled before saving.',true);
+      return;
+    }
+    const ids=new Set(groupAssignmentIds.filter(caseId=>state.selected.has(caseId)));
+    const items=state.cases.filter(item=>ids.has(item.id) && item.caseCategory===state.activeCategory);
+    if (!items.length) {
+      closeModal('groupAssignModal');
+      toast('Selection changed','Select the cases again and reopen Edit group assign.',true);
+      return;
+    }
+    items.forEach(item=>{item.labelId=id;});
+    persist();
+    groupAssignmentIds=[];
+    closeModal('groupAssignModal');
+    state.selected.clear();
+    renderWorkspace();
+    renderCaseLabelSettings();
+    if (state.activeCaseId && !state.editing && el('detailDrawer').classList.contains('open'))renderDrawer();
+    toast('Group assignment saved',items.length+' case'+(items.length===1?'':'s')+
+      ' updated locally. No student or visa information was changed.');
+  }
+
   function openModal(id) {
     el('modalBackdrop').classList.remove('hidden');
     el(id).classList.remove('hidden');
@@ -1506,7 +1557,7 @@
 
   function closeModal(id) {
     el(id).classList.add('hidden');
-    const anyOpen = ['studentModal', 'batchModal', 'individualModal', 'departmentModal'].some((modalId) => !el(modalId).classList.contains('hidden'));
+    const anyOpen = ['studentModal', 'batchModal', 'individualModal', 'departmentModal', 'groupAssignModal'].some((modalId) => !el(modalId).classList.contains('hidden'));
     if (!anyOpen) el('modalBackdrop').classList.add('hidden');
   }
 
@@ -2047,13 +2098,17 @@
     el('groupCasesToggle')?.addEventListener('change', e => { state.groupByLabel=e.target.checked;renderCaseList(); });
     el('manageCaseLabelsBtn')?.addEventListener('click', () => switchView('settings'));
     bindCaseLabelSettings();
-    el('selectAll').addEventListener('change', (e) => {
-      filteredCases().forEach((item) => e.target.checked ? state.selected.add(item.id) : state.selected.delete(item.id));
+    el('selectAll').addEventListener('click', () => {
+      const items=filteredCases();
+      const allSelected=items.length>0 && items.every(item=>state.selected.has(item.id));
+      items.forEach(item=>allSelected?state.selected.delete(item.id):state.selected.add(item.id));
       renderCaseList();
       renderSelectionBar();
     });
     el('clearSelectionBtn').addEventListener('click', () => { state.selected.clear(); renderCaseList(); renderSelectionBar(); });
     el('deleteSelectedBtn').addEventListener('click', deleteSelectedCases);
+    el('editGroupAssignBtn').addEventListener('click',openGroupAssignmentModal);
+    el('saveGroupAssignBtn').addEventListener('click',saveGroupAssignment);
     el('departmentTableBtn').addEventListener('click', () => { renderDepartmentModal(); openModal('departmentModal'); });
     el('copyDepartmentBtn').addEventListener('click', copyDepartmentTable);
     el('downloadDepartmentBtn').addEventListener('click', downloadDepartmentExcel);
@@ -2085,6 +2140,7 @@
       closeModal('batchModal');
       closeModal('individualModal');
       closeModal('departmentModal');
+      closeModal('groupAssignModal');
     });
     el('studentForm').addEventListener('submit', (e) => {
       e.preventDefault();

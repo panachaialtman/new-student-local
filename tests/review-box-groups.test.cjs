@@ -45,25 +45,29 @@ assert.equal(new TextDecoder().decode(disabled.get('word/document.xml').data),xm
 console.log('Word reviewer-box tests passed (position, rows, labels, page break, opt-out).');
 
 const css=fs.readFileSync('styles.css','utf8');
-assert(/\.case-row\.has-case-label::before\s*\{[^}]*width:54px;/.test(css),
-  'Desktop color rail must fill the checkbox column');
-assert(/\.case-row\.has-case-label::before\s*\{[^}]*linear-gradient\(to right,[\s\S]*?\s10%,#fff\)/.test(css),
-  'Checkbox-area rail must use a subtle 10% group color tint, not a solid block');
-assert(/\.case-row\.has-case-label::before\s*\{[^}]*var\(--case-label-color,#94a3b8\) 0 4px/.test(css),
-  'Slim saturated 4px accent must still identify the group');
-assert(/\.case-row\.has-case-label > :first-child\s*\{[^}]*z-index:1;/.test(css),
-  'Checkbox column must sit above the full-width colored band');
-assert(/\.case-row\.has-case-label \.case-check\s*\{[^}]*z-index:2;/.test(css),
-  'Checkbox remains visible and clickable');
-console.log('Case label band geometry and interactive checkbox CSS checks passed.');
+const html=fs.readFileSync('index.html','utf8');
+assert(/\.case-row\s*\{[^}]*grid-template-columns: 56px/.test(css),
+  'Desktop row reserves a full 56px clickable selector rail');
+assert(/\.case-row\s*\{[^}]*column-gap: 16px/.test(css),
+  'Student text is separated from the colored selector by a 16px gap');
+assert(/\.case-select-rail\s*\{[^}]*align-self:stretch/.test(css),
+  'The numbered selector fills the row height');
+assert(/\.case-select-rail\[aria-pressed="true"\]/.test(css),
+  'Selection has visible pressed styling');
+assert(!html.includes('type="checkbox" id="selectAll"'),
+  'No select-all checkbox remains in the header');
+assert(html.includes('id="editGroupAssignBtn"') && html.includes('id="groupAssignModal"') &&
+  html.includes('id="saveGroupAssignBtn"'),
+  'The dedicated batch group editor must be present');
+console.log('Numbered rail spacing, select-all button, and dedicated group editor UI checks passed.');
 
 const app=fs.readFileSync('app.js','utf8');
 const needle="  boot();\n})();";
 assert(app.endsWith(needle+'\n')||app.endsWith(needle));
 const appContext={window:{},document:{},console,Date,Math,Set,Map,Intl,Number,String,Array,RegExp};
 vm.runInNewContext(app.replace(needle,
-  "  window.__groupTest={state,caseLabels,labelForCase,filteredCases};\n})();"),appContext);
-const {state,caseLabels,labelForCase,filteredCases}=appContext.window.__groupTest;
+  "  window.__groupTest={state,caseLabels,labelForCase,caseGroupNumber,caseGroupSelectLabel,filteredCases};\n})();"),appContext);
+const {state,caseLabels,labelForCase,caseGroupNumber,caseGroupSelectLabel,filteredCases}=appContext.window.__groupTest;
 state.settings.caseLabels=[
  {id:'label_blue_1234',name:'Waiting for document',color:'#2563eb'},
  {id:'label_red_1234',name:'Urgent',color:'#be3a46'}];
@@ -73,6 +77,18 @@ state.cases=[
  {id:'case_3',fullName:'Sample Three',caseCategory:'exchange',labelId:'label_red_1234'}];
 assert.equal(caseLabels().length,2);
 assert.equal(labelForCase(state.cases[0]).name,'Waiting for document');
+assert.equal(caseGroupNumber(state.cases[0]),'1');
+assert.equal(caseGroupNumber(state.cases[2]),'2');
+assert.equal(caseGroupNumber(state.cases[1]),'—');
+state.selected.add('case_1');
+assert(caseGroupSelectLabel(state.cases[0],true).startsWith('Deselect Sample One. Group 1'));
+assert(app.includes('data-case-select aria-pressed=') &&
+  !app.includes('class="case-check"') && !app.includes('data-case-group'),
+  'Case rows must use a numbered selection button rather than checkbox and inline group picker');
+assert(app.includes("editableSelect('Case group', 'labelId'") &&
+  app.includes('groupAssignmentIds=[]') && app.includes('state.selected.clear();'),
+  'Single-case Edit and bulk group reassignment must both be wired');
+
 state.activeCategory='normal';state.activeLabelId='label_blue_1234';
 assert.deepEqual(Array.from(filteredCases(),x=>x.id),['case_1']);
 state.activeLabelId='unlabeled';assert.deepEqual(Array.from(filteredCases(),x=>x.id),['case_2']);

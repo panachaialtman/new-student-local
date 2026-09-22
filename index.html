@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#101d35" />
   <link rel="manifest" href="manifest.webmanifest" />
   <title>BU Visa Case Workspace</title>
-  <link rel="stylesheet" href="styles.css?v=040" />
+  <link rel="stylesheet" href="styles.css?v=041" />
 </head>
 <body>
   <div class="app-shell">
@@ -36,7 +36,7 @@
         <button class="nav-item nav-settings" data-view="settings">
           <span class="nav-icon">⚙</span><span>Workspace settings</span>
         </button>
-        <div class="version-row"><span>Visa Workspace</span><span>v0.3.10 Web</span></div>
+        <div class="version-row"><span>Visa Workspace</span><span>v0.3.11 Web</span></div>
       </div>
     </aside>
 
@@ -75,7 +75,7 @@
           </div>
 
           <div class="list-header desktop-table">
-            <div><input type="checkbox" id="selectAll" aria-label="Select all visible students" /></div>
+            <div><button type="button" id="selectAll" class="case-select-all" aria-label="Select all visible cases" aria-pressed="false" title="Select all visible cases">All</button></div>
             <div>Student</div>
             <div>Program / rule</div>
             <div>Visa request</div>
@@ -204,6 +204,7 @@
     <div><strong id="selectedCount">0 selected</strong><span>Ready for batch actions</span></div>
     <div class="selection-actions">
       <button class="btn subtle-on-dark" id="clearSelectionBtn">Clear</button>
+      <button class="btn selection-secondary" id="editGroupAssignBtn" type="button">Edit group assign</button>
       <button class="btn danger-on-dark" id="deleteSelectedBtn">Delete selected</button>
       <button class="btn selection-secondary" id="departmentTableBtn">Department table</button>
       <button class="btn white" id="prepareBatchBtn">Export Word →</button>
@@ -273,6 +274,25 @@
     </div>
   </section>
 
+  <section class="modal group-assign-modal hidden" id="groupAssignModal" role="dialog" aria-modal="true" aria-labelledby="groupAssignModalTitle">
+    <div class="modal-head">
+      <div><div class="eyebrow">CASE ORGANIZATION</div><h2 id="groupAssignModalTitle">Edit group assignment</h2></div>
+      <button class="icon-btn modal-close" type="button" data-close="groupAssignModal" aria-label="Close group assignment">×</button>
+    </div>
+    <div class="modal-body">
+      <p class="group-assign-intro" id="groupAssignSummary"></p>
+      <div class="group-assign-case-list" id="groupAssignCaseList"></div>
+      <label class="group-assign-field" for="groupAssignSelect">Assign selected cases to
+        <select id="groupAssignSelect"></select>
+      </label>
+      <p class="group-assign-note">Assignments stay in this browser and are included in your existing backup. No student details are sent to Central Hub.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn subtle modal-close" type="button" data-close="groupAssignModal">Cancel</button>
+      <button class="btn primary" id="saveGroupAssignBtn" type="button">Save group assignment</button>
+    </div>
+  </section>
+
   <section class="modal individual-modal hidden" id="individualModal" role="dialog" aria-modal="true" aria-labelledby="individualModalTitle">
     <div class="modal-head">
       <div><div class="eyebrow">INDIVIDUAL LETTER</div><h2 id="individualModalTitle">Print individual</h2></div>
@@ -298,7 +318,7 @@
   <script src="docx-engine.js?v=039"></script>
   <script src="excel-export.js"></script>
   <script src="hub-reference.js?v=037"></script>
-  <script src="app.js?v=038"></script>
+  <script src="app.js?v=041"></script>
   <script src="ui-enhancements.js?v=036"></script>
   <script>
     if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(console.warn));
