@@ -49,6 +49,8 @@
     programs: [],
     nationalities: [],
     cases: [],
+    drafts: [],
+    activeDraftId: null,
     batches: [],
     selected: new Set(),
     activeCategory: 'normal',
@@ -716,6 +718,7 @@
       const stored = await VisaDB.getState('workspace_v02');
       if (stored && typeof stored === 'object') {
         state.cases = migrateCaseOrder(stored.cases);
+        state.drafts = normalizeDrafts(stored.drafts);
         state.batches = Array.isArray(stored.batches) ? stored.batches : [];
         state.settings = { ...state.settings, ...(stored.settings || {}) };
       } else {
@@ -725,6 +728,7 @@
         const legacyBatches = JSON.parse(localStorage.getItem(BATCH_KEY) || '[]');
         const legacySettings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
         state.cases = migrateCaseOrder(legacyCases);
+        state.drafts = [];
         state.batches = Array.isArray(legacyBatches) ? legacyBatches : [];
         if (legacySettings) state.settings = { ...state.settings, ...legacySettings };
         if (state.cases.length || state.batches.length || legacySettings) persist();
@@ -738,6 +742,7 @@
     } catch (err) {
       console.warn('Could not load browser state', err);
       state.cases = [];
+      state.drafts = [];
       state.batches = [];
     }
   }
@@ -745,6 +750,7 @@
   function persist() {
     VisaDB.setState('workspace_v02', {
       cases: state.cases,
+      drafts: state.drafts,
       batches: state.batches,
       settings: state.settings,
       savedAt: new Date().toISOString(),
@@ -1678,7 +1684,7 @@
 
   function closeModal(id) {
     el(id).classList.add('hidden');
-    const anyOpen = ['studentModal', 'batchModal', 'individualModal', 'departmentModal', 'groupAssignModal'].some((modalId) => !el(modalId).classList.contains('hidden'));
+    const anyOpen = ['studentModal', 'batchModal', 'individualModal', 'departmentModal', 'groupAssignModal', 'draftsModal'].some((modalId) => !el(modalId).classList.contains('hidden'));
     if (!anyOpen) el('modalBackdrop').classList.add('hidden');
   }
 
@@ -2018,7 +2024,7 @@
     const templates = await VisaDB.exportTemplatesBase64();
     const payload = {
       exportedAt: new Date().toISOString(), version: '0.2-web',
-      cases: state.cases, batches: state.batches, settings: state.settings, templates,
+      cases: state.cases, drafts: state.drafts, batches: state.batches, settings: state.settings, templates,
     };
     downloadBlob(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }), `visa_workspace_${todayIso()}.visabackup`);
     toast('Backup exported', 'Cases, history, settings and imported Word templates are included.');
@@ -2030,6 +2036,8 @@
       const payload = JSON.parse(await file.text());
       if (!payload || typeof payload !== 'object') throw new Error('Backup file is not valid JSON');
       state.cases = migrateCaseOrder(payload.cases);
+      state.drafts = normalizeDrafts(payload.drafts);
+      state.activeDraftId = null;
       state.batches = Array.isArray(payload.batches) ? payload.batches : [];
       state.settings = { ...state.settings, ...(payload.settings || {}) };
       state.settings.signatory = normalizeSignatoryKey(state.settings.signatory);
@@ -2048,6 +2056,7 @@
       renderCaseLabelSettings();
       showPartnerUniversitySuggestions();
       renderSavedUniversities();
+      renderDraftsButton();
       state.selected.clear();
       renderWorkspace(); renderBatchHistory(); renderProgramTable();
       toast('Backup restored', `${state.cases.length} cases restored into this browser.`);
@@ -2328,6 +2337,7 @@
     document.querySelectorAll('.modal-close').forEach((btn) => btn.addEventListener('click', () => closeModal(btn.dataset.close)));
     el('modalBackdrop').addEventListener('click', () => {
       closeModal('studentModal');
+      closeModal('draftsModal');
       closeModal('batchModal');
       closeModal('individualModal');
       closeModal('departmentModal');
@@ -2395,6 +2405,7 @@
       renderListColumnSettings();
       renderCaseLabelSettings();
       renderSavedUniversities();
+      renderDraftsButton();
 
       bindEvents();
       renderWorkspace();
