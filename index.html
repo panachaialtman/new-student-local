@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#101d35" />
   <link rel="manifest" href="manifest.webmanifest" />
   <title>BU Visa Case Workspace</title>
-  <link rel="stylesheet" href="styles.css?v=044" />
+  <link rel="stylesheet" href="styles.css?v=046" />
 </head>
 <body>
   <div class="app-shell">
@@ -36,7 +36,7 @@
         <button class="nav-item nav-settings" data-view="settings">
           <span class="nav-icon">⚙</span><span>Workspace settings</span>
         </button>
-        <div class="version-row"><span>Visa Workspace</span><span>v0.3.15 Web</span></div>
+        <div class="version-row"><span>Visa Workspace</span><span>v0.3.16 Web</span></div>
       </div>
     </aside>
 
@@ -330,7 +330,7 @@
     </div>
   </section>
 
-  <datalist id="nationalitySuggestions"></datalist>
+  
   <datalist id="partnerCountrySuggestions"></datalist>
   <datalist id="partnerUniversitySuggestions"></datalist>
   <input id="restoreFileInput" type="file" accept=".visabackup,.json,application/json" hidden />
@@ -343,7 +343,7 @@
   <script src="docx-engine.js?v=045"></script>
   <script src="excel-export.js"></script>
   <script src="hub-reference.js?v=037"></script>
-  <script src="app.js?v=045"></script>
+  <script src="app.js?v=046"></script>
   <script src="ui-enhancements.js?v=036"></script>
   <script>
     if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(console.warn));
