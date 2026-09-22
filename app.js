@@ -926,7 +926,7 @@
           <span class="case-rail-number" aria-hidden="true">${caseGroupNumber(item)}</span>
         </button>
         <div class="case-click student-cell">
-          <div class="student-name">${escapeHtml(item.fullName || 'Unnamed student')}</div>
+          <div class="student-name">${escapeHtml(item.fullName || 'Unnamed student')}${item.isTestCase ? ' <span class="tester-case-pill" title="Fictional demonstration case">TEST ONLY</span>' : ''}</div>
           <div class="student-meta"><span class="meta-strong">${escapeHtml(item.studentId || 'No ID')}</span><span>•</span><span>Doc ${escapeHtml(item.documentNo || '—')}</span></div>
         </div>
         <div class="case-click program-cell">
@@ -2021,6 +2021,75 @@
     }).join('');
   }
 
+  const SETTINGS_TABS = ['general','groups','documents','data','tools'];
+  let activeSettingsTab = 'general';
+  function switchSettingsTab(tab) {
+    activeSettingsTab=SETTINGS_TABS.includes(tab)?tab:'general';
+    document.querySelectorAll('[data-settings-tab]').forEach(button=>{
+      const active=button.dataset.settingsTab===activeSettingsTab;
+      button.classList.toggle('active',active);
+      button.setAttribute('aria-selected',String(active));
+      button.tabIndex=active?0:-1;
+    });
+    document.querySelectorAll('[data-settings-panel]').forEach(panel=>{
+      const active=panel.dataset.settingsPanel===activeSettingsTab;
+      panel.hidden=!active;
+      panel.classList.toggle('active',active);
+    });
+  }
+  function bindSettingsTabs() {
+    document.querySelectorAll('[data-settings-tab]').forEach(button=>{
+      button.addEventListener('click',()=>switchSettingsTab(button.dataset.settingsTab));
+      button.addEventListener('keydown',event=>{
+        if(!['ArrowDown','ArrowUp','Home','End'].includes(event.key))return;
+        event.preventDefault();
+        const current=SETTINGS_TABS.indexOf(button.dataset.settingsTab);
+        const next=event.key==='Home'?0:event.key==='End'?SETTINGS_TABS.length-1:
+          (current+(event.key==='ArrowDown'?1:-1)+SETTINGS_TABS.length)%SETTINGS_TABS.length;
+        switchSettingsTab(SETTINGS_TABS[next]);
+        document.querySelector('[data-settings-tab="'+SETTINGS_TABS[next]+'"]')?.focus();
+      });
+    });
+    switchSettingsTab(activeSettingsTab);
+  }
+  function addTesterCase() {
+    const sampleProgram=state.programs.find(p=>p.programType==='international' &&
+      /business administration/i.test(p.programEnglish||''))||
+      state.programs.find(p=>p.programType==='international' && p.credits?.['2026']);
+    if(!sampleProgram) {
+      toast('Test case unavailable','Academic references are still loading. Try again shortly.',true);
+      return;
+    }
+    // Clearly synthetic values: no student record is read or copied.
+    let serial=1,number;
+    do {number='TEST'+String(serial++).padStart(5,'0')}
+    while(state.cases.some(item=>item.studentId===number || item.documentNo==='TEST-'+number));
+    const item=normalizeCase({
+      id:uid('tester'), createdAt:new Date().toISOString(), isTestCase:true,
+      caseCategory:'normal', documentNo:'TEST-'+number, title:'MISS',
+      fullName:'TESTER [SAMPLE CASE]', studentId:number, currentStudent:true,
+      nationalityThai:'ไทย', passportNo:'TEST-ONLY',
+      passportExpiry:addMonths(todayIso(),48),
+      currentStayUntil:addMonths(todayIso(),1),
+      programKey:sampleProgram.key, programType:sampleProgram.programType,
+      facultyEnglish:sampleProgram.facultyEnglish, facultyThai:sampleProgram.facultyThai,
+      programEnglish:sampleProgram.programEnglish, programThai:sampleProgram.programThai,
+      totalCredits:sampleProgram.credits?.['2026']??'',
+      registeredCredits:18, requestRuleOverride:'six_months',
+      labelId:''
+    });
+    state.cases.push(item);
+    state.cases=sortCasesOldestFirst(state.cases);
+    persist();
+    state.search='';
+    state.activeLabelId='all';
+    el('searchInput').value='';
+    switchView('workspace','normal');
+    renderWorkspace();
+    openDrawer(item.id);
+    toast('Tester created','A fictional local case was added. Delete it when your testing is finished.');
+  }
+
   function switchView(view, caseCategory = state.activeCategory) {
     const categories = {
       normal: ['Normal cases', 'NEW & CURRENT STUDENTS'],
@@ -2051,7 +2120,7 @@
     el('pageEyebrow').textContent = eyebrow;
     if (view === 'programs') renderProgramTable();
     if (view === 'batches') renderBatchHistory();
-    if (view === 'settings') refreshTemplateStatus().catch(console.error);
+    if (view === 'settings') { switchSettingsTab(activeSettingsTab); refreshTemplateStatus().catch(console.error); }
     if (window.innerWidth <= 880) el('sidebar').classList.remove('open');
   }
 
@@ -2070,6 +2139,8 @@
       () => switchView(item.dataset.view, item.dataset.caseCategory || state.activeCategory)));
     el('menuToggle')?.addEventListener('click', () => el('sidebar').classList.toggle('open'));
     el('addStudentBtn').addEventListener('click', () => { renderStudentForm(); openModal('studentModal'); });
+    bindSettingsTabs();
+    el('addTesterBtn')?.addEventListener('click',addTesterCase);
     el('openHistoryFromSettings').addEventListener('click', () => switchView('batches'));
     el('openProgramsFromSettings').addEventListener('click', () => switchView('programs'));
 
@@ -2096,7 +2167,6 @@
     el('searchInput').addEventListener('input', (e) => { state.search = e.target.value; renderCaseList(); });
     el('caseLabelFilter')?.addEventListener('change', e => { state.activeLabelId=e.target.value;renderCaseList(); });
     el('groupCasesToggle')?.addEventListener('change', e => { state.groupByLabel=e.target.checked;renderCaseList(); });
-    el('manageCaseLabelsBtn')?.addEventListener('click', () => switchView('settings'));
     bindCaseLabelSettings();
     el('selectAll').addEventListener('click', () => {
       const items=filteredCases();

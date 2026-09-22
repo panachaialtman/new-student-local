@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#101d35" />
   <link rel="manifest" href="manifest.webmanifest" />
   <title>BU Visa Case Workspace</title>
-  <link rel="stylesheet" href="styles.css?v=041" />
+  <link rel="stylesheet" href="styles.css?v=044" />
 </head>
 <body>
   <div class="app-shell">
@@ -36,7 +36,7 @@
         <button class="nav-item nav-settings" data-view="settings">
           <span class="nav-icon">⚙</span><span>Workspace settings</span>
         </button>
-        <div class="version-row"><span>Visa Workspace</span><span>v0.3.13 Web</span></div>
+        <div class="version-row"><span>Visa Workspace</span><span>v0.3.14 Web</span></div>
       </div>
     </aside>
 
@@ -50,10 +50,6 @@
           </div>
         </div>
         <div class="topbar-actions">
-          <span id="hubReferenceStatus" role="status" aria-live="polite" title="Reference-data source" style="font-size:12px;max-width:220px;color:#64748b">Bundled references · checking Hub…</span>
-          <button class="btn subtle" id="refreshHubReferencesBtn" type="button" title="Refresh public academic and nationality reference data only">↻ Refresh references</button>
-          <button class="btn subtle" id="restoreBtn">Restore</button>
-          <button class="btn subtle" id="backupBtn">Backup data</button>
           <button class="btn primary" id="addStudentBtn">＋ Add student</button>
         </div>
       </header>
@@ -64,7 +60,6 @@
             <div class="case-group-tools">
               <label class="case-group-filter-label">Case group <select id="caseLabelFilter" aria-label="Filter by case group"><option value="all">All groups</option></select></label>
               <label class="case-group-toggle"><input type="checkbox" id="groupCasesToggle" /> Group rows by label</label>
-              <button class="btn subtle" type="button" id="manageCaseLabelsBtn">Manage groups</button>
             </div>
             <div class="toolbar-right">
               <label class="search-box">
@@ -115,22 +110,24 @@
         <div class="section-head">
           <div><h2>Workspace settings</h2><p>Batch-level information should live here instead of being hard-coded inside Word templates.</p></div>
         </div>
-        <div class="content-card settings-shortcuts">
-          <div><h3>Tools and records</h3><p>Open previous document batches or browse the academic program reference.</p></div>
-          <div class="settings-shortcut-actions">
-            <button type="button" class="btn subtle" id="openHistoryFromSettings">▤ Generation history →</button>
-            <button type="button" class="btn subtle" id="openProgramsFromSettings">⌘ Academic programs →</button>
-          </div>
-        </div>
-        <div class="settings-grid">
-          <div class="content-card setting-card">
+<div class="settings-shell">
+<nav class="settings-category-nav" aria-label="Settings categories" role="tablist" aria-orientation="vertical">
+  <button type="button" class="settings-tab active" data-settings-tab="general" aria-controls="settingsPanel_general" aria-selected="true" role="tab"><span class="settings-tab-icon" aria-hidden="true">⚙</span><span><strong>General</strong><small>Case defaults & rules</small></span></button>
+  <button type="button" class="settings-tab" data-settings-tab="groups" aria-controls="settingsPanel_groups" aria-selected="false" role="tab"><span class="settings-tab-icon" aria-hidden="true">●</span><span><strong>Manage groups</strong><small>Colors & names</small></span></button>
+  <button type="button" class="settings-tab" data-settings-tab="documents" aria-controls="settingsPanel_documents" aria-selected="false" role="tab"><span class="settings-tab-icon" aria-hidden="true">▤</span><span><strong>Documents</strong><small>Word & student lists</small></span></button>
+  <button type="button" class="settings-tab" data-settings-tab="data" aria-controls="settingsPanel_data" aria-selected="false" role="tab"><span class="settings-tab-icon" aria-hidden="true">⇄</span><span><strong>Data & backup</strong><small>Hub, restore & backup</small></span></button>
+  <button type="button" class="settings-tab" data-settings-tab="tools" aria-controls="settingsPanel_tools" aria-selected="false" role="tab"><span class="settings-tab-icon" aria-hidden="true">⌘</span><span><strong>Tools & testing</strong><small>Records & sample case</small></span></button>
+</nav>
+<div class="settings-category-content">
+  <section class="settings-panel active" data-settings-panel="general" id="settingsPanel_general" role="tabpanel" aria-label="General settings" ><div class="settings-panel-head"><h3>General settings</h3><p>Manage case defaults, exchange partners and signatories.</p></div><div class="settings-grid">
+<div class="content-card setting-card">
             <div class="setting-icon">⌕</div>
             <h3>Remembered partner universities</h3>
             <p>Exchange university names are saved only in this browser when a case is created or edited. Remove individual suggestions or clear them all here. Deleting a suggestion does not change any existing student record.</p>
             <div id="savedUniversitiesList" class="saved-universities-list"></div>
             <button type="button" class="btn subtle" id="clearSavedUniversitiesBtn">Clear all remembered universities</button>
           </div>
-          <div class="content-card setting-card">
+<div class="content-card setting-card">
             <div class="setting-icon">✦</div>
             <h3>Signatories</h3>
             <p>Choose the active signer for new batches. This will replace the static signer currently embedded in the DOCX templates.</p>
@@ -139,13 +136,13 @@
             </label>
             <div id="settingsSignaturePreview"></div>
           </div>
-          <div class="content-card setting-card">
+<div class="content-card setting-card">
             <div class="setting-icon">⌁</div>
             <h3>Request date rules</h3>
             <p>Choose the extension period per student. Manual request date appears only when Manual Date is selected.</p>
             <div class="rule-summary">+6 months → current stay + 6 months<br/>+1 year → current stay + 12 months<br/>Manual Date → use the entered request-until date</div>
           </div>
-          <div class="content-card setting-card">
+<div class="content-card setting-card">
             <div class="setting-icon">ID</div>
             <h3>New student ID prefixes</h3>
             <p>IDs beginning with one of these prefixes are treated as new students. Any other entered ID is automatically marked as a current student. You can still override the checkbox on an individual case.</p>
@@ -154,19 +151,9 @@
             </label>
             <div class="rule-summary">New student → 4.3 สำเนาหลักฐานการศึกษาที่ใช้สมัครเรียน<br/>Current student → 4.3 สำเนาหลักฐานการศึกษา (Transcript)</div>
           </div>
-          <div class="content-card setting-card template-setting-card list-columns-card">
-            <div class="setting-icon">≡</div>
-            <h3>Student List columns</h3>
-            <p>These columns appear after Document no., Student ID, Title, and Name. Add, rename, delete, or reorder columns here; all changes are saved locally.</p>
-            <div id="studentListColumnsEditor" class="list-column-editor"></div>
-            <div class="list-columns-actions">
-              <button type="button" class="btn subtle" id="addStudentListColumnBtn">+ Add column</button>
-              <button type="button" class="btn subtle" id="resetStudentListColumnsBtn">Restore defaults</button>
-              <span id="studentListColumnCount" class="list-columns-count"></span>
-            </div>
-            <div class="rule-summary">Default: หน.บน. | ผศ.ดร.ธรรญธร | อ.เนาวกานต์. Extra cells remain blank for handwritten notes or signatures. More than three columns may appear narrow in portrait Word documents.</div>
-          </div>
-          <div class="content-card setting-card template-setting-card" id="caseGroupsSettingsCard">
+</div></section>
+  <section class="settings-panel" data-settings-panel="groups" id="settingsPanel_groups" role="tabpanel" aria-label="Case groups" hidden><div class="settings-panel-head"><h3>Case groups</h3><p>Name your color-coded groups and organize your local cases.</p></div><div class="settings-grid">
+<div class="content-card setting-card template-setting-card" id="caseGroupsSettingsCard">
             <div class="setting-icon">●</div>
             <h3>Named case groups</h3>
             <p>Create up to eight color-coded groups (for example, Awaiting documents or Immigration follow-up). Assign a group to any local case, then filter or group the case list. Group names and assignments stay in this browser and are included in Backups.</p>
@@ -178,7 +165,21 @@
             </div>
             <div class="rule-summary">One group per case. Groups are independent of the case type and visa processing status; deleting a group does not delete student cases.</div>
           </div>
-          <div class="content-card setting-card template-setting-card">
+</div></section>
+  <section class="settings-panel" data-settings-panel="documents" id="settingsPanel_documents" role="tabpanel" aria-label="Document settings" hidden><div class="settings-panel-head"><h3>Document settings</h3><p>Configure reviewer names, student lists and optional Word templates.</p></div><div class="settings-grid">
+<div class="content-card setting-card template-setting-card list-columns-card">
+            <div class="setting-icon">≡</div>
+            <h3>Student List columns</h3>
+            <p>These columns appear after Document no., Student ID, Title, and Name. Add, rename, delete, or reorder columns here; all changes are saved locally.</p>
+            <div id="studentListColumnsEditor" class="list-column-editor"></div>
+            <div class="list-columns-actions">
+              <button type="button" class="btn subtle" id="addStudentListColumnBtn">+ Add column</button>
+              <button type="button" class="btn subtle" id="resetStudentListColumnsBtn">Restore defaults</button>
+              <span id="studentListColumnCount" class="list-columns-count"></span>
+            </div>
+            <div class="rule-summary">Default: หน.บน. | ผศ.ดร.ธรรญธร | อ.เนาวกานต์. Extra cells remain blank for handwritten notes or signatures. More than three columns may appear narrow in portrait Word documents.</div>
+          </div>
+<div class="content-card setting-card template-setting-card">
             <div class="setting-icon">W</div>
             <h3>Word templates</h3>
             <p>Five Word templates are built in, including the supplied Exchange and Non-O documents. You may import an optional replacement for any template on this browser.</p>
@@ -189,13 +190,37 @@
             <div class="template-import-row"><label>Non-O transfer — optional override<input id="nonOTemplateInput" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" /></label><span id="nonOTemplateStatus" class="template-status">Not configured</span></div>
             <div class="rule-summary">Built-in templates are available automatically. Any optional override remains only on this browser profile and is included in Backup data.</div>
           </div>
-          <div class="content-card setting-card">
+</div></section>
+  <section class="settings-panel" data-settings-panel="data" id="settingsPanel_data" role="tabpanel" aria-label="Data & backup" hidden><div class="settings-panel-head"><h3>Data & backup</h3><p>Check Central Hub references and protect your local browser workspace.</p></div><div class="settings-grid">
+<div class="content-card setting-card settings-data-card">
+  <div class="setting-icon">↻</div><h3>Central Hub reference data</h3>
+  <p>Refresh published academic program and nationality references. Student cases, local notes and Word templates remain stored in this browser.</p>
+  <div class="settings-reference-status" id="hubReferenceStatus" role="status" aria-live="polite">Bundled references · checking Hub…</div>
+  <button class="btn subtle" id="refreshHubReferencesBtn" type="button">↻ Refresh references</button>
+</div>
+<div class="content-card setting-card">
             <div class="setting-icon">⇄</div>
             <h3>Browser data</h3>
             <p>Student records and imported Word templates are stored in this browser, not uploaded to GitHub. Use Backup data before clearing site data, changing devices, or using another browser profile. Restore accepts .visabackup and older JSON backups.</p>
-            <button class="btn subtle" id="settingsRestoreBtn">Restore backup</button>
+            <div class="settings-data-actions"><button class="btn subtle" id="restoreBtn" type="button">Restore</button><button class="btn subtle" id="backupBtn" type="button">Backup data</button></div>
+          </div>
+</div></section>
+  <section class="settings-panel" data-settings-panel="tools" id="settingsPanel_tools" role="tabpanel" aria-label="Tools & testing" hidden><div class="settings-panel-head"><h3>Tools & testing</h3><p>Open records or add a fictional case to test the workspace.</p></div>        <div class="content-card settings-shortcuts">
+          <div><h3>Tools and records</h3><p>Open previous document batches or browse the academic program reference.</p></div>
+          <div class="settings-shortcut-actions">
+            <button type="button" class="btn subtle" id="openHistoryFromSettings">▤ Generation history →</button>
+            <button type="button" class="btn subtle" id="openProgramsFromSettings">⌘ Academic programs →</button>
           </div>
         </div>
+<div class="settings-grid">
+<div class="content-card setting-card settings-tester-card">
+  <div class="setting-icon">T</div><h3>Tester case</h3>
+  <p>Create one clearly labeled, fictional TESTER case to try the case editor, groups and Word output. It is saved only in this browser; delete it from the case drawer when finished.</p>
+  <button type="button" class="btn subtle" id="addTesterBtn">＋ Add Tester</button>
+  <div class="rule-summary">For testing only. Do not submit generated documents or sample identifiers to Immigration.</div>
+</div>
+</div></section>
+</div></div>
       </section>
     </main>
   </div>
@@ -318,7 +343,7 @@
   <script src="docx-engine.js?v=043"></script>
   <script src="excel-export.js"></script>
   <script src="hub-reference.js?v=037"></script>
-  <script src="app.js?v=041"></script>
+  <script src="app.js?v=044"></script>
   <script src="ui-enhancements.js?v=036"></script>
   <script>
     if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(console.warn));
