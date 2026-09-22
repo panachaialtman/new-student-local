@@ -247,13 +247,13 @@
   }
 
   // A4 page-positioned, 3-row review box. The three labels share the existing
-  // Student List column setting. The second column is blank for handwritten notes.
+  // Letter checker setting. The second column is blank for handwritten notes.
   // A VML textbox is used because an ordinary Word table would shift letter text.
   function reviewerBoxDrawing(columnNames) {
     const names = Array.isArray(columnNames) ? columnNames.slice(0,3).map(text) : [];
-    if (!names.length) throw new Error('Add at least one Student List column in Workspace settings before enabling the top-right review table.');
+    if (!names.length) throw new Error('Add at least one Letter checker in Workspace settings before enabling the top-right review table.');
     if (names.some(name => name.length > 28)) {
-      throw new Error('For the fixed-size review table, shorten the first three Student List column names to 28 characters or fewer.');
+      throw new Error('For the fixed-size review table, shorten the first three Letter checker names to 28 characters or fewer.');
     }
     const cell = (value, width) =>
       '<w:tc><w:tcPr><w:tcW w:w="'+width+'" w:type="dxa"/><w:vAlign w:val="center"/>'+ 
@@ -416,16 +416,52 @@
     }
     return updated;
   }
+  // Exact column geometry from the reviewed, wide A4 Student List example.
+  // Word centers the entire table on the page's text-area midpoint. The wider
+  // checker columns intentionally extend beyond the normal left/right margins.
+  const LIST_FIXED_WIDTHS = [680, 1375, 634, 3330];
+  const LIST_CHECKER_WIDTH = 4891;
   function listTableGrid(table, count) {
     const match = /<w:tblGrid\b[^>]*>([\s\S]*?)<\/w:tblGrid>/.exec(table);
     if (!match) throw new Error('Student-list table grid not found');
-    const widths = [...match[1].matchAll(/<w:gridCol\b[^>]*w:w="(\d+)"[^>]*\/>/g)].map(m => Number(m[1]));
-    if (widths.length < 6) throw new Error('Student-list template must include four student fields and two blank columns');
-    const fixed = widths.slice(0, 4);
-    const space = widths.slice(4).reduce((sum, width) => sum + width, 0);
-    const extras = Array.from({length: count}, (_, i) => Math.floor(space / count) + (i < space % count ? 1 : 0));
+    if (!/<w:tblW\b[^>]*\/>/.test(table)) throw new Error('Student-list table width is missing');
+    if (!Number.isInteger(count) || count < 0 || count > 6) throw new Error('Invalid number of letter checkers');
+    const fixed = [...LIST_FIXED_WIDTHS];
+    const extras = count ? Array.from({length:count}, (_, i) =>
+      Math.floor(LIST_CHECKER_WIDTH / count) + (i < LIST_CHECKER_WIDTH % count ? 1 : 0)) : [];
+    const width = [...fixed, ...extras].reduce((sum, value)=>sum+value,0);
     const grid = '<w:tblGrid>' + [...fixed, ...extras].map(w => '<w:gridCol w:w="' + w + '"/>').join('') + '</w:tblGrid>';
-    return {table: table.replace(match[0], grid), fixed, extras};
+    let updated = table.replace(match[0], grid)
+      .replace(/<w:tblW\b[^>]*\/>/, '<w:tblW w:w="' + width + '" w:type="dxa"/>');
+    const props = /<w:tblPr\b[^>]*>([\s\S]*?)<\/w:tblPr>/.exec(updated);
+    if (!props) throw new Error('Student-list table properties are missing');
+    const centred = /<w:jc\b[^>]*\/>/.test(props[1])
+      ? props[1].replace(/<w:jc\b[^>]*\/>/, '<w:jc w:val="center"/>')
+      : props[1] + '<w:jc w:val="center"/>';
+    const fixedLayout = /<w:tblLayout\b[^>]*\/>/.test(centred)
+      ? centred.replace(/<w:tblLayout\b[^>]*\/>/, '<w:tblLayout w:type="fixed"/>')
+      : centred + '<w:tblLayout w:type="fixed"/>';
+    updated = updated.replace(props[0], '<w:tblPr>' + fixedLayout + '</w:tblPr>');
+    return {table:updated, fixed, extras};
+  }
+  function topLeftListCell(cell) {
+    // Make the title and every student field start at the top-left even when
+    // a long name wraps over two or more lines. Header checkers are unchanged.
+    if (!/<w:tcPr\b[^>]*>/.test(cell)) throw new Error('Student-list cell properties missing');
+    let updated = cell.replace(/<w:vAlign\b[^>]*\/>/g,'');
+    updated = updated.replace(/<\/w:tcPr>/, '<w:vAlign w:val="top"/></w:tcPr>');
+    const open = /<w:p\b[^>]*>/.exec(updated);
+    if(!open)throw new Error('Student-list cell paragraph missing');
+    const after = open.index + open[0].length;
+    const tail = updated.slice(after);
+    const match = /^\s*<w:pPr\b[^>]*>([\s\S]*?)<\/w:pPr>/.exec(tail);
+    if (match) {
+      const aligned = /<w:jc\b[^>]*\/>/.test(match[1])
+        ? match[1].replace(/<w:jc\b[^>]*\/>/, '<w:jc w:val="left"/>')
+        : match[1] + '<w:jc w:val="left"/>';
+      return updated.slice(0,after)+tail.replace(match[0], '<w:pPr>'+aligned+'</w:pPr>');
+    }
+    return updated.slice(0,after)+'<w:pPr><w:jc w:val="left"/></w:pPr>'+tail;
   }
   function titleCase(raw) {
     const x = text(raw).toLowerCase();
@@ -456,9 +492,10 @@
     ]);
     const proto = rows[1][0];
     const body = students.map(student => {
-      const filled = replaceCells(proto, [text(student.documentNo), text(student.studentId), titleCase(student.title), text(student.fullName)]);
-      const leftCells = listCells(filled).slice(0, 4);
-      const emptyCells = extras.map(width => listCellWidth(dataCells[4], width));
+      const filled = replaceCells(proto, [text(student.documentNo), text(student.studentId), titleCase(formattedTitle(student.title)), text(student.fullName)]);
+      const leftCells = listCells(filled).slice(0, 4).map((cell,i) =>
+        topLeftListCell(listCellWidth(cell, fixed[i])));
+      const emptyCells = extras.map(width => topLeftListCell(listCellWidth(dataCells[4], width)));
       return replaceListRowCells(filled, [...leftCells, ...emptyCells]);
     }).join('');
     const last = rows[rows.length - 1];
