@@ -179,14 +179,15 @@ const needle="  boot();\n})();";
 assert(app.endsWith(needle+'\n')||app.endsWith(needle));
 const appContext={window:{},document:{},console,Date,Math,Set,Map,Intl,Number,String,Array,RegExp};
 vm.runInNewContext(app.replace(needle,
-  "  window.__groupTest={state,caseLabels,labelForCase,caseGroupNumber,caseGroupSelectLabel,filteredCases,nationalityMatches,nationalityField,nationalitySelectionValid,normalizeDrafts,valuesForSwitchedCaseType};\n})();"),appContext);
-const {state,caseLabels,labelForCase,caseGroupNumber,caseGroupSelectLabel,filteredCases,nationalityMatches,nationalityField,nationalitySelectionValid,normalizeDrafts,valuesForSwitchedCaseType}=appContext.window.__groupTest;
+  "  window.__groupTest={state,caseLabels,labelForCase,caseGroupNumber,caseGroupSelectLabel,filteredCases,nationalityMatches,nationalityField,nationalitySelectionValid,normalizeDrafts,valuesForSwitchedCaseType,countryOptions};\n})();"),appContext);
+const {state,caseLabels,labelForCase,caseGroupNumber,caseGroupSelectLabel,filteredCases,nationalityMatches,nationalityField,nationalitySelectionValid,normalizeDrafts,valuesForSwitchedCaseType,countryOptions}=appContext.window.__groupTest;
 // Nationality: search can be English/Thai country or demonym, selected value Thai only.
 state.nationalities=[
  {thai:'เมียนมา',english:'Myanmar',aliases:['Burma','พม่า']},
  {thai:'ไทย',english:'Thailand',aliases:[]},
  {thai:'จีน',english:'China',aliases:[]},
  {thai:'เยอรมัน',english:'Germany',countryThai:'เยอรมนี',
+  countryOfficialThai:'สหพันธ์สาธารณรัฐเยอรมนี',
   nationalityEnglish:'German',aliases:['Federal Republic of Germany']},
  {thai:'บริติช / อังกฤษ',english:'United Kingdom',countryThai:'สหราชอาณาจักร',
   nationalityEnglish:'British',aliases:['Briton']}
@@ -205,8 +206,24 @@ for(const term of ['United Kingdom','British','สหราชอาณาจั
  assert(nationalityMatches(state.nationalities[4],term),
   'British country/demonym query '+term+' must return Thai nationality บริติช / อังกฤษ');
 }
-assert(app.includes('const countryThai=item.countryThai||item.thai;'),
- 'Partner country suggestions must not be replaced by nationality labels');
+const partnerOptions=countryOptions();
+assert(partnerOptions.includes('value="สหพันธ์สาธารณรัฐเยอรมนี"'),
+ 'Partner country suggestions must use the formal full Thai country name');
+assert(!partnerOptions.includes('value="เยอรมนี"') &&
+ !partnerOptions.includes('value="เยอรมัน"'),
+ 'Short country names and nationalities must not become selectable alternatives');
+assert(partnerOptions.includes('Germany · เยอรมนี'),
+ 'Both English and short Thai country names remain visible as search hints');
+assert(partnerOptions.includes('value="ไทย"'),
+ 'Where no longer official Thai name is supplied, use the existing country name');
+const bundledNationalities=[1,2,3,4].flatMap(i=>
+ JSON.parse(fs.readFileSync('data/nationalities-'+i+'.json','utf8')));
+assert.equal(bundledNationalities.length,250);
+assert.equal(bundledNationalities.find(item=>item.english==='Germany').countryOfficialThai,
+ 'สหพันธ์สาธารณรัฐเยอรมนี',
+ 'The full Thai country label must also work without an online Hub connection');
+assert(bundledNationalities.filter(item=>item.countryOfficialThai!==item.thai).length>=150,
+ 'Bundled official-country names must cover the source-backed formal names');
 assert(app.includes("Germany:'เยอรมัน'")&&
   app.includes("'United States':'อเมริกัน'"),
   'Offline fallback must distinguish country names from nationality names');
