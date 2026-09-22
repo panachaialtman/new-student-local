@@ -809,3 +809,134 @@ body { font-size: 16px; }
   .case-select-rail {width:46px}
   .selection-actions {flex-wrap:wrap}
 }
+
+
+/* v0.3.14 — consolidated settings. Vertical local navigation on desktop;
+   becomes a horizontally scrollable tab strip on narrow screens. */
+#settingsView .section-head {margin-bottom:19px}
+.settings-shell {
+  display:grid;
+  grid-template-columns:220px minmax(0,1fr);
+  align-items:start;
+  gap:20px;
+  max-width:1520px;
+  margin:0 auto;
+}
+.settings-category-nav {
+  position:sticky;
+  top:102px;
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  padding:9px;
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:16px;
+  box-shadow:0 6px 20px rgba(25,46,80,.035);
+}
+.settings-tab {
+  display:flex;
+  align-items:center;
+  gap:11px;
+  width:100%;
+  min-height:57px;
+  padding:10px;
+  border:1px solid transparent;
+  border-radius:11px;
+  text-align:left;
+  background:transparent;
+  color:#65748d;
+  cursor:pointer;
+  font:inherit;
+}
+.settings-tab-icon {
+  width:32px;
+  height:32px;
+  flex:0 0 32px;
+  display:grid;
+  place-items:center;
+  border-radius:9px;
+  background:#f1f5fb;
+  color:#697b99;
+  font-size:15px;
+  font-weight:750;
+}
+.settings-tab > span:last-child {display:grid;gap:2px;min-width:0}
+.settings-tab strong {color:#34455e;font-size:12px;line-height:1.35}
+.settings-tab small {font-size:10px;color:#8b96a9;line-height:1.35}
+.settings-tab:hover {background:#f5f7fc}
+.settings-tab.active {
+  background:#edf3ff;
+  border-color:#cdddfa;
+  box-shadow:inset 3px 0 0 #315eca;
+}
+.settings-tab.active strong,.settings-tab.active .settings-tab-icon {color:#2554b8}
+.settings-tab.active .settings-tab-icon {background:#dae7ff}
+.settings-tab:focus-visible {outline:2px solid #2b66cd;outline-offset:2px}
+.settings-category-content {min-width:0}
+.settings-panel[hidden] {display:none!important}
+.settings-panel-head {margin:0 0 14px}
+.settings-panel-head h3 {font-size:17px;letter-spacing:-.02em;margin:0;color:var(--ink)}
+.settings-panel-head p {font-size:12px;color:var(--muted);margin:5px 0 0;line-height:1.5}
+.settings-panel .settings-grid {min-width:0}
+.settings-panel .settings-grid > .setting-card:only-child {grid-column:1/-1}
+.settings-panel .settings-shortcuts {margin-bottom:12px}
+.settings-panel .settings-shortcut-actions {align-items:center}
+.settings-panel .settings-data-card {display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+.settings-panel .settings-data-card h3 {margin:3px 0}
+.settings-panel .settings-data-card p {margin:0}
+.settings-reference-status {
+  padding:10px 12px;
+  border-radius:10px;
+  background:#f0f5ff;
+  color:#2d589c;
+  font-size:12px;
+  font-weight:750;
+  width:100%;
+  overflow-wrap:anywhere;
+}
+.settings-data-actions {display:flex;flex-wrap:wrap;gap:9px;margin-top:10px}
+.settings-tester-card {display:flex;flex-direction:column;align-items:flex-start;gap:10px}
+.settings-tester-card h3 {margin:2px 0 0}
+.settings-tester-card p {margin:0}
+.tester-case-pill {
+  display:inline-flex;
+  vertical-align:middle;
+  margin-left:7px;
+  padding:3px 6px;
+  border-radius:6px;
+  font-size:9px;
+  letter-spacing:.035em;
+  font-weight:900;
+  color:#9b4c10;
+  background:#fff3dd;
+  border:1px solid #f2d7ab;
+}
+@media (max-width:1020px){
+  .settings-shell {grid-template-columns:180px minmax(0,1fr);gap:14px}
+  .settings-tab {gap:8px;padding:8px}
+  .settings-tab small {font-size:9px}
+}
+@media (max-width:760px){
+  .settings-shell {grid-template-columns:minmax(0,1fr);gap:13px}
+  .settings-category-nav {
+    position:static;
+    flex-direction:row;
+    overflow-x:auto;
+    padding:5px;
+    gap:4px;
+    scroll-snap-type:x proximity;
+    scrollbar-width:thin;
+  }
+  .settings-tab {
+    flex:0 0 auto;
+    width:auto;
+    min-height:42px;
+    padding:7px 10px;
+    scroll-snap-align:start;
+    white-space:nowrap;
+  }
+  .settings-tab-icon {width:25px;height:25px;flex-basis:25px;font-size:13px}
+  .settings-tab small {display:none}
+  .settings-tab.active {box-shadow:inset 0 -3px 0 #315eca}
+}
