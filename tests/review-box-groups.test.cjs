@@ -8,7 +8,7 @@ const ending="  window.BrowserDocx = { generateIndividual, generateBatch, genera
 assert(word.includes(ending));
 const wordContext={window:{},TextEncoder,TextDecoder,Blob,Date,Map,Uint8Array,console};
 vm.runInNewContext(word.replace(ending,ending+
-  "\n  window.__reviewTest={reviewerBoxDrawing,insertReviewerBox,pageBreakBeforeFirstParagraph,addReviewerBoxToFiles};"),
+  "\n  window.__reviewTest={reviewerBoxDrawing,insertReviewerBox,pageBreakBeforeFirstParagraph,addReviewerBoxToFiles,listTableGrid,topLeftListCell,titleCase,formattedTitle,listCellWidth};"),
   wordContext);
 const fn=wordContext.window.__reviewTest;
 const paragraph='<w:p><w:pPr><w:jc w:val="left"/></w:pPr><w:r><w:t>Example letter</w:t></w:r></w:p>';
@@ -55,6 +55,43 @@ const disabled=new Map([['word/document.xml',{name:'word/document.xml',data:new 
 fn.addReviewerBoxToFiles(disabled,{reviewBox:false,columnNames:['First']});
 assert.equal(new TextDecoder().decode(disabled.get('word/document.xml').data),xml);
 console.log('Word reviewer-box tests passed (position, rows, labels, page break, opt-out).');
+
+// Student List must reproduce the approved wide, centered Word-table layout.
+// Use synthetic XML here; do not put the user's sample student data in GitHub.
+const templateTable='<w:tbl><w:tblPr><w:tblW w:w="9000" w:type="dxa"/>'+
+  '<w:jc w:val="left"/></w:tblPr>'+
+  '<w:tblGrid><w:gridCol w:w="100"/><w:gridCol w:w="200"/>'+
+  '<w:gridCol w:w="300"/><w:gridCol w:w="400"/>'+
+  '<w:gridCol w:w="200"/><w:gridCol w:w="200"/></w:tblGrid></w:tbl>';
+const layout=fn.listTableGrid(templateTable,3);
+assert(layout.table.includes('<w:tblW w:w="10910" w:type="dxa"/>'),
+  'Wide reference table uses the reviewed 10910-twip total width');
+assert(layout.table.includes('<w:jc w:val="center"/>') &&
+  layout.table.includes('<w:tblLayout w:type="fixed"/>'),
+  'Wide table must remain centered and not auto-shrink inside page margins');
+assert.deepEqual(Array.from(layout.fixed),[680,1375,634,3330],
+  'First four student columns must match the supplied approved layout');
+assert.equal(layout.extras.reduce((sum,w)=>sum+w,0),4891,
+  'Remaining width must be reserved for longer letter-checker columns');
+assert.equal(layout.extras.length,3);
+const layoutEmpty=fn.listTableGrid(templateTable,0);
+assert.equal(layoutEmpty.extras.length,0);
+assert(layoutEmpty.table.includes('<w:tblW w:w="6019" w:type="dxa"/>'));
+assert.equal(fn.titleCase(fn.formattedTitle('Mr')),'Mr.');
+assert.equal(fn.titleCase(fn.formattedTitle('MR.')),'Mr.');
+assert.equal(fn.titleCase(fn.formattedTitle('Mrs')),'Mrs.');
+const syntheticCell='<w:tc><w:tcPr><w:tcW w:w="100" w:type="dxa"/>'+
+  '<w:vAlign w:val="center"/></w:tcPr>'+
+  '<w:p><w:pPr><w:jc w:val="center"/></w:pPr>'+
+  '<w:r><w:t>TESTER long enough to wrap to another line</w:t></w:r></w:p></w:tc>';
+const aligned=fn.topLeftListCell(fn.listCellWidth(syntheticCell,3330));
+assert(aligned.includes('<w:tcW w:w="3330" w:type="dxa"/>'));
+assert(aligned.includes('<w:vAlign w:val="top"/>') &&
+  !aligned.includes('<w:vAlign w:val="center"/>'));
+assert(aligned.includes('<w:jc w:val="left"/>') &&
+  !aligned.includes('<w:jc w:val="center"/>'));
+assert(aligned.includes('TESTER long enough to wrap to another line'));
+console.log('Wide, centered Student List, title punctuation and top-left cell checks passed.');
 
 const css=fs.readFileSync('styles.css','utf8');
 const html=fs.readFileSync('index.html','utf8');

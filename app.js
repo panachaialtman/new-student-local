@@ -247,13 +247,13 @@
     root.innerHTML = labels.length ? labels.map((name, i) => `
       <div class="list-column-item" data-column-index="${i}">
         <span class="list-column-index">${i + 1}.</span>
-        <input class="list-column-name" type="text" maxlength="70" aria-label="Column name ${i + 1}" value="${escapeHtml(name)}" />
+        <input class="list-column-name" type="text" maxlength="70" aria-label="Letter checker name ${i + 1}" value="${escapeHtml(name)}" />
         <button type="button" class="list-column-control" data-action="up" aria-label="Move up" ${i === 0 ? 'disabled' : ''}>↑</button>
         <button type="button" class="list-column-control" data-action="down" aria-label="Move down" ${i === labels.length - 1 ? 'disabled' : ''}>↓</button>
         <button type="button" class="list-column-control list-column-remove" data-action="remove" aria-label="Delete column">×</button>
-      </div>`).join('') : '<div class="list-column-empty">No additional columns. The list will only contain the date and student details.</div>';
+      </div>`).join('') : '<div class="list-column-empty">No letter checkers configured. The list will contain only the date and student details.</div>';
     el('addStudentListColumnBtn').disabled = labels.length >= MAX_STUDENT_LIST_COLUMNS;
-    el('studentListColumnCount').textContent = `${labels.length} additional column${labels.length === 1 ? '' : 's'} · Saved locally`;
+    el('studentListColumnCount').textContent = `${labels.length} letter checker${labels.length === 1 ? '' : 's'} · Saved locally`;
   }
 
   function bindListColumnSettings() {
@@ -265,7 +265,7 @@
       const name = input.value.trim();
       if (!name) {
         input.value = studentListColumns()[idx];
-        toast('Column name required', 'Give the column a name or use × to delete it.', true);
+        toast('Checker name required', 'Give the letter checker a name or use × to remove it.', true);
         return;
       }
       studentListColumns()[idx] = name;
@@ -292,7 +292,7 @@
     el('addStudentListColumnBtn')?.addEventListener('click', () => {
       const list = studentListColumns();
       if (list.length >= MAX_STUDENT_LIST_COLUMNS) return;
-      list.push('New column');
+      list.push('New checker');
       persist();
       renderListColumnSettings();
       const input = root.querySelector('.list-column-item:last-child .list-column-name');
@@ -1686,7 +1686,7 @@
     return `<label class="review-box-option">
       <input type="checkbox" id="${id}" ${state.settings.letterReviewBoxEnabled?'checked':''} ${names.length?'':'disabled'} />
       <span><strong>Add review table at top-right of Word letter</strong>
-        <small>Same labels as Student List columns (first three): ${escapeHtml(names.join(' | ') || 'No columns configured')}.
+        <small>Same names as Letter checkers (first three): ${escapeHtml(names.join(' | ') || 'No columns configured')}.
         Right-hand cells stay blank for handwritten notes. Optional, and applied to each generated letter.</small></span>
     </label>`;
   }
