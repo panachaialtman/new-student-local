@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#101d35" />
   <link rel="manifest" href="manifest.webmanifest" />
   <title>BU Visa Case Workspace</title>
-  <link rel="stylesheet" href="styles.css?v=046" />
+  <link rel="stylesheet" href="styles.css?v=047" />
 </head>
 <body>
   <div class="app-shell">
@@ -36,7 +36,7 @@
         <button class="nav-item nav-settings" data-view="settings">
           <span class="nav-icon">⚙</span><span>Workspace settings</span>
         </button>
-        <div class="version-row"><span>Visa Workspace</span><span>v0.3.16 Web</span></div>
+        <div class="version-row"><span>Visa Workspace</span><span>v0.3.17 Web</span></div>
       </div>
     </aside>
 
@@ -50,6 +50,7 @@
           </div>
         </div>
         <div class="topbar-actions">
+          <button class="btn subtle drafts-open-btn" id="draftsBtn" type="button">Drafts <span id="draftsCount" class="drafts-count">0</span></button>
           <button class="btn primary" id="addStudentBtn">＋ Add student</button>
         </div>
       </header>
@@ -269,7 +270,23 @@
     </div>
     <div class="modal-footer">
       <button class="btn subtle modal-close" data-close="studentModal">Cancel</button>
-      <button class="btn primary" type="submit" form="studentForm">Add student</button>
+      <button class="btn subtle" id="saveStudentDraftBtn" type="button">Save draft</button>
+      <button class="btn primary" id="submitStudentBtn" type="submit" form="studentForm">Add student</button>
+    </div>
+  </section>
+
+  <section class="modal drafts-modal hidden" id="draftsModal" role="dialog" aria-modal="true" aria-labelledby="draftsModalTitle">
+    <div class="modal-head">
+      <div><div class="eyebrow">LOCAL WORKSPACE</div><h2 id="draftsModalTitle">Student drafts</h2></div>
+      <button class="icon-btn modal-close" data-close="draftsModal" type="button" aria-label="Close drafts">×</button>
+    </div>
+    <div class="modal-body">
+      <p class="drafts-intro">Save an unfinished student here. Drafts stay in this browser and never appear in active cases or Word exports until you open one and click Add student.</p>
+      <div id="draftsList" class="drafts-list"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn subtle modal-close" data-close="draftsModal" type="button">Close</button>
+      <button class="btn primary" id="newFromDraftsBtn" type="button">＋ Add student</button>
     </div>
   </section>
 
@@ -343,7 +360,7 @@
   <script src="docx-engine.js?v=045"></script>
   <script src="excel-export.js"></script>
   <script src="hub-reference.js?v=037"></script>
-  <script src="app.js?v=046"></script>
+  <script src="app.js?v=047"></script>
   <script src="ui-enhancements.js?v=036"></script>
   <script>
     if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(console.warn));
