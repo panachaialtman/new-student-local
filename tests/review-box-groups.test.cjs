@@ -179,8 +179,8 @@ const needle="  boot();\n})();";
 assert(app.endsWith(needle+'\n')||app.endsWith(needle));
 const appContext={window:{},document:{},console,Date,Math,Set,Map,Intl,Number,String,Array,RegExp};
 vm.runInNewContext(app.replace(needle,
-  "  window.__groupTest={state,caseLabels,labelForCase,caseGroupNumber,caseGroupSelectLabel,filteredCases,nationalityMatches,nationalityField,nationalitySelectionValid};\n})();"),appContext);
-const {state,caseLabels,labelForCase,caseGroupNumber,caseGroupSelectLabel,filteredCases,nationalityMatches,nationalityField,nationalitySelectionValid}=appContext.window.__groupTest;
+  "  window.__groupTest={state,caseLabels,labelForCase,caseGroupNumber,caseGroupSelectLabel,filteredCases,nationalityMatches,nationalityField,nationalitySelectionValid,normalizeDrafts};\n})();"),appContext);
+const {state,caseLabels,labelForCase,caseGroupNumber,caseGroupSelectLabel,filteredCases,nationalityMatches,nationalityField,nationalitySelectionValid,normalizeDrafts}=appContext.window.__groupTest;
 // Nationality: search can be English/Thai country or demonym, selected value Thai only.
 state.nationalities=[
  {thai:'เมียนมา',english:'Myanmar',aliases:['Burma','พม่า']},
@@ -219,6 +219,45 @@ assert(app.includes('if(!nationalitySelectionValid(form))return;')&&
   app.includes("if(!nationalitySelectionValid(el('drawerContent')))return;"),
   'Both add and edit workflows must reject unconfirmed search text');
 console.log('Thai-only nationality picker tests passed (Thai/English search, canonical selection, both forms).');
+
+// Drafts are a distinct browser-local collection; incomplete entries never
+// join active cases or document-generation flows without explicit promotion.
+for(const id of ['draftsBtn','draftsCount','saveStudentDraftBtn','draftsModal',
+ 'draftsList','newFromDraftsBtn']){
+  assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,
+    id+' must occur once in the Drafts UI');
+}
+assert(html.indexOf('id="draftsBtn"')<html.indexOf('id="addStudentBtn"'),
+  'Drafts button must appear beside and before Add student');
+assert(html.includes('type="button">Save draft</button>')&&
+  html.includes('type="submit" form="studentForm">Add student</button>'),
+  'Save draft must bypass required-field validation while Add student keeps it');
+assert(app.includes("drafts: state.drafts")&&
+  app.includes("state.drafts = normalizeDrafts(stored.drafts)")&&
+  app.includes("state.drafts = normalizeDrafts(payload.drafts)"),
+  'Drafts must be saved, backed up and restored separately from active cases');
+const sampleDraft={id:'draft_example',createdAt:'2026-09-22T08:00:00Z',
+ updatedAt:'2026-09-22T08:01:00Z',
+ values:{caseCategory:'normal',fullName:'EXAMPLE DRAFT',studentId:''}};
+const drafts=normalizeDrafts([sampleDraft,sampleDraft,{id:'case_not_a_draft',values:{}}]);
+assert.equal(drafts.length,1);
+assert.equal(drafts[0].values.fullName,'EXAMPLE DRAFT');
+state.drafts=drafts;
+assert.equal(state.cases.length,0,
+  'A restored draft must not appear as an active student case');
+assert(app.includes("if(state.activeDraftId){")&&
+  app.includes("state.drafts=state.drafts.filter(draft=>draft.id!==state.activeDraftId);")&&
+  app.includes("renderDraftsButton();"),
+  'Only an explicit Add student action promotes and removes the draft');
+assert(app.includes("async function saveStudentDraft()")&&
+  app.includes("const saved=await persist();")&&
+  app.includes("if(!saved){"),
+  'Draft-saving confirmation must wait for a successful local database write');
+assert(app.includes("function restoreDraftValues(form,values)")&&
+  app.includes("form.elements[name]")&&
+  app.includes("nationality.dataset.confirmedThai="),
+  'Draft reopening must restore partial form values and the Thai nationality picker');
+console.log('Local Drafts tests passed (unfinished entry, reopen, isolated storage, backup, explicit promotion).');
 
 state.settings.caseLabels=[
  {id:'label_blue_1234',name:'Waiting for document',color:'#2563eb'},

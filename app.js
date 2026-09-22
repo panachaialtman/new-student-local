@@ -49,6 +49,8 @@
     programs: [],
     nationalities: [],
     cases: [],
+    drafts: [],
+    activeDraftId: null,
     batches: [],
     selected: new Set(),
     activeCategory: 'normal',
@@ -81,6 +83,122 @@
 
   function uid(prefix = 'case') {
     return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  function normalizeDrafts(rows) {
+    if(!Array.isArray(rows))return [];
+    const seen=new Set();
+    return rows.filter(draft=>draft&&typeof draft==='object'&&
+      typeof draft.id==='string'&&draft.id.startsWith('draft_')&&
+      draft.values&&typeof draft.values==='object'&&!Array.isArray(draft.values)&&
+      !seen.has(draft.id)&&seen.add(draft.id)
+    ).map(draft=>({
+      id:draft.id,createdAt:String(draft.createdAt||''),updatedAt:String(draft.updatedAt||''),
+      values:{...draft.values}
+    }));
+  }
+
+  function renderDraftsButton() {
+    const button=el('draftsBtn'),count=state.drafts.length;
+    if(!button)return;
+    el('draftsCount').textContent=String(count);
+    button.setAttribute('aria-label','Open '+count+' saved student draft'+(count===1?'':'s'));
+  }
+  function renderDraftsModal() {
+    const list=el('draftsList');if(!list)return;
+    renderDraftsButton();
+    const drafts=[...state.drafts].sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')));
+    list.innerHTML=drafts.length?drafts.map(draft=>{
+      const name=String(draft.values.fullName||'').trim()||'Untitled student draft';
+      const id=String(draft.values.studentId||draft.values.documentNo||'').trim();
+      const cat=({normal:'Normal cases',exchange:'Exchange students',non_o:'Non-O transfer'})[draft.values.caseCategory]||'Normal cases';
+      const stamp=draft.updatedAt?new Date(draft.updatedAt).toLocaleString():'';
+      return `<div class="student-draft-card" data-draft-id="${escapeHtml(draft.id)}">
+        <div class="student-draft-info">
+          <strong>${escapeHtml(name)}</strong>
+          <span>${escapeHtml(cat)}${id?' · '+escapeHtml(id):''}</span>
+          <small>Saved ${escapeHtml(stamp)} · Not added to active cases</small>
+        </div>
+        <div class="student-draft-actions">
+          <button type="button" class="btn subtle" data-draft-open="${escapeHtml(draft.id)}">Edit draft</button>
+          <button type="button" class="btn subtle draft-delete-btn" data-draft-delete="${escapeHtml(draft.id)}">Delete</button>
+        </div>
+      </div>`;
+    }).join(''):'<div class="drafts-empty"><strong>No student drafts yet.</strong><span>Start a new student, enter any available details, then select Save draft.</span></div>';
+  }
+  function readDraftValues(form) {
+    const values=Object.fromEntries(new FormData(form).entries());
+    values.currentStudent=Boolean(form.elements.currentStudent?.checked);
+    values.enabledOverrides={};
+    for(const name of ['studyYearOverride','graduationYearOverride']){
+      values.enabledOverrides[name]=Boolean(form.querySelector('[data-unlock-target="new_'+name+'"]')?.checked);
+    }
+    return values;
+  }
+  function restoreDraftValues(form,values) {
+    if(!values||typeof values!=='object')return;
+    // Respect dependency order: type -> faculty -> major, then restore all
+    // other fields without triggering student-ID auto-guessing on saved drafts.
+    for(const name of ['programType','facultyKey','programKey']){
+      const control=form.elements[name];
+      if(!control || typeof values[name]!=='string')continue;
+      control.value=values[name];
+      if(name!=='programKey')control.dispatchEvent(new Event('change',{bubbles:true}));
+    }
+    Object.entries(values).forEach(([name,value])=>{
+      if(['programType','facultyKey','programKey','caseCategory','enabledOverrides'].includes(name))return;
+      const control=form.elements[name];
+      if(!control)return;
+      if(control.type==='checkbox')control.checked=Boolean(value);
+      else control.value=String(value??'');
+    });
+    for(const name of ['studyYearOverride','graduationYearOverride']){
+      const enabled=Boolean(values.enabledOverrides?.[name]);
+      const checkbox=form.querySelector('[data-unlock-target="new_'+name+'"]');
+      if(checkbox){checkbox.checked=enabled;checkbox.dispatchEvent(new Event('change',{bubbles:true}));}
+      if(enabled && form.elements[name])form.elements[name].value=String(values[name]??'');
+    }
+    form.querySelector('[data-request-rule="new"]')?.dispatchEvent(new Event('change',{bubbles:true}));
+    updateAutomaticStudyFields(form);
+    const nationality=form.querySelector('[data-nationality-input]');
+    if(nationality)nationality.dataset.confirmedThai=
+      state.nationalities.some(row=>row.thai===nationality.value)?nationality.value:'';
+  }
+  function openNewStudentForm() {
+    state.activeDraftId=null;
+    renderStudentForm();
+    el('saveStudentDraftBtn').textContent='Save draft';
+    openModal('studentModal');
+  }
+  function openDraft(id) {
+    const draft=state.drafts.find(row=>row.id===id);
+    if(!draft)return;
+    closeModal('draftsModal');
+    state.activeDraftId=draft.id;
+    renderStudentForm(draft.values.caseCategory);
+    restoreDraftValues(el('studentForm'),draft.values);
+    el('studentModalTitle').textContent='Edit draft · Add student';
+    el('saveStudentDraftBtn').textContent='Update draft';
+    openModal('studentModal');
+  }
+  async function saveStudentDraft() {
+    const values=readDraftValues(el('studentForm'));
+    const now=new Date().toISOString();
+    const existing=state.drafts.find(draft=>draft.id===state.activeDraftId);
+    if(existing){existing.values=values;existing.updatedAt=now;}
+    else{
+      const draft={id:uid('draft'),createdAt:now,updatedAt:now,values};
+      state.drafts.push(draft);
+      state.activeDraftId=draft.id;
+    }
+    const saved=await persist();
+    if(!saved){
+      toast('Draft not saved','Browser storage is unavailable. Keep this window open and try again.',true);
+      return;
+    }
+    renderDraftsButton();renderDraftsModal();
+    closeModal('studentModal');openModal('draftsModal');
+    toast('Draft saved','This unfinished student is stored locally and is not an active case.');
   }
 
   function todayIso() {
@@ -716,6 +834,7 @@
       const stored = await VisaDB.getState('workspace_v02');
       if (stored && typeof stored === 'object') {
         state.cases = migrateCaseOrder(stored.cases);
+        state.drafts = normalizeDrafts(stored.drafts);
         state.batches = Array.isArray(stored.batches) ? stored.batches : [];
         state.settings = { ...state.settings, ...(stored.settings || {}) };
       } else {
@@ -725,6 +844,7 @@
         const legacyBatches = JSON.parse(localStorage.getItem(BATCH_KEY) || '[]');
         const legacySettings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
         state.cases = migrateCaseOrder(legacyCases);
+        state.drafts = [];
         state.batches = Array.isArray(legacyBatches) ? legacyBatches : [];
         if (legacySettings) state.settings = { ...state.settings, ...legacySettings };
         if (state.cases.length || state.batches.length || legacySettings) persist();
@@ -738,17 +858,22 @@
     } catch (err) {
       console.warn('Could not load browser state', err);
       state.cases = [];
+      state.drafts = [];
       state.batches = [];
     }
   }
 
   function persist() {
-    VisaDB.setState('workspace_v02', {
+    return VisaDB.setState('workspace_v02', {
       cases: state.cases,
+      drafts: state.drafts,
       batches: state.batches,
       settings: state.settings,
       savedAt: new Date().toISOString(),
-    }).catch((err) => console.error('Autosave failed', err));
+    }).then(()=>true).catch((err) => {
+      console.error('Autosave failed',err);
+      return false;
+    });
   }
 
   async function loadReferenceData() {
@@ -1612,6 +1737,11 @@
     delete item.facultyKey;
     state.cases.push(item);
     state.cases = sortCasesOldestFirst(state.cases);
+    if(state.activeDraftId){
+      state.drafts=state.drafts.filter(draft=>draft.id!==state.activeDraftId);
+      state.activeDraftId=null;
+      renderDraftsButton();
+    }
     rememberExchangeDetails(item);
     if (item.caseCategory !== state.activeCategory) switchView('workspace', item.caseCategory);
     persist();
@@ -1678,7 +1808,7 @@
 
   function closeModal(id) {
     el(id).classList.add('hidden');
-    const anyOpen = ['studentModal', 'batchModal', 'individualModal', 'departmentModal', 'groupAssignModal'].some((modalId) => !el(modalId).classList.contains('hidden'));
+    const anyOpen = ['studentModal', 'batchModal', 'individualModal', 'departmentModal', 'groupAssignModal', 'draftsModal'].some((modalId) => !el(modalId).classList.contains('hidden'));
     if (!anyOpen) el('modalBackdrop').classList.add('hidden');
   }
 
@@ -2018,7 +2148,7 @@
     const templates = await VisaDB.exportTemplatesBase64();
     const payload = {
       exportedAt: new Date().toISOString(), version: '0.2-web',
-      cases: state.cases, batches: state.batches, settings: state.settings, templates,
+      cases: state.cases, drafts: state.drafts, batches: state.batches, settings: state.settings, templates,
     };
     downloadBlob(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }), `visa_workspace_${todayIso()}.visabackup`);
     toast('Backup exported', 'Cases, history, settings and imported Word templates are included.');
@@ -2030,6 +2160,8 @@
       const payload = JSON.parse(await file.text());
       if (!payload || typeof payload !== 'object') throw new Error('Backup file is not valid JSON');
       state.cases = migrateCaseOrder(payload.cases);
+      state.drafts = normalizeDrafts(payload.drafts);
+      state.activeDraftId = null;
       state.batches = Array.isArray(payload.batches) ? payload.batches : [];
       state.settings = { ...state.settings, ...(payload.settings || {}) };
       state.settings.signatory = normalizeSignatoryKey(state.settings.signatory);
@@ -2048,6 +2180,7 @@
       renderCaseLabelSettings();
       showPartnerUniversitySuggestions();
       renderSavedUniversities();
+      renderDraftsButton();
       state.selected.clear();
       renderWorkspace(); renderBatchHistory(); renderProgramTable();
       toast('Backup restored', `${state.cases.length} cases restored into this browser.`);
@@ -2259,7 +2392,28 @@
     document.querySelectorAll('.nav-item').forEach((item) => item.addEventListener('click',
       () => switchView(item.dataset.view, item.dataset.caseCategory || state.activeCategory)));
     el('menuToggle')?.addEventListener('click', () => el('sidebar').classList.toggle('open'));
-    el('addStudentBtn').addEventListener('click', () => { renderStudentForm(); openModal('studentModal'); });
+    el('addStudentBtn').addEventListener('click',openNewStudentForm);
+    el('draftsBtn').addEventListener('click',()=>{
+      renderDraftsModal();openModal('draftsModal');
+    });
+    el('newFromDraftsBtn').addEventListener('click',()=>{
+      closeModal('draftsModal');openNewStudentForm();
+    });
+    el('saveStudentDraftBtn').addEventListener('click',saveStudentDraft);
+    el('draftsList').addEventListener('click',event=>{
+      const edit=event.target.closest('[data-draft-open]');
+      if(edit){openDraft(edit.dataset.draftOpen);return;}
+      const remove=event.target.closest('[data-draft-delete]');
+      if(!remove)return;
+      const draft=state.drafts.find(item=>item.id===remove.dataset.draftDelete);
+      if(!draft)return;
+      const name=String(draft.values.fullName||'').trim()||'this draft';
+      if(!confirm('Delete draft "'+name+'"? No active student case will be removed.'))return;
+      state.drafts=state.drafts.filter(item=>item.id!==draft.id);
+      if(state.activeDraftId===draft.id)state.activeDraftId=null;
+      persist();renderDraftsModal();
+      toast('Draft deleted','Only the selected local draft was removed.');
+    });
     bindSettingsTabs();
     el('addTesterBtn')?.addEventListener('click',addTesterCase);
     el('openHistoryFromSettings').addEventListener('click', () => switchView('batches'));
@@ -2328,6 +2482,7 @@
     document.querySelectorAll('.modal-close').forEach((btn) => btn.addEventListener('click', () => closeModal(btn.dataset.close)));
     el('modalBackdrop').addEventListener('click', () => {
       closeModal('studentModal');
+      closeModal('draftsModal');
       closeModal('batchModal');
       closeModal('individualModal');
       closeModal('departmentModal');
@@ -2395,6 +2550,7 @@
       renderListColumnSettings();
       renderCaseLabelSettings();
       renderSavedUniversities();
+      renderDraftsButton();
 
       bindEvents();
       renderWorkspace();
