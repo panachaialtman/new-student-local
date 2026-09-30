@@ -121,6 +121,12 @@
 </nav>
 <div class="settings-category-content">
   <section class="settings-panel active" data-settings-panel="general" id="settingsPanel_general" role="tabpanel" aria-label="General settings" ><div class="settings-panel-head"><h3>General settings</h3><p>Manage case defaults, exchange partners and signatories.</p></div><div class="settings-grid">
+<div class="content-card setting-card standalone-settings-card" id="embeddedStandaloneSettingsCard" hidden>
+  <div class="setting-icon" aria-hidden="true">↗</div>
+  <h3>Standalone workspace</h3>
+  <p>Open the visa extension workspace in a separate browser tab for a full-screen view or when the embedded workspace needs troubleshooting.</p>
+  <a class="btn subtle standalone-settings-link" href="/new-student-local/" target="_blank" rel="noopener noreferrer">↗ Open standalone fallback</a>
+</div>
 <div class="content-card setting-card">
             <div class="setting-icon">⌕</div>
             <h3>Remembered partner universities</h3>
@@ -362,6 +368,16 @@
   <script src="hub-reference.js?v=050"></script>
   <script src="app.js?v=050"></script>
   <script src="ui-enhancements.js?v=036"></script>
+  <script>
+    // The standalone escape hatch is offered only when this workspace is embedded.
+    try {
+      if (window.self !== window.top) {
+        document.getElementById('embeddedStandaloneSettingsCard')?.removeAttribute('hidden');
+      }
+    } catch (error) {
+      document.getElementById('embeddedStandaloneSettingsCard')?.removeAttribute('hidden');
+    }
+  </script>
   <script>
     if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(console.warn));
   </script>
