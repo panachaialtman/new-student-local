@@ -995,3 +995,25 @@ body { font-size: 16px; }
   .student-draft-actions {justify-content:flex-end}
   .drafts-open-btn {gap:5px}
 }
+
+
+/* Standalone fallback is available within Settings only for embedded workspaces. */
+#embeddedStandaloneSettingsCard[hidden]{display:none!important}
+#embeddedStandaloneSettingsCard .standalone-settings-link{
+  display:inline-flex;align-items:center;justify-content:center;
+  gap:6px;align-self:flex-start;
+  max-width:100%;min-height:36px;padding:8px 13px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:#f5f8ff;
+  color:#24518b;
+  font-size:11px;
+  font-weight:750;
+  text-decoration:none;
+}
+#embeddedStandaloneSettingsCard .standalone-settings-link:hover{
+  border-color:#83a6dd;background:#eaf1ff;
+}
+#embeddedStandaloneSettingsCard .standalone-settings-link:focus-visible{
+  outline:2px solid #4674bd;outline-offset:3px;
+}
