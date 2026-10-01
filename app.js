@@ -2449,8 +2449,8 @@
     el('pageTitle').textContent = title;
     el('pageEyebrow').textContent = eyebrow;
     const reserved = view === 'placeholder';
-    if (el('draftsBtn')) el('draftsBtn').hidden = reserved;
-    if (el('addStudentBtn')) el('addStudentBtn').hidden = reserved;
+    if (el('draftsBtn')) { el('draftsBtn').hidden = reserved; el('draftsBtn').classList.toggle('hidden', reserved); }
+    if (el('addStudentBtn')) { el('addStudentBtn').hidden = reserved; el('addStudentBtn').classList.toggle('hidden', reserved); }
     if (view === 'programs') renderProgramTable();
     if (view === 'batches') renderBatchHistory();
     if (view === 'settings') { switchSettingsTab(activeSettingsTab); refreshTemplateStatus().catch(console.error); }
