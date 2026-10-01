@@ -30,6 +30,15 @@
         <button class="nav-item" data-view="workspace" data-case-category="non_o">
           <span class="nav-icon">↗</span><span>Non-O → ED transfer</span>
         </button>
+        <button class="nav-item" data-view="placeholder" data-placeholder="cancel">
+          <span class="nav-icon">×</span><span>Cancel</span>
+        </button>
+        <button class="nav-item" data-view="placeholder" data-placeholder="graduated">
+          <span class="nav-icon">✓</span><span>Graduated</span>
+        </button>
+        <button class="nav-item" data-view="placeholder" data-placeholder="criminal_record">
+          <span class="nav-icon">◇</span><span>Criminal Record</span>
+        </button>
       </nav>
 
       <div class="sidebar-foot">
@@ -85,6 +94,8 @@
           </div>
         </div>
       </section>
+
+      <section class="view placeholder-view" id="placeholderView" aria-label="Reserved Current Letter topic"></section>
 
       <section class="view" id="batchesView">
         <div class="section-head">
@@ -366,7 +377,7 @@
   <script src="docx-engine.js?v=045"></script>
   <script src="excel-export.js"></script>
   <script src="hub-reference.js?v=050"></script>
-  <script src="app.js?v=050"></script>
+  <script src="app.js?v=051"></script>
   <script src="ui-enhancements.js?v=036"></script>
   <script>
     // The standalone escape hatch is offered only when this workspace is embedded.
