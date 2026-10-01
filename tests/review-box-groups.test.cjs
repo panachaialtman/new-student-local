@@ -165,6 +165,25 @@ assert(/\.settings-panel\[hidden\]\s*\{display:none!important/.test(css),
 console.log('Settings tab layout, control relocation, and Tester UI checks passed.');
 
 const app=fs.readFileSync('app.js','utf8');
+const individualHistorySource=app.slice(
+  app.indexOf('  async function generateIndividual() {'),
+  app.indexOf('  function deleteSelectedCases()',app.indexOf('  async function generateIndividual() {'))
+);
+assert(individualHistorySource.includes("state.batches.unshift({") &&
+  individualHistorySource.includes("outputType: 'individual_letter'") &&
+  individualHistorySource.includes("students: historyStudentSnapshot([item])") &&
+  individualHistorySource.includes("renderBatchHistory();"),
+  'Print individual must append a one-student Generation history record after a successful DOCX export');
+const historyRenderSource=app.slice(
+  app.indexOf('  function renderBatchHistory() {'),
+  app.indexOf("  const SETTINGS_TABS",app.indexOf('  function renderBatchHistory() {'))
+);
+assert(historyRenderSource.includes("batch.outputType === 'individual_letter'") &&
+  historyRenderSource.includes("'Individual Word letter'") &&
+  historyRenderSource.includes("'Individual Word letter exported'"),
+  'Generation history must identify individual-letter exports distinctly');
+console.log('Individual Print history regression checks passed.');
+
 assert(app.includes("function switchSettingsTab(tab)")&&
   app.includes("function bindSettingsTabs()")&&app.includes("button.setAttribute('aria-selected'")&&
   app.includes('panel.hidden=!active'),
