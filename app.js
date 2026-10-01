@@ -2172,12 +2172,28 @@
       const blob = await BrowserDocx.generateIndividual(body.student, body.issueDate, body.signatory, body.reviewerBox);
       const filename = `Visa_Extension_Letter_${item.studentId || 'student'}.docx`;
       downloadBlob(blob, filename);
-      item.generatedAt = new Date().toISOString();
+      const generatedAt = new Date().toISOString();
+      item.generatedAt = generatedAt;
+      state.batches.unshift({
+        id: uid('individual'),
+        createdAt: generatedAt,
+        issueDate: body.issueDate,
+        documentNumbers: [String(item.documentNo || '').trim()],
+        students: historyStudentSnapshot([item]),
+        count: 1,
+        signatory: body.signatory,
+        outputType: 'individual_letter',
+        category: item.caseCategory || state.activeCategory,
+        filename,
+        reviewerBox: body.reviewerBox.reviewBox,
+        reviewerColumns: body.reviewerBox.reviewBox ? body.reviewerBox.columnNames : [],
+      });
       persist();
       closeModal('individualModal');
       renderWorkspace();
       renderDrawer();
-      toast('Individual Word letter created', 'The DOCX was generated locally in your browser.');
+      renderBatchHistory();
+      toast('Individual Word letter created', 'The DOCX was generated locally in your browser and recorded in Generation history.');
     } catch (err) {
       toast('Individual letter could not be created', err.message || String(err), true);
     } finally {
@@ -2313,16 +2329,26 @@
 
   function renderBatchHistory() {
     if (!state.batches.length) {
-      el('batchHistory').innerHTML = `<div class="history-empty"><strong>No generated documents yet</strong><span>Generate letters or a student list from selected cases to create the first history record.</span></div>`;
+      el('batchHistory').innerHTML = `<div class="history-empty"><strong>No generated documents yet</strong><span>Generate a batch letter, individual letter, or student list to create the first history record.</span></div>`;
       return;
     }
     el('batchHistory').innerHTML = state.batches.map((batch) => {
       const students = historyStudents(batch);
-      const type = batch.outputType === 'student_list' ? 'student_list' : 'letters';
+      const type = batch.outputType === 'student_list'
+        ? 'student_list'
+        : batch.outputType === 'individual_letter'
+          ? 'individual_letter'
+          : 'letters';
       const title = type === 'student_list'
         ? `Student list · ${batch.count} student${batch.count === 1 ? '' : 's'}`
-        : `${batch.count} Word letter${batch.count === 1 ? '' : 's'}`;
-      const outputLabel = type === 'student_list' ? 'Student list exported' : 'Word letters exported';
+        : type === 'individual_letter'
+          ? 'Individual Word letter'
+          : `${batch.count} Word letter${batch.count === 1 ? '' : 's'}`;
+      const outputLabel = type === 'student_list'
+        ? 'Student list exported'
+        : type === 'individual_letter'
+          ? 'Individual Word letter exported'
+          : 'Word letters exported';
       const signer = type === 'student_list' ? '' : ` · ${escapeHtml(signatoryProfile(batch.signatory).name)}`;
       const details = students.length
         ? `<div class="history-student-table"><div class="history-student-head"><span>Document</span><span>Student name</span><span>Student ID</span></div>${students.map((student) => `<div class="history-student-row"><span>${escapeHtml(student.documentNo || '—')}</span><strong>${escapeHtml(student.fullName || 'Student details unavailable')}</strong><span>${escapeHtml(student.studentId || '—')}</span></div>`).join('')}</div>`
