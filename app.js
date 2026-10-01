@@ -2406,11 +2406,16 @@
     toast('Tester created','A fictional local case was added. Delete it when your testing is finished.');
   }
 
-  function switchView(view, caseCategory = state.activeCategory) {
+  function switchView(view, caseCategory = state.activeCategory, placeholderKey = '') {
     const categories = {
       normal: ['Normal cases', 'NEW & CURRENT STUDENTS'],
       exchange: ['Exchange students', 'EXCHANGE LETTERS'],
       non_o: ['Non-O → ED transfer', 'NON-O TRANSFER LETTERS'],
+    };
+    const placeholders = {
+      cancel: 'Cancel',
+      graduated: 'Graduated',
+      criminal_record: 'Criminal Record',
     };
     if (view === 'workspace') {
       state.activeCategory = categories[caseCategory] ? caseCategory : 'normal';
@@ -2419,8 +2424,14 @@
       renderCaseList();
       renderSelectionBar();
     }
+    if (view === 'placeholder') {
+      state.selected.clear();
+      if (el('detailDrawer')?.classList.contains('open')) closeDrawer();
+      renderSelectionBar();
+    }
     const map = {
       workspace: ['workspaceView', ...categories[state.activeCategory]],
+      placeholder: ['placeholderView', placeholders[placeholderKey] || '', ''],
       batches: ['batchesView', 'Generation history', 'DOCUMENT OUTPUT'],
       programs: ['programsView', 'Academic programs', 'REFERENCE DATA'],
       settings: ['settingsView', 'Workspace settings', 'CONFIGURATION'],
@@ -2429,11 +2440,17 @@
     document.querySelectorAll('.nav-item').forEach((n) => n.classList.remove('active'));
     const [id, title, eyebrow] = map[view] || map.workspace;
     el(id).classList.add('active');
-    document.querySelector(view === 'workspace'
+    const activeNav = view === 'workspace'
       ? `.nav-item[data-view="workspace"][data-case-category="${state.activeCategory}"]`
-      : `.nav-item[data-view="${view}"]`)?.classList.add('active');
+      : view === 'placeholder'
+        ? `.nav-item[data-view="placeholder"][data-placeholder="${placeholderKey}"]`
+        : `.nav-item[data-view="${view}"]`;
+    document.querySelector(activeNav)?.classList.add('active');
     el('pageTitle').textContent = title;
     el('pageEyebrow').textContent = eyebrow;
+    const reserved = view === 'placeholder';
+    if (el('draftsBtn')) el('draftsBtn').hidden = reserved;
+    if (el('addStudentBtn')) el('addStudentBtn').hidden = reserved;
     if (view === 'programs') renderProgramTable();
     if (view === 'batches') renderBatchHistory();
     if (view === 'settings') { switchSettingsTab(activeSettingsTab); refreshTemplateStatus().catch(console.error); }
@@ -2452,7 +2469,7 @@
 
   function bindEvents() {
     document.querySelectorAll('.nav-item').forEach((item) => item.addEventListener('click',
-      () => switchView(item.dataset.view, item.dataset.caseCategory || state.activeCategory)));
+      () => switchView(item.dataset.view, item.dataset.caseCategory || state.activeCategory, item.dataset.placeholder || '')));
     el('menuToggle')?.addEventListener('click', () => el('sidebar').classList.toggle('open'));
     el('addStudentBtn').addEventListener('click',openNewStudentForm);
     el('draftsBtn').addEventListener('click',()=>{
