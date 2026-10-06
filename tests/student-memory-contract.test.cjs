@@ -3,6 +3,7 @@ const assert=require('node:assert/strict');
 const app=fs.readFileSync('app.js','utf8');
 const html=fs.readFileSync('index.html','utf8');
 const sw=fs.readFileSync('sw.js','utf8');
+const memory=fs.readFileSync('student-memory.js','utf8');
 
 assert.match(app,/rememberCurrentLetterCases\(\[item\],'add_student'/,'Add Student must explicitly write shared memory');
 assert.match(app,/rememberCurrentLetterCases\(items,'create_letter',body\.issueDate,body\.signatory/,'Batch Create Letter must finalize shared memory');
@@ -12,6 +13,10 @@ assert.doesNotMatch(saveDrawer,/BUICStudentMemory|rememberCurrentLetterCases/,'O
 const draft=app.slice(app.indexOf('async function saveStudentDraft()'),app.indexOf('function todayIso',app.indexOf('async function saveStudentDraft()')));
 assert.doesNotMatch(draft,/BUICStudentMemory|rememberCurrentLetterCases/,'Draft save must not update shared memory');
 assert.match(app,/buic-student-memory-selected/,'Student DB selection must populate Current Letter');
-assert.match(html,/student-memory\.js\?v=3/);
+assert.match(html,/student-memory\.js\?v=4/);
 assert.match(sw,/\.\/student-memory\.js/);
+assert.match(memory,/id='buicWorkspaceUsername'|id=\"buicWorkspaceUsername\"/,'Workspace login must include account field');
+assert.match(memory,/id='buicWorkspacePassword'|id=\"buicWorkspacePassword\"/,'Workspace login must include password field');
+assert.doesNotMatch(memory,/buicMemoryOtp|Authenticator code/,'Student DB must not ask for 2FA');
+assert.doesNotMatch(memory,/specialvisa/,'Raw workspace password must never be shipped to the browser');
 console.log('PASS shared student-memory save contract');
