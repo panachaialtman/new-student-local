@@ -1772,7 +1772,128 @@
     });
   }
 
-  function addStudentFromForm(form) {
+
+  function nationalityRecordForCase(item) {
+    const thai=String(item?.nationalityThai||'').trim();
+    return state.nationalities.find(row=>String(row.thai||row.nationalityThai||'').trim()===thai)
+      || state.nationalities.find(row=>String(row.nationalityThai||'').trim()===thai)
+      || null;
+  }
+
+  function currentLetterMemoryPayload(caseItem, action, issueDate='', signatory='') {
+    const item=normalizeCase(caseItem),nationality=nationalityRecordForCase(item),program=programByKey(item.programKey);
+    const studentId=String(item.studentId||'').trim(),fullName=String(item.fullName||'').trim();
+    if(!studentId||!fullName)return null;
+    const exchangeData={
+      exchangeUniversity:item.exchangeUniversity||'',exchangeCountryThai:item.exchangeCountryThai||'',
+      exchangeTerm:item.exchangeTerm||'',exchangeAcademicYear:item.exchangeAcademicYear||'',
+      exchangeDurationSemesters:item.exchangeDurationSemesters||''
+    };
+    const studentExtra={
+      caseCategory:item.caseCategory,currentStudent:Boolean(item.currentStudent),recipientLocation:item.recipientLocation||'',
+      attachment43:item.attachment43||'',requestRuleOverride:item.requestRuleOverride||'',
+      manualRequestUntil:item.manualRequestUntil||'',nonOVisaPurpose:item.nonOVisaPurpose||'',
+      programDurationYears:item.programDurationYears||'',...exchangeData
+    };
+    const academicExtra={
+      programKey:item.programKey||'',programType:item.programType||'',studyYearOverride:item.studyYearOverride||'',
+      graduationYearOverride:item.graduationYearOverride||'',academicCohortYear:item.academicCohortYear??null,
+      ...exchangeData
+    };
+    const payload={
+      action,source_app:'current_letter',
+      student:{
+        student_id:studentId,full_name:fullName,title:item.title||null,
+        nationality_code:nationality?.recordId||null,
+        nationality_en:nationality?.nationalityEnglish||nationality?.english||null,
+        nationality_th:item.nationalityThai||nationality?.nationalityThai||nationality?.thai||null,
+        country_en:nationality?.countryEnglish||nationality?.english||null,
+        country_th:nationality?.countryThai||null,
+        degree_level_id:item.programType||null,major_id:item.programKey||null,faculty_id:program?.facultyCode||program?.facultyEnglish||null,
+        extra_data:studentExtra
+      },
+      passport:item.passportNo?{passport_number:String(item.passportNo).trim(),expiry_date:item.passportExpiry||null,extra_data:{}}:null,
+      visa:{
+        visa_type:item.caseCategory==='non_o'?'NON-O → ED':'NON-ED',visa_expiry_date:item.currentStayUntil||null,effective_date:null,
+        extra_data:{requestRuleOverride:item.requestRuleOverride||'',requestedUntil:calculateRequestUntil(item)||''}
+      },
+      academic:{
+        degree_level_id:item.programType||null,major_id:item.programKey||null,faculty_id:program?.facultyCode||program?.facultyEnglish||null,
+        major_en:item.programEnglish||program?.programEnglish||null,major_th:item.programThai||program?.programThai||null,
+        faculty_en:item.facultyEnglish||program?.facultyEnglish||null,faculty_th:item.facultyThai||program?.facultyThai||null,
+        required_credits:item.totalCredits===''?null:Number(item.totalCredits),achieved_credits:item.registeredCredits===''?null:Number(item.registeredCredits),
+        study_period:item.caseCategory==='exchange'?[item.exchangeTerm,item.exchangeAcademicYear].filter(Boolean).join('/')||null:null,
+        current_year:null,studied_hours:item.studyHours===''?null:Number(item.studyHours),effective_date:null,source:'current_letter',extra_data:academicExtra
+      }
+    };
+    if(action==='create_letter'){
+      const documentNo=String(item.documentNo||'').trim();
+      if(!documentNo||!issueDate)return null;
+      payload.document={
+        document_number:documentNo,document_type:item.caseCategory||'normal',
+        template_key:templateKeyForCase(item),template_version:'current-letter-v054',
+        letter_date:issueDate,proposed_extension_date:calculateRequestUntil(item)||null,signatory_id:signatory||null
+      };
+      payload.snapshot={...item,issueDate,signatory,requestUntil:calculateRequestUntil(item),templateKey:templateKeyForCase(item),sourceApp:'current_letter'};
+    }
+    return payload;
+  }
+
+  async function rememberCurrentLetterCases(items, action, issueDate='', signatory='', {quiet=false}={}) {
+    const memory=window.BUICStudentMemory;
+    if(!memory?.remember){
+      if(!quiet)toast('Student DB unavailable','The local action completed, but shared student memory is unavailable.',true);
+      return {saved:0,failed:items.length,lastError:'Student DB unavailable'};
+    }
+    let saved=0,failed=0,lastError='';
+    for(const item of items){
+      const payload=currentLetterMemoryPayload(item,action,issueDate,signatory);
+      if(!payload){failed++;lastError='Student ID, name, document number, or letter date is missing.';continue;}
+      try{await memory.remember(payload,{interactive:true});saved++;}
+      catch(err){failed++;lastError=err?.message||String(err);}
+    }
+    if(!quiet){
+      if(failed)toast('Student DB not fully updated',saved+' saved · '+failed+' not saved'+(lastError?' · '+lastError:''),true);
+      else toast(action==='add_student'?'Student remembered':'Letter history remembered',saved+' student record'+(saved===1?'':'s')+' saved to the shared Student DB.');
+    }
+    return {saved,failed,lastError};
+  }
+
+  function rememberedProgramKey(record) {
+    const a=record?.academic||{},ax=a.extra_data&&typeof a.extra_data==='object'?a.extra_data:{};
+    if(ax.programKey&&programByKey(ax.programKey))return programByKey(ax.programKey).key;
+    const major=String(a.major_en||'').trim().toLowerCase(),faculty=String(a.faculty_en||'').trim().toLowerCase();
+    const hit=state.programs.find(p=>String(p.programEnglish||'').trim().toLowerCase()===major &&
+      (!faculty||String(p.facultyEnglish||'').trim().toLowerCase()===faculty))
+      || state.programs.find(p=>String(p.programEnglish||'').trim().toLowerCase()===major);
+    return hit?.key||'';
+  }
+
+  function applyRememberedStudentToEntry(record) {
+    const s=record?.student||{},p=record?.passport||{},v=record?.visa||{},a=record?.academic||{};
+    const sx=s.extra_data&&typeof s.extra_data==='object'?s.extra_data:{},ax=a.extra_data&&typeof a.extra_data==='object'?a.extra_data:{};
+    const category=['normal','exchange','non_o'].includes(sx.caseCategory)?sx.caseCategory:'normal';
+    state.activeDraftId=null;resetEntryCategorySnapshots();renderStudentForm(category);
+    const values={
+      caseCategory:category,title:s.title||'MISS',fullName:s.full_name||'',studentId:s.student_id||'',
+      currentStudent:Boolean(sx.currentStudent),nationalityThai:s.nationality_th||'',
+      passportNo:p.passport_number||'',passportExpiry:p.expiry_date||'',currentStayUntil:v.visa_expiry_date||'',
+      programKey:rememberedProgramKey(record),programType:ax.programType||a.degree_level_id||'international',
+      totalCredits:a.required_credits??'',registeredCredits:a.achieved_credits??'',
+      requestRuleOverride:sx.requestRuleOverride||'six_months',manualRequestUntil:sx.manualRequestUntil||'',
+      studyYearOverride:ax.studyYearOverride||'',graduationYearOverride:ax.graduationYearOverride||'',
+      exchangeUniversity:sx.exchangeUniversity||ax.exchangeUniversity||'',exchangeCountryThai:sx.exchangeCountryThai||ax.exchangeCountryThai||'',
+      exchangeTerm:sx.exchangeTerm||ax.exchangeTerm||'',exchangeAcademicYear:sx.exchangeAcademicYear||ax.exchangeAcademicYear||'',
+      exchangeDurationSemesters:sx.exchangeDurationSemesters||ax.exchangeDurationSemesters||'',
+      nonOVisaPurpose:sx.nonOVisaPurpose||'',programDurationYears:sx.programDurationYears||''
+    };
+    restoreDraftValues(el('studentForm'),values);
+    el('saveStudentDraftBtn').textContent='Save draft';
+    openModal('studentModal');
+    toast('Student loaded','Remembered information was loaded for review. It will not be saved back until Add Student or Create Letter.');
+  }
+
+  async function addStudentFromForm(form) {
     if(!nationalitySelectionValid(form))return;
     const fd = new FormData(form);
     const obj = Object.fromEntries(fd.entries());
@@ -1811,6 +1932,7 @@
     renderWorkspace();
     openDrawer(item.id);
     toast('Student added', 'Faculty and major were linked to the supplied reference data.');
+    await rememberCurrentLetterCases([item],'add_student','','',{quiet:false});
   }
 
   // Group assignment is a local-only action: never touches student data or the Hub.
@@ -2089,7 +2211,8 @@
       closeModal('batchModal');
       renderWorkspace();
       renderBatchHistory();
-      toast('Word file exported', `${items.length} selected letters were generated entirely in this browser.`);
+      const memoryResult=await rememberCurrentLetterCases(items,'create_letter',body.issueDate,body.signatory,{quiet:true});
+      toast('Word file exported', `${items.length} selected letters were generated. Shared Student DB: ${memoryResult.saved} remembered${memoryResult.failed?' · '+memoryResult.failed+' not saved':''}.`,Boolean(memoryResult.failed));
     } catch (err) {
       toast('Export could not finish', err.message || String(err), true);
     } finally {
@@ -2193,7 +2316,8 @@
       renderWorkspace();
       renderDrawer();
       renderBatchHistory();
-      toast('Individual Word letter created', 'The DOCX was generated locally in your browser and recorded in Generation history.');
+      const memoryResult=await rememberCurrentLetterCases([item],'create_letter',body.issueDate,body.signatory,{quiet:true});
+      toast('Individual Word letter created','The DOCX was generated and recorded in Generation history. Shared Student DB: '+(memoryResult.saved?'remembered.':'not updated'+(memoryResult.lastError?' · '+memoryResult.lastError:'')),Boolean(memoryResult.failed));
     } catch (err) {
       toast('Individual letter could not be created', err.message || String(err), true);
     } finally {
@@ -2595,8 +2719,9 @@
     });
     el('studentForm').addEventListener('submit', (e) => {
       e.preventDefault();
-      addStudentFromForm(e.currentTarget);
+      void addStudentFromForm(e.currentTarget);
     });
+    window.addEventListener('buic-student-memory-selected',e=>applyRememberedStudentToEntry(e.detail));
     el('programSearch').addEventListener('input', renderProgramTable);
     el('refreshHubReferencesBtn')?.addEventListener('click', () => { void syncHubReferences(true); });
     el('signatoryInput').addEventListener('change', (e) => {
