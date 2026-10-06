@@ -12,6 +12,6 @@ assert.doesNotMatch(saveDrawer,/BUICStudentMemory|rememberCurrentLetterCases/,'O
 const draft=app.slice(app.indexOf('async function saveStudentDraft()'),app.indexOf('function todayIso',app.indexOf('async function saveStudentDraft()')));
 assert.doesNotMatch(draft,/BUICStudentMemory|rememberCurrentLetterCases/,'Draft save must not update shared memory');
 assert.match(app,/buic-student-memory-selected/,'Student DB selection must populate Current Letter');
-assert.match(html,/student-memory\.js\?v=2/);
+assert.match(html,/student-memory\.js\?v=3/);
 assert.match(sw,/\.\/student-memory\.js/);
 console.log('PASS shared student-memory save contract');
