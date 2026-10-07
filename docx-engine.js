@@ -37,18 +37,11 @@
   }
   function thaiDateObj(d) { return `${d.d}  ${THAI_MONTHS[d.m]}  ${d.y + 543}`; }
   function thaiDate(raw) { return thaiDateObj(parseIso(raw)); }
-  function extensionDateBasis(st) {
-    const explicit = text(st.extensionDateBasis);
-    if (explicit === 'current_stay' || explicit === 'issue_date') return explicit;
-    const credits = Number.parseFloat(text(st.registeredCredits));
-    return Number.isFinite(credits) && credits < 50 ? 'issue_date' : 'current_stay';
-  }
-  function requestUntil(st, issueDate = '') {
+  function requestUntil(st) {
     const rule = text(st.requestRuleOverride) || 'six_months';
-    const baseDate = extensionDateBasis(st) === 'issue_date' ? issueDate : st.currentStayUntil;
     let requested;
-    if (rule === 'six_months') requested = addMonths(baseDate, 6);
-    else if (rule === 'one_year') requested = addMonths(baseDate, 12);
+    if (rule === 'six_months') requested = addMonths(st.currentStayUntil, 6);
+    else if (rule === 'one_year') requested = addMonths(st.currentStayUntil, 12);
     else if (rule === 'manual') requested = parseIso(st.manualRequestUntil);
     else throw new Error(`Unknown request rule: ${rule}`);
 
@@ -69,7 +62,7 @@
     return t;
   }
   function commaInt(n) { return Number(n).toLocaleString('en-US', { maximumFractionDigits: 0 }); }
-  function replacements(st, issueDate) {
+  function replacements(st) {
     const credits = Number.parseInt(text(st.registeredCredits), 10);
     if (!Number.isFinite(credits)) throw new Error('Invalid registered credits');
     return [
@@ -85,7 +78,7 @@
       text(st.totalCredits),
       String(credits),
       commaInt(credits * 14),
-      thaiDateObj(requestUntil(st, issueDate)),
+      thaiDateObj(requestUntil(st)),
     ];
   }
 
@@ -325,7 +318,7 @@
     const doc = files.get('word/document.xml');
     if (!doc) throw new Error('Invalid Word template: word/document.xml is missing');
     let xml = dec.decode(doc.data);
-    xml = fillHighlights(xml, replacements(st, issueDate));
+    xml = fillHighlights(xml, replacements(st));
     xml = applyAcademicWording(xml, st);
     xml = replaceIssueDate(xml, thaiDate(issueDate));
     const profile = resolveSignatory(signatory);
@@ -538,7 +531,7 @@
       thaiDate(st.passportExpiry),
       thaiDate(st.currentStayUntil),
     ];
-    const effectiveDate = thaiDateObj(requestUntil(st, issueDate));
+    const effectiveDate = thaiDateObj(requestUntil(st));
     if (category === 'exchange') {
       const term = Number(st.exchangeTerm);
       const academicYear = Number(st.exchangeAcademicYear);

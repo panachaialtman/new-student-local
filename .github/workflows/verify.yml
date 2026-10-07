@@ -28,4 +28,3 @@ jobs:
           node tests/review-box-groups.test.cjs
           node tests/hub-nationality.test.cjs
           node tests/student-memory-contract.test.cjs
-          node tests/extension-date-basis.test.cjs
