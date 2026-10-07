@@ -333,24 +333,52 @@
     return ['six_months', 'one_year', 'manual'].includes(rule) ? rule : 'six_months';
   }
 
-  function calculateRequestedUntil(caseItem) {
+  function completedCredits(caseItem) {
+    const raw = caseItem?.registeredCredits;
+    if (raw === undefined || raw === null || String(raw).trim() === '') return null;
+    const value = Number(raw);
+    return Number.isFinite(value) ? value : null;
+  }
+
+  function defaultExtensionDateBasis(caseItem) {
+    const credits = completedCredits(caseItem);
+    return credits !== null && credits < 50 ? 'issue_date' : 'current_stay';
+  }
+
+  function extensionDateBasis(caseItem) {
+    const basis = String(caseItem?.extensionDateBasis || '').trim();
+    return ['current_stay', 'issue_date'].includes(basis) ? basis : defaultExtensionDateBasis(caseItem);
+  }
+
+  function extensionBasisLabel(caseItem) {
+    return extensionDateBasis(caseItem) === 'issue_date' ? 'Date of issue' : 'Current stay until';
+  }
+
+  function extensionBaseDate(caseItem, issueDate = '') {
+    return extensionDateBasis(caseItem) === 'issue_date'
+      ? (String(issueDate || '').trim() || todayIso())
+      : caseItem.currentStayUntil;
+  }
+
+  function calculateRequestedUntil(caseItem, issueDate = '') {
     const rule = inferRule(caseItem);
-    if (rule === 'six_months') return addMonths(caseItem.currentStayUntil, 6);
-    if (rule === 'one_year') return addMonths(caseItem.currentStayUntil, 12);
+    const baseDate = extensionBaseDate(caseItem, issueDate);
+    if (rule === 'six_months') return addMonths(baseDate, 6);
+    if (rule === 'one_year') return addMonths(baseDate, 12);
     if (rule === 'manual') return caseItem.manualRequestUntil || '';
     return '';
   }
 
   // The passport expiration date is a hard ceiling for every letter, even
   // when a staff member dismisses the separate on-screen warning.
-  function calculateRequestUntil(caseItem) {
-    const requested = calculateRequestedUntil(caseItem);
+  function calculateRequestUntil(caseItem, issueDate = '') {
+    const requested = calculateRequestedUntil(caseItem, issueDate);
     const expiry = String(caseItem.passportExpiry || '').trim();
     return requested && expiry && expiry < requested ? expiry : requested;
   }
 
-  function isPassportCapped(caseItem) {
-    const requested = calculateRequestedUntil(caseItem);
+  function isPassportCapped(caseItem, issueDate = '') {
+    const requested = calculateRequestedUntil(caseItem, issueDate);
     const expiry = String(caseItem.passportExpiry || '').trim();
     return Boolean(requested && expiry && expiry < requested);
   }
@@ -734,6 +762,7 @@
     }
     if (!PROGRAM_TYPE_OPTIONS.some(([value]) => value === item.programType)) item.programType = 'international';
     if (!['six_months', 'one_year', 'manual'].includes(item.requestRuleOverride)) item.requestRuleOverride = 'six_months';
+    if (!['current_stay', 'issue_date'].includes(item.extensionDateBasis)) item.extensionDateBasis = defaultExtensionDateBasis(item);
     item.studyHours = item.registeredCredits ? Number(item.registeredCredits) * 14 : '';
     item.requestUntil = calculateRequestUntil(item);
     return item;
@@ -753,7 +782,7 @@
       ['currentStayUntil', 'current stay date'],
       ['programKey', 'major'],
       ['totalCredits', 'total credits'],
-      ['registeredCredits', 'registered credits'],
+      ['registeredCredits', 'credits completed'],
     ];
     requiredFields.forEach(([field, label]) => {
       if (item[field] === undefined || item[field] === null || String(item[field]).trim() === '') missing.push(label);
@@ -1355,7 +1384,7 @@
     move(academicGrid, [
       ['programType', 12],
       ['facultyKey', 6], ['programKey', 6],
-      ['totalCredits', 4], ['registeredCredits', 4], ['requestRuleOverride', 4],
+      ['totalCredits', 3], ['registeredCredits', 3], ['requestRuleOverride', 3], ['extensionDateBasis', 3],
       ['studyYearOverride', 6], ['graduationYearOverride', 6],
     ]);
     if (!isDrawer && academicGrid) {
@@ -1443,14 +1472,15 @@
             <div class="drawer-field"><label>Faculty</label><select id="drawerFacultySelect" data-academic-faculty="drawer">${facultyOptions.map(([v,l]) => `<option value="${escapeHtml(v)}" ${v === currentFacultyKey ? 'selected' : ''}>${escapeHtml(l)}</option>`).join('')}</select></div>
             <div class="drawer-field full"><label>Major</label><select data-edit-field="programKey" id="drawerProgramSelect" data-academic-program="drawer">${majorOptions.map((p) => `<option value="${escapeHtml(p.key)}" ${p.key === item.programKey ? 'selected' : ''}>${escapeHtml(majorLabelForType(item.programType, p))}</option>`).join('')}</select></div>
             ${editableField('Total credits', 'totalCredits', item.totalCredits, 'number')}
-            ${editableField('Registered credits', 'registeredCredits', item.registeredCredits, 'number')}
+            ${editableField('Credits Completed', 'registeredCredits', item.registeredCredits, 'number')}
             ${lockedField('Study year override (optional)', 'studyYearOverride', item.studyYearOverride || '', 'number', true, 'min="1" max="20" placeholder="Automatic from Student ID"', Boolean(item.studyYearOverride))}
             ${lockedField('Graduation year B.E. override (optional)', 'graduationYearOverride', item.graduationYearOverride || '', 'number', true, 'min="2500" max="2700" placeholder="Automatic from Student ID"', Boolean(item.graduationYearOverride))}
           </div>
         </div>
         <div class="drawer-section"><div class="drawer-section-head"><h3>Visa request</h3></div>
           <div class="field-grid">
-            ${editableSelect('Request option', 'requestRuleOverride', rule, [['six_months','+6 months'],['one_year','+1 year'],['manual','Manual Date']], 'data-request-rule="drawer"')}
+            ${editableSelect('Extension period', 'requestRuleOverride', rule, [['six_months','+6 months'],['one_year','+1 year'],['manual','Manual Date']], 'data-request-rule="drawer"')}
+            ${editableSelect('Extend until', 'extensionDateBasis', extensionDateBasis(item), [['current_stay','Current stay until'],['issue_date','Date of issue']], 'data-extension-basis="drawer"')}
             <div class="drawer-field manual-request-field ${rule === 'manual' ? '' : 'hidden'}"><label>Manual request until</label><input data-edit-field="manualRequestUntil" type="date" value="${escapeHtml(item.manualRequestUntil || '')}" /></div>
             ${editableSelect('Case type · move to another section', 'caseCategory', item.caseCategory, [['normal','Normal cases'],['exchange','Exchange students'],['non_o','Non-O → ED transfer']], 'id="editCaseCategory"')}
             ${editableSelect('Case group', 'labelId', item.labelId || '', [['','Unlabeled'],...caseLabels().map((group,index)=>[group.id,(index+1)+' · '+group.name])])}
@@ -1505,6 +1535,7 @@
         studentIdSelector: '[data-edit-field="studentId"]',
         currentStudentSelector: '[data-edit-field="currentStudent"]',
       });
+      bindExtensionBasisAuto(el('drawerContent'), '[data-edit-field="registeredCredits"]', '[data-edit-field="extensionDateBasis"]');
     } else {
       const facultyDisplay = program ? facultyLabelForType(item.programType, program) : (item.facultyThai || item.facultyEnglish);
       el('drawerContent').innerHTML = `
@@ -1521,7 +1552,7 @@
             ${fieldItem('Major', displayProgramName(item, program))}
             ${fieldItem('Thai major name', item.programThai || program?.programThai)}
             ${fieldItem('Total credits', item.totalCredits || program?.credits?.['2026'])}
-            ${fieldItem('Registered credits', item.registeredCredits)}
+            ${fieldItem('Credits Completed', item.registeredCredits)}
             ${fieldItem('Study year', item.currentStudent ? (item.studyYearOverride || ((item.academicCohortYear !== null && /^[0-9]{3}/.test(String(item.studentId || ''))) ? (((item.academicCohortYear - Number(String(item.studentId).slice(1, 3)) + 100) % 100) + 1) : 'Verify')) : 1)}
             ${fieldItem('Graduation year B.E.', item.graduationYearOverride || (item.programType === 'graduate' ? 'Graduate template value' : (/^[0-9]{3}/.test(String(item.studentId || '')) ? 2504 + Number(String(item.studentId).slice(1, 3)) : 'Verify')))}
             ${fieldItem('Study hours', item.studyHours ? `${Number(item.studyHours).toLocaleString()} hours` : '—', true)}
@@ -1544,7 +1575,8 @@
           <div class="field-grid">
             ${fieldItem('Current stay', formatDate(item.currentStayUntil))}
             ${fieldItem('Case group', labelForCase(item) ? 'Group '+caseGroupNumber(item)+' · '+labelForCase(item).name : 'Unlabeled')}
-            ${fieldItem('Request option', ruleLabel(item))}
+            ${fieldItem('Extension period', ruleLabel(item))}
+            ${fieldItem('Extend until', extensionBasisLabel(item))}
             <div class="field-item"><label>Case type</label><div class="field-value">${escapeHtml(({normal:'Normal cases',exchange:'Exchange students',non_o:'Non-O → ED transfer'})[item.caseCategory] || 'Normal cases')}</div><button type="button" class="btn subtle case-move-button" id="moveCaseTypeBtn">Move to another case type →</button></div>
             ${fieldItem(isPassportCapped(item) ? 'Extend until (passport cap)' : 'Request until', item.requestUntil ? formatDate(item.requestUntil) : '—', true)}
           </div>
@@ -1564,10 +1596,26 @@
     const requested = calculateRequestedUntil(item);
     const capped = isPassportCapped(item);
     const description = rule === 'six_months' ? 'Six-month request' : rule === 'one_year' ? 'One-year request' : 'Manual request';
+    const basis = rule === 'manual' ? '' : ' from ' + extensionBasisLabel(item);
     return capped
-      ? `${description}: ${formatDate(requested)}. Passport expires ${formatDate(item.passportExpiry)}, so the letter and table use the passport expiry date.`
-      : `${description}: ${formatDate(calculateRequestUntil(item))}.`;
+      ? `${description}${basis}: ${formatDate(requested)}. Passport expires ${formatDate(item.passportExpiry)}, so the letter and table use the passport expiry date.`
+      : `${description}${basis}: ${formatDate(calculateRequestUntil(item))}.`;
     return '';
+  }
+
+  function bindExtensionBasisAuto(root, creditsSelector, basisSelector) {
+    const creditsInput = root.querySelector(creditsSelector);
+    const basisSelect = root.querySelector(basisSelector);
+    if (!creditsInput || !basisSelect) return;
+    const sync = () => {
+      const raw = String(creditsInput.value ?? '').trim();
+      if (!raw) return;
+      const credits = Number(raw);
+      if (!Number.isFinite(credits)) return;
+      basisSelect.value = credits < 50 ? 'issue_date' : 'current_stay';
+    };
+    creditsInput.addEventListener('input', sync);
+    creditsInput.addEventListener('change', sync);
   }
 
   function bindAcademicSelectors({ root, typeSelector, facultySelector, programSelector, totalCreditsSelector, studentIdSelector = '', currentStudentSelector = '' }) {
@@ -1729,10 +1777,11 @@
       <div class="form-field"><label>Faculty</label><select name="facultyKey" data-academic-faculty="new" required></select></div>
       <div class="form-field full"><label>Major</label><select name="programKey" data-academic-program="new" required></select></div>
       <div class="form-field"><label>Total credits</label><input type="number" min="0" name="totalCredits" data-total-credits="new" /></div>
-      <div class="form-field"><label>Registered credits</label><input type="number" min="0" name="registeredCredits" /></div>
+      <div class="form-field"><label>Credits Completed</label><input type="number" min="0" name="registeredCredits" /></div>
       ${lockedField('Study year override (optional)', 'studyYearOverride', '', 'number', false, 'min="1" max="20" placeholder="Automatic from Student ID"', false)}
       ${lockedField('Graduation year B.E. override (optional)', 'graduationYearOverride', '', 'number', false, 'min="2500" max="2700" placeholder="Automatic from Student ID"', false)}
-      <div class="form-field"><label>Request option</label><select name="requestRuleOverride" data-request-rule="new"><option value="six_months">+6 months</option><option value="one_year">+1 year</option><option value="manual">Manual Date</option></select></div>
+      <div class="form-field"><label>Extension period</label><select name="requestRuleOverride" data-request-rule="new"><option value="six_months">+6 months</option><option value="one_year">+1 year</option><option value="manual">Manual Date</option></select></div>
+      <div class="form-field"><label>Extend until</label><select name="extensionDateBasis" data-extension-basis="new"><option value="current_stay">Current stay until</option><option value="issue_date">Date of issue</option></select></div>
       <div class="form-field manual-request-field hidden"><label>Manual request until</label><input type="date" name="manualRequestUntil" /></div>`;
     const form = el('studentForm');
     typePanel.querySelectorAll('[data-entry-category]').forEach(button => button.addEventListener('click', () => {
@@ -1766,6 +1815,7 @@
       studentIdSelector: '[name="studentId"]',
       currentStudentSelector: '[name="currentStudent"]',
     });
+    bindExtensionBasisAuto(form, '[name="registeredCredits"]', '[name="extensionDateBasis"]');
     const ruleSelect = form.querySelector('[data-request-rule="new"]');
     ruleSelect?.addEventListener('change', () => {
       form.querySelector('.manual-request-field')?.classList.toggle('hidden', ruleSelect.value !== 'manual');
@@ -1792,7 +1842,7 @@
     const studentExtra={
       caseCategory:item.caseCategory,currentStudent:Boolean(item.currentStudent),recipientLocation:item.recipientLocation||'',
       attachment43:item.attachment43||'',requestRuleOverride:item.requestRuleOverride||'',
-      manualRequestUntil:item.manualRequestUntil||'',nonOVisaPurpose:item.nonOVisaPurpose||'',
+      extensionDateBasis:extensionDateBasis(item),manualRequestUntil:item.manualRequestUntil||'',nonOVisaPurpose:item.nonOVisaPurpose||'',
       programDurationYears:item.programDurationYears||'',...exchangeData
     };
     const academicExtra={
@@ -1815,7 +1865,7 @@
       passport:item.passportNo?{passport_number:String(item.passportNo).trim(),expiry_date:item.passportExpiry||null,extra_data:{}}:null,
       visa:{
         visa_type:item.caseCategory==='non_o'?'NON-O → ED':'NON-ED',visa_expiry_date:item.currentStayUntil||null,effective_date:null,
-        extra_data:{requestRuleOverride:item.requestRuleOverride||'',requestedUntil:calculateRequestUntil(item)||''}
+        extra_data:{requestRuleOverride:item.requestRuleOverride||'',extensionDateBasis:extensionDateBasis(item),requestedUntil:calculateRequestUntil(item,issueDate)||''}
       },
       academic:{
         degree_level_id:item.programType||null,major_id:item.programKey||null,faculty_id:program?.facultyCode||program?.facultyEnglish||null,
@@ -1832,9 +1882,9 @@
       payload.document={
         document_number:documentNo,document_type:item.caseCategory||'normal',
         template_key:templateKeyForCase(item),template_version:'current-letter-v054',
-        letter_date:issueDate,proposed_extension_date:calculateRequestUntil(item)||null,signatory_id:signatory||null
+        letter_date:issueDate,proposed_extension_date:calculateRequestUntil(item,issueDate)||null,signatory_id:signatory||null
       };
-      payload.snapshot={...item,issueDate,signatory,requestUntil:calculateRequestUntil(item),templateKey:templateKeyForCase(item),sourceApp:'current_letter'};
+      payload.snapshot={...item,issueDate,signatory,extensionDateBasis:extensionDateBasis(item),requestUntil:calculateRequestUntil(item,issueDate),templateKey:templateKeyForCase(item),sourceApp:'current_letter'};
     }
     return payload;
   }
@@ -1880,7 +1930,7 @@
       passportNo:p.passport_number||'',passportExpiry:p.expiry_date||'',currentStayUntil:v.visa_expiry_date||'',
       programKey:rememberedProgramKey(record),programType:ax.programType||a.degree_level_id||'international',
       totalCredits:a.required_credits??'',registeredCredits:a.achieved_credits??'',
-      requestRuleOverride:sx.requestRuleOverride||'six_months',manualRequestUntil:sx.manualRequestUntil||'',
+      requestRuleOverride:sx.requestRuleOverride||'six_months',extensionDateBasis:sx.extensionDateBasis||defaultExtensionDateBasis({registeredCredits:a.achieved_credits}),manualRequestUntil:sx.manualRequestUntil||'',
       studyYearOverride:ax.studyYearOverride||'',graduationYearOverride:ax.graduationYearOverride||'',
       exchangeUniversity:sx.exchangeUniversity||ax.exchangeUniversity||'',exchangeCountryThai:sx.exchangeCountryThai||ax.exchangeCountryThai||'',
       exchangeTerm:sx.exchangeTerm||ax.exchangeTerm||'',exchangeAcademicYear:sx.exchangeAcademicYear||ax.exchangeAcademicYear||'',

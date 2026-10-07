@@ -19,11 +19,17 @@
   };
   const readable=value=>value?new Intl.DateTimeFormat('en-GB',{day:'2-digit',month:'short',year:'numeric'}).format(value):'—';
   let dismissed='';
+  function today() {
+    const d=new Date(),y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');
+    return y+'-'+m+'-'+day;
+  }
   function signature() {
     const expiry=date(form.elements.passportExpiry?.value),stay=form.elements.currentStayUntil?.value||'';
     const rule=form.elements.requestRuleOverride?.value||'',manual=form.elements.manualRequestUntil?.value||'';
-    const requested=rule==='manual'?date(manual):addMonths(stay,rule==='one_year'?12:6);
-    return {expiry,requested,key:[expiry?.getTime(),stay,rule,manual,requested?.getTime()].join('|')};
+    const basis=form.elements.extensionDateBasis?.value||'current_stay';
+    const base=basis==='issue_date'?today():stay;
+    const requested=rule==='manual'?date(manual):addMonths(base,rule==='one_year'?12:6);
+    return {expiry,requested,key:[expiry?.getTime(),stay,rule,basis,manual,requested?.getTime()].join('|')};
   }
   function update(reset=false) {
     if(reset)dismissed='';
@@ -45,7 +51,7 @@
     update();
   }
   form.addEventListener('input',event=>{
-    if(event.target.matches('[name="passportExpiry"],[name="currentStayUntil"],[name="requestRuleOverride"],[name="manualRequestUntil"]'))update(true);
+    if(event.target.matches('[name="passportExpiry"],[name="currentStayUntil"],[name="requestRuleOverride"],[name="extensionDateBasis"],[name="manualRequestUntil"]'))update(true);
   });
   form.addEventListener('change',event=>{
     if(event.target.matches('[name="passportExpiry"],[name="currentStayUntil"],[name="requestRuleOverride"],[name="manualRequestUntil"]'))update(true);
