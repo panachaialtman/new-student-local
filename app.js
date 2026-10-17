@@ -987,7 +987,7 @@
         el('partnerCountrySuggestions').innerHTML = countryOptions();
         renderProgramTable();
         // Student cases, imported Word templates, history and local settings are untouched.
-        hubStatus('Hub v' + result.version + ' · reference data updated');
+        hubStatus('Hub v' + result.version + ' · updated ' + (result.counts?.programs ?? result.programs.length) + ' programs, ' + (result.counts?.nationalities ?? result.nationalities.length) + ' nationalities');
       } else if (result.status === 'unchanged') {
         hubStatus('Hub v' + result.version + ' · up to date');
       } else {
@@ -995,7 +995,7 @@
       }
     } catch (error) {
       console.warn('Central Hub reference refresh failed; retaining current local references', error);
-      hubStatus('Hub unavailable · existing references preserved', true);
+      hubStatus('Hub refresh failed · ' + String(error?.message || 'Unknown error').slice(0,160), true);
     } finally {
       hubRefreshInProgress = false;
       if (button) button.disabled = false;
