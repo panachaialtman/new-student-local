@@ -46,18 +46,47 @@
     ].filter(value => typeof value === 'string' && value.trim()))];
   }
 
+  // The Hub records the original academic delivery classification while this
+  // workspace uses four stable operational categories. Existing local keys and
+  // categories must not be rewritten when a Hub release refreshes.
+  const WORKSPACE_PROGRAM_TYPES = new Set([
+    'thai', 'international', 'chinese_international', 'graduate'
+  ]);
+  const HUB_PROGRAM_TYPES = new Set([
+    'thai', 'international', 'chinese_international', 'graduate',
+    'bilingual', 'english', 'online_/_it-based'
+  ]);
+  function workspaceProgramType(remote, local) {
+    const sourceType = String(remote.programType || '').trim().toLowerCase();
+    const degree = String(remote.degreeLevel || '').trim().toLowerCase();
+    if (!HUB_PROGRAM_TYPES.has(sourceType)) {
+      throw new Error('Unsupported academic program type for ' + remote.recordId + ': ' + (sourceType || 'blank'));
+    }
+    if (local?.programType && WORKSPACE_PROGRAM_TYPES.has(local.programType)) {
+      return local.programType;
+    }
+    if (degree === 'master' || degree === 'doctor') return 'graduate';
+    if (WORKSPACE_PROGRAM_TYPES.has(sourceType)) return sourceType;
+    if (sourceType === 'bilingual' && degree === 'bachelor') {
+      if (remote.facultyCode === 'BUI') return 'international';
+      if (remote.facultyCode === 'BUCI') return 'chinese_international';
+    }
+    throw new Error('Cannot safely categorize new academic program ' + remote.recordId);
+  }
+
   function compatibleProgram(remote, local) {
     const english = String(remote.programEnglish || '').trim();
     const thai = String(remote.programThai || '').trim();
     const facultyEnglish = String(remote.facultyEnglish || '').trim();
     const facultyThai = String(remote.facultyThai || '').trim();
-    const type = String(remote.programType || '').trim();
-    const degree = String(remote.degreeLevel || '').trim();
+    const type = String(remote.programType || '').trim().toLowerCase();
+    const degree = String(remote.degreeLevel || '').trim().toLowerCase();
     if (!english || !thai || !facultyEnglish || !facultyThai ||
-        !['thai','international','graduate','chinese_international'].includes(type) ||
+        !HUB_PROGRAM_TYPES.has(type) ||
         !['bachelor','master','doctor'].includes(degree)) {
       throw new Error('Invalid academic program reference ' + remote.recordId);
     }
+    const workspaceType = workspaceProgramType(remote, local);
     const credit = remote.credits?.['2026'];
     if (credit != null && (!Number.isInteger(credit) || credit < 1 || credit > 600)) {
       throw new Error('Invalid 2026 credits for ' + remote.recordId);
@@ -68,9 +97,11 @@
       ...(local || {}),
       recordId: remote.recordId,
       key: local?.key || remote.key || generatedKey,
-      programType: local?.programType || type,
+      programType: workspaceType,
       sourceProgramType: remote.sourceProgramType || local?.sourceProgramType || type,
-      degreeLevel: degree,
+      // Preserve the workspace's historical "graduate" degree grouping.
+      degreeLevel: local?.degreeLevel || (degree === 'bachelor' ? 'bachelor' : 'graduate'),
+      sourceDegreeLevel: degree,
       facultyEnglish, facultyThai,
       facultyCode: code, programEnglish: english, programThai: thai,
       additionalNotes: String(remote.additionalNotes || ''),
