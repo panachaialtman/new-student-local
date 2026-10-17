@@ -27,14 +27,83 @@
       /[ก-๙]/.test(alias) && !/[A-Za-z]/.test(alias))||shortName;
   }
 
-  function checkRows(rows, expected, label, key) {
-    if (!Array.isArray(rows) || rows.length !== expected) {
-      throw new Error(label + ' record count changed; existing references were kept');
+  // Counts are not fixed: administrators can add and remove published references.
+  // Validate the entire incoming release before changing either local dataset.
+  function checkRows(rows, label, key) {
+    if (!Array.isArray(rows) || !rows.length || rows.length > 5000) {
+      throw new Error(label + ' has an invalid record count; existing references kept');
     }
-    const ids = rows.map(row => String(row?.[key] ?? ''));
+    const ids = rows.map(row => String(row?.[key] ?? '').trim());
     if (ids.some(id => !id) || new Set(ids).size !== ids.length) {
-      throw new Error(label + ' contains missing or duplicate identifiers');
+      throw new Error(label + ' has missing or duplicate record identifiers');
     }
+  }
+
+  function mergedAliases(local, remote) {
+    return [...new Set([
+      ...(Array.isArray(local?.aliases) ? local.aliases : []),
+      ...(Array.isArray(remote?.aliases) ? remote.aliases : [])
+    ].filter(value => typeof value === 'string' && value.trim()))];
+  }
+
+  function compatibleProgram(remote, local) {
+    const english = String(remote.programEnglish || '').trim();
+    const thai = String(remote.programThai || '').trim();
+    const facultyEnglish = String(remote.facultyEnglish || '').trim();
+    const facultyThai = String(remote.facultyThai || '').trim();
+    const type = String(remote.programType || '').trim();
+    const degree = String(remote.degreeLevel || '').trim();
+    if (!english || !thai || !facultyEnglish || !facultyThai ||
+        !['thai','international','graduate','chinese_international'].includes(type) ||
+        !['bachelor','master','doctor'].includes(degree)) {
+      throw new Error('Invalid academic program reference ' + remote.recordId);
+    }
+    const credit = remote.credits?.['2026'];
+    if (credit != null && (!Number.isInteger(credit) || credit < 1 || credit > 600)) {
+      throw new Error('Invalid 2026 credits for ' + remote.recordId);
+    }
+    const code = String(remote.facultyCode || '').trim();
+    const generatedKey = english + ' [' + (code || facultyEnglish) + ']';
+    return {
+      ...(local || {}),
+      recordId: remote.recordId,
+      key: local?.key || remote.key || generatedKey,
+      programType: local?.programType || type,
+      sourceProgramType: remote.sourceProgramType || local?.sourceProgramType || type,
+      degreeLevel: degree,
+      facultyEnglish, facultyThai,
+      facultyCode: code, programEnglish: english, programThai: thai,
+      additionalNotes: String(remote.additionalNotes || ''),
+      credits: { ...(local?.credits || {}), '2026': credit ?? null },
+      creditStatus: remote.creditStatus,
+      creditSourceUrl: remote.creditSourceUrl || '',
+      creditSourceStatus: remote.creditSourceStatus || '',
+      creditNotes: remote.creditNotes || '',
+      aliases: mergedAliases(local, remote)
+    };
+  }
+
+  function compatibleNationality(remote, local) {
+    const english = String(remote.english || '').trim();
+    const countryThai = String(remote.thai || '').trim();
+    const thaiNationality = String(remote.nationalityThai || '').trim();
+    if (!english || !countryThai || !thaiNationality ||
+        !/[ก-๙]/.test(thaiNationality) || /[A-Za-z]/.test(thaiNationality)) {
+      throw new Error('Invalid Thai nationality reference for ' + (english || remote.recordId));
+    }
+    return {
+      ...(local || {}),
+      recordId: remote.recordId,
+      // The nationality field takes the Thai demonym, never the country label.
+      thai: thaiNationality,
+      english,
+      countryThai,
+      countryEnglish: english,
+      countryOfficialThai: officialThaiCountry(remote),
+      nationalityThai: thaiNationality,
+      nationalityEnglish: String(remote.nationalityEnglish || '').trim(),
+      aliases: mergedAliases(local, remote)
+    };
   }
 
   async function update(localPrograms, localNationalities, force = false) {
@@ -54,66 +123,47 @@
       ]);
       if (programResponse.version !== meta.version || nationalityResponse.version !== meta.version ||
           programResponse.dataset !== 'programs' || nationalityResponse.dataset !== 'nationalities') {
-        throw new Error('Central Hub dataset versions do not match');
+        throw new Error('Hub versions do not match; try refreshing again');
       }
       const programs = programResponse.records;
       const nationalities = nationalityResponse.records;
-      checkRows(programs, localPrograms.length, 'Programs', 'recordId');
-      checkRows(nationalities, localNationalities.length, 'Nationalities', 'recordId');
-
-      const programById = new Map(programs.map(row => [row.recordId, row]));
-      if (localPrograms.some(row => !programById.has(row.recordId))) {
-        throw new Error('Program IDs changed; existing local records were kept');
+      checkRows(programs, 'Programs', 'recordId');
+      checkRows(nationalities, 'Nationalities', 'recordId');
+      const englishKeys = nationalities.map(row => normalize(row.english));
+      if (englishKeys.some(key => !key) || new Set(englishKeys).size !== englishKeys.length) {
+        throw new Error('Hub country names are missing or duplicated');
       }
-      const nationalityByEnglish = new Map(nationalities.map(row => [normalize(row.english), row]));
-      if (localNationalities.some(row => !nationalityByEnglish.has(normalize(row.english)))) {
-        throw new Error('Nationality names changed; existing local records were kept');
-      }
-      const newPrograms = localPrograms.map(local => {
-        const remote = programById.get(local.recordId);
-        const credit = remote.credits?.['2026'];
-        if (credit !== null && credit !== undefined &&
-            (!Number.isInteger(credit) || credit < 1 || credit > 600)) {
-          throw new Error('Invalid 2026 credits for ' + local.recordId);
-        }
-        return {
-          ...local,
-          facultyEnglish: remote.facultyEnglish,
-          facultyThai: remote.facultyThai,
-          facultyCode: remote.facultyCode,
-          programEnglish: remote.programEnglish,
-          programThai: remote.programThai,
-          additionalNotes: remote.additionalNotes || '',
-          credits: { ...local.credits, '2026': credit ?? null },
-          creditStatus: remote.creditStatus,
-          creditSourceUrl: remote.creditSourceUrl,
-          creditSourceStatus: remote.creditSourceStatus,
-          aliases: [...new Set([...(local.aliases || []), ...(remote.aliases || [])])]
-          // Do not replace "key"/"programType": existing local cases depend on them.
-        };
-      });
-      const newNationalities = localNationalities.map(local => {
-        const remote = nationalityByEnglish.get(normalize(local.english));
-        const thaiNationality = String(remote.nationalityThai || '').trim();
-        if (!thaiNationality || !/[ก-๙]/.test(thaiNationality) || /[A-Za-z]/.test(thaiNationality)) {
-          throw new Error('Missing Thai nationality for ' + local.english + '; existing references were kept');
-        }
-        return {
-          ...local,
-          // Only nationalityThai can enter the student nationality field.
-          // Keep the distinct country labels and demonym for bilingual search.
-          thai: thaiNationality,
-          english: remote.english,
-          countryThai: remote.thai,
-          countryEnglish: remote.english,
-          countryOfficialThai: officialThaiCountry(remote),
-          nationalityThai: thaiNationality,
-          nationalityEnglish: String(remote.nationalityEnglish || '').trim(),
-          aliases: [...new Set([...(local.aliases || []), ...(remote.aliases || [])])]
-        };
-      });
+      const localProgramById = new Map(localPrograms.map(row => [row.recordId, row]));
+      const localNationalityById = new Map(
+        localNationalities.filter(row => row.recordId).map(row => [row.recordId, row])
+      );
+      const localNationalityByEnglish = new Map(
+        localNationalities.map(row => [normalize(row.english), row])
+      );
+      // Start with the published release, not the old fixed-length bundled arrays.
+      // Removed entries disappear from new lookup options, but stored cases are never changed.
+      const newPrograms = programs.map(remote =>
+        compatibleProgram(remote, localProgramById.get(remote.recordId))
+      );
+      const newNationalities = nationalities.map(remote =>
+        compatibleNationality(remote,
+          localNationalityById.get(remote.recordId) ||
+          localNationalityByEnglish.get(normalize(remote.english)))
+      );
       lastVersion = meta.version;
-      return { status: 'updated', version: meta.version, programs: newPrograms, nationalities: newNationalities };
+      return {
+        status: 'updated', version: meta.version,
+        programs: newPrograms, nationalities: newNationalities,
+        counts: { programs: newPrograms.length, nationalities: newNationalities.length }
+      };
+    } catch (error) {
+      if (error?.name === 'AbortError') {
+        throw new Error('Hub request timed out; existing references preserved');
+      }
+      if (error instanceof TypeError) {
+        throw new Error('Cannot reach Hub (connection or browser permission); references preserved');
+      }
+      throw error;
     } finally {
       clearTimeout(timer);
     }
