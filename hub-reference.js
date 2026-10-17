@@ -83,10 +83,19 @@
     };
   }
 
+  // Approved short-name conventions; a previously published Hub release may
+  // predate the matching source correction. Apply the same display policy here.
+  const THAI_NATIONALITY_OVERRIDES = Object.freeze({
+    Germany:'เยอรมนี',
+    Taiwan:'จีน', 'Hong Kong':'จีน', Macao:'จีน',
+    'DR Congo':'คองโก', 'Republic of the Congo':'คองโก',
+    Netherlands:'เนเธอร์แลนด์',
+    'United Kingdom':'อังกฤษ', 'United States':'อเมริกา'
+  });
   function compatibleNationality(remote, local) {
     const english = String(remote.english || '').trim();
     const countryThai = String(remote.thai || '').trim();
-    const thaiNationality = String(remote.nationalityThai || '').trim();
+    const thaiNationality = THAI_NATIONALITY_OVERRIDES[english] || String(remote.nationalityThai || '').trim();
     if (!english || !countryThai || !thaiNationality ||
         !/[ก-๙]/.test(thaiNationality) || /[A-Za-z]/.test(thaiNationality)) {
       throw new Error('Invalid Thai nationality reference for ' + (english || remote.recordId));
