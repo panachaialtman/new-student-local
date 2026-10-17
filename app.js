@@ -1003,8 +1003,8 @@
     }
   }
 
-  // Thai is the only selectable nationality value. English and Thai country
-  // names, demonyms and source aliases are search terms, never form values.
+  // Suggestions use approved short Thai labels; manual Thai values are also valid.
+  // Keep legacy demonyms searchable without forcing them as the saved label.
   const EXTRA_NATIONALITY_TERMS={
     Myanmar:['Burmese','Burma','พม่า'],
     Thailand:['Thai','ประเทศไทย'],
@@ -1012,13 +1012,15 @@
     Japan:['Japanese','ประเทศญี่ปุ่น'],
     India:['Indian','ประเทศอินเดีย'],
     Philippines:['Filipino','Filipina','Philippine'],
-    'United Kingdom':['British','Briton','UK','สหราชอาณาจักร'],
-    'United States':['American','USA','สหรัฐอเมริกา'],
+    'United Kingdom':['British','Briton','UK','สหราชอาณาจักร','บริติช'],
+    Netherlands:['Dutch','ดัตช์'],Taiwan:['Taiwanese','ไต้หวัน'],
+    'Hong Kong':['ฮ่องกง'],Macao:['มาเก๊า'],
+    'United States':['American','USA','สหรัฐอเมริกา','อเมริกัน'],
     Vietnam:['Vietnamese'],Cambodia:['Cambodian','Khmer'],
     Laos:['Lao','Laotian'],Malaysia:['Malaysian'],
     Indonesia:['Indonesian'],Singapore:['Singaporean'],
     Australia:['Australian'],Canada:['Canadian'],
-    France:['French'],Germany:['German'],Russia:['Russian']
+    France:['French'],Germany:['German','เยอรมัน'],Russia:['Russian']
   };
   function nationalitySearchKey(value) {
     return String(value??'').normalize('NFKC').toLocaleLowerCase()
