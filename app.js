@@ -917,13 +917,14 @@
   // published Hub V3. Online Hub data always overrides this small snapshot.
   const OFFLINE_THAI_NATIONALITIES=Object.freeze({
     'DR Congo':'คองโก',
-    Germany:'เยอรมัน',
+    Germany:'เยอรมนี',
     'Hong Kong':'จีน',
     Macao:'จีน',
-    Netherlands:'ดัตช์ / เนเธอร์แลนด์',
+    Netherlands:'เนเธอร์แลนด์',
     'Republic of the Congo':'คองโก',
-    'United Kingdom':'บริติช / อังกฤษ',
-    'United States':'อเมริกัน'
+    'United Kingdom':'อังกฤษ',
+    'United States':'อเมริกา',
+    Taiwan:'จีน'
   });
   async function loadReferenceData() {
     const programFiles = [
@@ -1047,7 +1048,7 @@
         <div class="nationality-results hidden" id="${id}Options" role="listbox"
           aria-label="Select Thai nationality"></div>
       </div>
-      <small class="nationality-help">Search in Thai or English; choose the Thai nationality.</small>
+      <small class="nationality-help">Type a nationality in Thai, or choose a suggestion. Suggestions are optional.</small>
     </div>`;
   }
   function bindNationalityPicker(root) {
@@ -1122,18 +1123,15 @@
   function nationalitySelectionValid(root) {
     const input=root.querySelector('[data-nationality-input]');
     if(!input)return true;
-    const thai=state.nationalities.find(item=>item.thai===input.value)?.thai;
-    // Preserve existing Thai-language legacy values (such as อังกฤษ) on
-    // unrelated edits; no stored student data is silently rewritten.
-    const unchangedLegacy=Boolean(input.hasAttribute('data-edit-field')&&
-      input.value&&input.value===input.dataset.originalThai&&
-      /[ก-๙]/.test(input.value)&&!/[A-Za-z]/.test(input.value));
-    if((input.value===input.dataset.confirmedThai&&thai)||unchangedLegacy){
+    // Autocomplete is an optional convenience. A manually typed Thai nationality
+    // is valid even if it is absent from the Hub and was never selected.
+    // Keep the field in Thai; no text is ever sent to the public Hub.
+    const value=String(input.value||'').trim();
+    if(value && /[ก-๙]/.test(value) && !/[A-Za-z]/.test(value)){
       input.setCustomValidity('');return true;
     }
-    input.setCustomValidity('Select a Thai nationality from the suggestions before saving.');
-    input.reportValidity();input.focus();
-    return false;
+    input.setCustomValidity('Enter the nationality in Thai. You may type it manually without choosing a suggestion.');
+    input.reportValidity();input.focus();return false;
   }
   function ensureNationalityDatalist() {
     // Compatibility with existing Hub refresh calls. Active pickers search
