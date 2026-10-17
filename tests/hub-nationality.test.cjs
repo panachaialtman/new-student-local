@@ -6,7 +6,8 @@ const source=fs.readFileSync('hub-reference.js','utf8');
 const localPrograms=[{recordId:'FM000',key:'demo',programType:'international',
   credits:{'2026':129},facultyEnglish:'Example',programEnglish:'Example program'}];
 const remotePrograms=[{recordId:'FM000',credits:{'2026':129},
-  facultyEnglish:'Example',programEnglish:'Example program',aliases:[]}];
+  facultyEnglish:'Example',facultyThai:'คณะตัวอย่าง',programEnglish:'Example program',
+  programThai:'ตัวอย่าง',programType:'international',degreeLevel:'bachelor',aliases:[]}];
 const localNationalities=[
   {english:'Germany',thai:'เยอรมนี',aliases:[]},
   {english:'United Kingdom',thai:'อังกฤษ',aliases:[]},
@@ -23,11 +24,11 @@ const remoteNationalities=[
   {recordId:'C004',english:'Myanmar',thai:'เมียนมา',
     nationalityThai:'เมียนมา',nationalityEnglish:'Myanmar / Burmese',aliases:['พม่า','สาธารณรัฐแห่งสหภาพเมียนมา']}
 ];
-async function run(rows) {
+async function run(rows, programs=remotePrograms, version=3, localP=localPrograms, localN=localNationalities) {
   const api={
-    meta:{available:true,version:3},
-    programs:{version:3,dataset:'programs',records:remotePrograms},
-    nationalities:{version:3,dataset:'nationalities',records:rows}
+    meta:{available:true,version},
+    programs:{version,dataset:'programs',records:programs},
+    nationalities:{version,dataset:'nationalities',records:rows}
   };
   const context={
     window:{},AbortController:class {constructor(){this.signal={}}abort(){}},
@@ -37,7 +38,7 @@ async function run(rows) {
     })
   };
   vm.runInNewContext(source,context);
-  return context.window.BUICReferenceHub.update(localPrograms,localNationalities,true);
+  return context.window.BUICReferenceHub.update(localP,localN,true);
 }
 (async()=>{
   const result=await run(remoteNationalities);
@@ -65,5 +66,45 @@ async function run(rows) {
     row.english==='Germany'?{...row,nationalityThai:''}:row)),/Missing Thai nationality/);
   assert.equal(localNationalities[0].thai,'เยอรมนี',
     'Bad Hub nationality data must not rewrite existing references');
-  console.log('Hub nationality and official Thai country-name tests passed (full names, short-name fallback, no student data).');
+  // Published additions must appear in Current Letter without a bundled-file update.
+  const addedProgram={recordId:'FM101',facultyEnglish:'New Faculty',facultyThai:'คณะใหม่',
+    programEnglish:'Example Applied Science',programThai:'วิทยาศาสตร์ประยุกต์ตัวอย่าง',
+    facultyCode:'NF',degreeLevel:'bachelor',programType:'international',
+    credits:{'2026':null},creditStatus:'missing',aliases:[]};
+  const addedNationality={recordId:'C101',english:'Example Republic',
+    thai:'สาธารณรัฐตัวอย่าง',nationalityEnglish:'Example Republic citizen',
+    nationalityThai:'ชาวตัวอย่าง',aliases:['ราชรัฐตัวอย่าง']};
+  const expanded=await run([...remoteNationalities,addedNationality],
+    [...remotePrograms,addedProgram],4);
+  assert.equal(expanded.programs.length,2,'New academic programs must appear');
+  assert.equal(expanded.nationalities.length,5,'New nationalities must appear');
+  assert.equal(expanded.programs.find(row=>row.recordId==='FM101').programType,'international');
+  assert.equal(expanded.programs.find(row=>row.recordId==='FM101').key,'Example Applied Science [NF]');
+  assert.equal(expanded.nationalities.find(row=>row.recordId==='C101').thai,'ชาวตัวอย่าง');
+  assert.equal(expanded.nationalities.find(row=>row.recordId==='C101').countryOfficialThai,'ราชรัฐตัวอย่าง');
+  assert.equal(expanded.programs.find(row=>row.recordId==='FM000').key,'demo',
+    'Existing program keys must remain stable for stored cases');
+
+  // Deletions must remove the published reference from current lookup options
+  // but never mutate the bundled fallback arrays.
+  const reduced=await run(remoteNationalities.filter(row=>row.english!=='Germany'),
+    remotePrograms,5);
+  assert.equal(reduced.nationalities.length,3,'Removed nationality should disappear');
+  assert.equal(reduced.nationalities.some(row=>row.english==='Germany'),false);
+  assert.equal(localNationalities.length,4,'Existing bundled/local reference arrays remain untouched');
+  assert.equal(localPrograms.length,1,'No existing program record is mutated or deleted');
+  const withoutPrograms=await run(remoteNationalities,[addedProgram],6);
+  assert.equal(withoutPrograms.programs.some(row=>row.recordId==='FM000'),false,
+    'A removed program must no longer be an available published option');
+
+  // Invalid releases must fail as a whole, with no partial changes applied.
+  await assert.rejects(run([...remoteNationalities,{...remoteNationalities[0]}]),
+    /duplicate record identifiers/);
+  await assert.rejects(run([...remoteNationalities,{...remoteNationalities[0],recordId:'C500'}]),
+    /duplicated/);
+  await assert.rejects(run(remoteNationalities,[
+    {...remotePrograms[0],credits:{'2026':700}}
+  ]),/Invalid 2026 credits/);
+  assert.equal(localNationalities[0].thai,'เยอรมนี');
+  console.log('Hub nationality, dynamic record count and safe staged publication tests passed.');
 })().catch(err=>{console.error(err);process.exitCode=1;});
