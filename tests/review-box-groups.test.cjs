@@ -205,10 +205,10 @@ state.nationalities=[
  {thai:'เมียนมา',english:'Myanmar',aliases:['Burma','พม่า']},
  {thai:'ไทย',english:'Thailand',aliases:[]},
  {thai:'จีน',english:'China',aliases:[]},
- {thai:'เยอรมัน',english:'Germany',countryThai:'เยอรมนี',
+ {thai:'เยอรมนี',english:'Germany',countryThai:'เยอรมนี',
   countryOfficialThai:'สหพันธ์สาธารณรัฐเยอรมนี',
   nationalityEnglish:'German',aliases:['Federal Republic of Germany']},
- {thai:'บริติช / อังกฤษ',english:'United Kingdom',countryThai:'สหราชอาณาจักร',
+ {thai:'อังกฤษ',english:'United Kingdom',countryThai:'สหราชอาณาจักร',
   nationalityEnglish:'British',aliases:['Briton']}
 ];
 for(const query of ['myanmar','Burma','Burmese','พม่า','เมียนมา']){
@@ -219,11 +219,11 @@ assert(nationalityMatches(state.nationalities[1],'Thai'));
 assert(nationalityMatches(state.nationalities[2],'Chinese'));
 for(const term of ['Germany','German','เยอรมนี','เยอรมัน','Federal Republic of Germany']){
  assert(nationalityMatches(state.nationalities[3],term),
-  'German country/demonym query '+term+' must return Thai nationality เยอรมัน');
+  'German country/demonym query '+term+' must return Thai nationality เยอรมนี');
 }
 for(const term of ['United Kingdom','British','สหราชอาณาจักร','บริติช']){
  assert(nationalityMatches(state.nationalities[4],term),
-  'British country/demonym query '+term+' must return Thai nationality บริติช / อังกฤษ');
+  'British country/demonym query '+term+' must return Thai nationality อังกฤษ');
 }
 const partnerOptions=countryOptions();
 assert(partnerOptions.includes('value="สหพันธ์สาธารณรัฐเยอรมนี"'),
@@ -243,8 +243,10 @@ assert.equal(bundledNationalities.find(item=>item.english==='Germany').countryOf
  'The full Thai country label must also work without an online Hub connection');
 assert(bundledNationalities.filter(item=>item.countryOfficialThai!==item.thai).length>=150,
  'Bundled official-country names must cover the source-backed formal names');
-assert(app.includes("Germany:'เยอรมัน'")&&
-  app.includes("'United States':'อเมริกัน'"),
+assert(app.includes("Germany:'เยอรมนี'")&&
+  app.includes("'United States':'อเมริกา'")&&
+  app.includes("'United Kingdom':'อังกฤษ'")&&
+  app.includes("Taiwan:'จีน'"),
   'Offline fallback must distinguish country names from nationality names');
 assert(!nationalityMatches(state.nationalities[0],'Japan'));
 const picker=nationalityField('',false);
@@ -265,22 +267,26 @@ function validate(value,confirmed,{existing=false,originalThai=''}={}){
 assert.equal(validate('เมียนมา','เมียนมา').allowed,true);
 assert.equal(validate('Burma','').allowed,false);
 assert.equal(validate('Myanmar','').allowed,false);
-assert.equal(validate('พม่า','').allowed,false,
-  'A Thai-language alias must still be explicitly selected as the canonical Thai nationality');
-assert.equal(validate('เมียนมา','').allowed,false,
-  'Typing is a search action; user confirms a Thai value from suggestions');
-assert.equal(validate('เยอรมัน','เยอรมัน').allowed,true);
-assert.equal(validate('เยอรมนี','').allowed,false,
- 'Thai country name must not be saved as a new nationality');
-assert.equal(validate('บริติช / อังกฤษ','บริติช / อังกฤษ').allowed,true);
-assert.equal(validate('อังกฤษ','อังกฤษ',{existing:true,originalThai:'อังกฤษ'}).allowed,true,
- 'Unchanged Thai-language legacy student records must remain editable');
+assert.equal(validate('พม่า','').allowed,true,
+  'Thai-language aliases are accepted without choosing an autocomplete suggestion');
+assert.equal(validate('เมียนมา','').allowed,true,
+  'Typing an existing nationality must work without selecting suggestions');
+assert.equal(validate('เยอรมนี','').allowed,true,
+  'Germany short Thai nationality is allowed as free text');
+assert.equal(validate('คองโก','').allowed,true);
+assert.equal(validate('จีน','').allowed,true);
+assert.equal(validate('เนเธอร์แลนด์','').allowed,true);
+assert.equal(validate('อังกฤษ','').allowed,true);
+assert.equal(validate('อเมริกา','').allowed,true);
+assert.equal(validate('ชื่อสัญชาติใหม่','').allowed,true,
+  'A manually typed Thai value not found in references can be saved');
+assert.equal(validate('  ','').allowed,false);
 assert.equal(validate('England','England',{existing:true,originalThai:'England'}).allowed,false,
- 'An English legacy value cannot be accepted as a new confirmed Thai nationality');
+  'Nationality Thai must remain written in Thai');
 assert(app.includes('if(!nationalitySelectionValid(form))return;')&&
   app.includes("if(!nationalitySelectionValid(el('drawerContent')))return;"),
-  'Both add and edit workflows must reject unconfirmed search text');
-console.log('Thai-only nationality picker tests passed (Thai/English search, canonical selection, both forms).');
+  'Add and edit must both validate free-text Thai nationality values');
+console.log('Optional nationality picker tests passed (Thai free text, lookup, both forms).');
 
 // Drafts are a distinct browser-local collection; incomplete entries never
 // join active cases or document-generation flows without explicit promotion.
