@@ -45,7 +45,7 @@ async function run(rows, programs=remotePrograms, version=3, localP=localProgram
   assert.equal(result.status,'updated');
   assert.equal(result.version,3);
   const find=name=>result.nationalities.find(row=>row.english===name);
-  assert.equal(find('Germany').thai,'เยอรมัน');
+  assert.equal(find('Germany').thai,'เยอรมนี');
   assert.equal(find('Germany').countryThai,'เยอรมนี');
   assert.equal(find('Germany').countryOfficialThai,'สหพันธ์สาธารณรัฐเยอรมนี',
     'Partner country must use the complete formal country name');
@@ -55,15 +55,34 @@ async function run(rows, programs=remotePrograms, version=3, localP=localProgram
     'When the source supplies no fuller name, use the published country name');
 
   assert.equal(find('Germany').nationalityEnglish,'German');
-  assert.equal(find('United Kingdom').thai,'บริติช / อังกฤษ');
+  assert.equal(find('United Kingdom').thai,'อังกฤษ');
   assert.equal(find('United Kingdom').countryThai,'สหราชอาณาจักร');
-  assert.equal(find('United States').thai,'อเมริกัน');
+  assert.equal(find('United States').thai,'อเมริกา');
   assert.equal(find('United States').countryThai,'สหรัฐอเมริกา');
   assert.equal(find('Myanmar').thai,'เมียนมา');
+  // An older Hub publication can still contain traditional demonyms; the
+  // Current Letter consumer must apply the approved short forms immediately.
+  const special=[
+    {recordId:'C063',english:'DR Congo',thai:'สาธารณรัฐประชาธิปไตยคองโก',nationalityThai:'คองโก'},
+    {recordId:'C099',english:'Hong Kong',thai:'ฮ่องกง',nationalityThai:'จีน'},
+    {recordId:'C129',english:'Macao',thai:'มาเก๊า',nationalityThai:'จีน'},
+    {recordId:'C154',english:'Netherlands',thai:'เนเธอร์แลนด์',nationalityThai:'ดัตช์ / เนเธอร์แลนด์'},
+    {recordId:'C180',english:'Republic of the Congo',thai:'สาธารณรัฐคองโก',nationalityThai:'คองโก'},
+    {recordId:'C218',english:'Taiwan',thai:'ไต้หวัน',nationalityThai:'ไต้หวัน'},
+  ];
+  const all=await run([...remoteNationalities,...special],remotePrograms,7);
+  const expected={'DR Congo':'คองโก','Hong Kong':'จีน',Macao:'จีน',
+    Netherlands:'เนเธอร์แลนด์','Republic of the Congo':'คองโก',Taiwan:'จีน',
+    Germany:'เยอรมนี','United Kingdom':'อังกฤษ','United States':'อเมริกา'};
+  for(const [name,label] of Object.entries(expected)){
+    assert.equal(all.nationalities.find(row=>row.english===name).thai,label,
+      'Short Thai nationality convention for '+name);
+  }
+
   assert(find('Myanmar').aliases.includes('Burma')&&find('Myanmar').aliases.includes('พม่า'));
   assert.equal(localNationalities[0].thai,'เยอรมนี','Do not mutate bundled records');
   await assert.rejects(run(remoteNationalities.map(row=>
-    row.english==='Germany'?{...row,nationalityThai:''}:row)),/Missing Thai nationality/);
+    row.english==='Myanmar'?{...row,nationalityThai:''}:row)),/Invalid Thai nationality/);
   assert.equal(localNationalities[0].thai,'เยอรมนี',
     'Bad Hub nationality data must not rewrite existing references');
   // Published additions must appear in Current Letter without a bundled-file update.
