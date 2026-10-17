@@ -85,6 +85,55 @@ async function run(rows, programs=remotePrograms, version=3, localP=localProgram
     row.english==='Myanmar'?{...row,nationalityThai:''}:row)),/Invalid Thai nationality/);
   assert.equal(localNationalities[0].thai,'เยอรมนี',
     'Bad Hub nationality data must not rewrite existing references');
+  // Production regression: Hub FM033 is bilingual while this workspace
+  // historically categorizes it as international. Do not reject or reclassify it.
+  const legacyPrograms=[
+    {recordId:'FM033',key:'Business Administration (Bilingual Program) [BUI]',
+      programType:'international',degreeLevel:'bachelor',credits:{'2026':120}},
+    {recordId:'FM037',key:'Business Administration (Bilingual Program) [BUCI]',
+      programType:'chinese_international',degreeLevel:'bachelor',credits:{'2026':120}},
+    {recordId:'FM068',key:'Business Administration Program (English Program) [Thai Faculty]',
+      programType:'graduate',degreeLevel:'graduate',credits:{'2026':null}},
+    {recordId:'FM070',key:'IT Based Business Administration [Thai Faculty]',
+      programType:'graduate',degreeLevel:'graduate',credits:{'2026':null}},
+    {recordId:'FM073',key:'Digital Marketing Bilingual [Faculty]',
+      programType:'graduate',degreeLevel:'graduate',credits:{'2026':null}}
+  ];
+  const hubProgram=(id,programType,degreeLevel,facultyCode='')=>({
+    recordId:id,facultyEnglish:'Sample Faculty',facultyThai:'คณะตัวอย่าง',
+    facultyCode,programEnglish:'Sample Program '+id,
+    programThai:'สาขาตัวอย่าง '+id,programType,degreeLevel,
+    sourceProgramType:programType,credits:{'2026':null},aliases:[]
+  });
+  const variedHubPrograms=[
+    hubProgram('FM033','bilingual','bachelor','BUI'),
+    hubProgram('FM037','bilingual','bachelor','BUCI'),
+    hubProgram('FM068','english','master'),
+    hubProgram('FM070','online_/_it-based','master'),
+    hubProgram('FM073','bilingual','master'),
+  ];
+  const compatible=await run(remoteNationalities,variedHubPrograms,8,legacyPrograms);
+  for(let i=0;i<legacyPrograms.length;i++){
+    assert.equal(compatible.programs[i].programType,legacyPrograms[i].programType,
+      'Must retain Current Letter category for '+legacyPrograms[i].recordId);
+    assert.equal(compatible.programs[i].key,legacyPrograms[i].key,
+      'Must retain saved key for '+legacyPrograms[i].recordId);
+    assert.equal(compatible.programs[i].degreeLevel,legacyPrograms[i].degreeLevel,
+      'Must retain workspace degree for '+legacyPrograms[i].recordId);
+    assert.equal(compatible.programs[i].sourceProgramType,variedHubPrograms[i].programType);
+  }
+  assert.equal(compatible.programs[0].recordId,'FM033');
+  const bilingualNew=await run(remoteNationalities,
+    [hubProgram('FM999','bilingual','bachelor','BUCI')],9,[]);
+  assert.equal(bilingualNew.programs[0].programType,'chinese_international');
+  const graduateNew=await run(remoteNationalities,
+    [hubProgram('FM998','english','master')],10,[]);
+  assert.equal(graduateNew.programs[0].programType,'graduate');
+  assert.equal(graduateNew.programs[0].degreeLevel,'graduate');
+  await assert.rejects(run(remoteNationalities,
+    [hubProgram('FM997','unknown_delivery','bachelor')],11,[]),
+    /Invalid academic program reference/);
+
   // Published additions must appear in Current Letter without a bundled-file update.
   const addedProgram={recordId:'FM101',facultyEnglish:'New Faculty',facultyThai:'คณะใหม่',
     programEnglish:'Example Applied Science',programThai:'วิทยาศาสตร์ประยุกต์ตัวอย่าง',
