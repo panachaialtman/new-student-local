@@ -55,6 +55,14 @@ const example={
    assert(doc.includes('อธิการบดี'));
    assert(doc.includes('ผู้ช่วยศาสตราจารย์ ดร. สมยศ วัฒนากมลชัย'));
    assert(!doc.includes('{{DOCUMENT_NO}}'),'Template placeholder must be resolved');
+   assert.equal((doc.match(/<w:highlight w:val="yellow"\/>/g)||[]).length,7,
+     'Every editable document field must keep its yellow Word highlight');
+   for(const value of ['0042/2569','20 ตุลาคม 2569',
+     reason==='others'?'ย้ายสถานศึกษา':reason,
+     'MISS EXAMPLE STUDENT','เมียนมา','AB1234567','28 ตุลาคม 2569']){
+     assert(doc.includes(value),'Missing field value '+value);
+   }
+
    assert(footer.includes('ศูนย์นานาชาติ'));
    assert(footer.includes('โทร 0 2407 3888 ต่อ 2441'));
    assert(doc.includes('w:w="11906"')&&doc.includes('w:h="16838"'),'A4 pages');
