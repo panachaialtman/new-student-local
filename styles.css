@@ -1043,3 +1043,14 @@ body { font-size: 16px; }
 #cancelSignaturePreview .signature-preview{margin-top:16px}
 @media(max-width:1160px){.cancel-workspace{grid-template-columns:1fr}}
 @media(max-width:610px){.cancel-form,.cancel-preview-card{padding:15px}.cancel-form-grid{grid-template-columns:1fr}.cancel-span{grid-column:auto}.cancel-actions .btn{width:100%}.cancel-paper{padding:16px;font-size:16px}}
+
+/* Cancel Letter: accessible nationality suggestions and conditional custom reason. */
+.cancel-field[hidden],.cancel-other-field[hidden],.cancel-nat-suggestions[hidden]{display:none!important}
+.cancel-nationality-field{position:relative}
+.cancel-nat-suggestions{position:absolute;z-index:35;left:0;right:0;top:calc(100% - 24px);max-height:260px;overflow-y:auto;background:#fff;border:1px solid #cfd8e5;border-radius:12px;box-shadow:0 15px 35px rgba(16,29,53,.16);padding:5px}
+.cancel-nat-option{display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;border:0;border-radius:8px;background:transparent;color:var(--ink);padding:10px;width:100%}
+.cancel-nat-option strong{font-size:14px;color:var(--navy)}
+.cancel-nat-option span{font-size:11px;color:var(--muted);text-align:right}
+.cancel-nat-option:hover,.cancel-nat-option.active{background:var(--blue-soft)}
+.cancel-other-field textarea{font:inherit;min-height:76px;resize:vertical;padding:10px 11px;border:1px solid var(--line-strong);border-radius:10px}
+.cancel-other-field textarea:focus{border-color:#6184d8;outline:2px solid rgba(40,92,196,.28)}
