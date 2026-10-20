@@ -57,7 +57,7 @@
     const o=opts||{},before=o.before||0,after=o.after==null?100:o.after;
     const align=o.align||'left',indent=o.indent||0;
     return '<w:p><w:pPr><w:jc w:val="'+align+'"/>'+
-      '<w:spacing w:before="'+before+'" w:after="'+after+'" w:line="385" w:lineRule="atLeast"/>'+
+      '<w:spacing w:before="'+before+'" w:after="'+after+'" w:line="435" w:lineRule="atLeast"/>'+
       (indent?'<w:ind w:firstLine="'+indent+'"/>':'')+
       '<w:keepLines/></w:pPr>'+run(value,!!o.bold,!!o.small)+'</w:p>';
   }
@@ -111,21 +111,41 @@
       '<Default Extension="xml" ContentType="application/xml"/>'+
       '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'+
       '<Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/>'+
+      '<Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/>'+
+      '<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>'+
       '</Types>';
     const mainRels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
       '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+
       '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/>'+
+      '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings" Target="settings.xml"/>'+
+      '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'+
       '</Relationships>';
     const rels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
       '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+
       '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>'+
       '</Relationships>';
+    // Modern Word compatibility profile prevents the legacy "Compatibility Mode"
+    // layout and provides consistent Thai font defaults in editable documents.
+    const settings='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+      '<w:settings xmlns:w="'+NS+'"><w:defaultTabStop w:val="720"/>'+
+      '<w:compat><w:compatSetting w:name="compatibilityMode" w:uri="http://schemas.microsoft.com/office/word" w:val="15"/></w:compat>'+
+      '<w:themeFontLang w:val="en-US" w:eastAsia="th-TH"/></w:settings>';
+    const styles='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+      '<w:styles xmlns:w="'+NS+'">'+
+      '<w:docDefaults><w:rPrDefault><w:rPr>'+
+      '<w:rFonts w:ascii="TH SarabunPSK" w:hAnsi="TH SarabunPSK" w:eastAsia="TH SarabunPSK" w:cs="TH SarabunPSK"/>'+
+      '<w:sz w:val="38"/><w:szCs w:val="38"/><w:lang w:val="en-US" w:eastAsia="th-TH"/>'+
+      '</w:rPr></w:rPrDefault></w:docDefaults>'+
+      '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/>'+
+      '<w:qFormat/></w:style></w:styles>';
     return new Map([
       ['[Content_Types].xml',types],
       ['_rels/.rels',rels],
       ['word/document.xml',document],
       ['word/_rels/document.xml.rels',mainRels],
-      ['word/footer1.xml',footer]
+      ['word/footer1.xml',footer],
+      ['word/settings.xml',settings],
+      ['word/styles.xml',styles]
     ].map(([name,data])=>[name,{name,data:enc.encode(data)}]));
   }
   async function create(raw){
