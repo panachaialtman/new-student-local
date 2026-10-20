@@ -18,8 +18,8 @@ const context={
 vm.runInNewContext(source,context);
 const engine=context.window.BUICCancelLetter;
 assert(engine&&typeof engine.create==='function');
-assert.equal(engine.REASONS.length,6);
-const reasons=['พ้นสภาพ','สำเร็จการศึกษา','ลาออก','จะใช้วีซ่าประเภทอื่น','ลาพัก','ได้สัญชาติไทย'];
+assert.equal(engine.REASONS.length,7);
+const reasons=['พ้นสภาพ','สำเร็จการศึกษา','ลาออก','จะใช้วีซ่าประเภทอื่น','ลาพัก','ได้สัญชาติไทย','others'];
 assert.equal(Array.from(engine.REASONS).join('|'),reasons.join('|'));
 const draft={
  documentNo:'0042/2569',
@@ -34,7 +34,7 @@ const draft={
 };
 (async()=>{
  for(const reason of reasons){
-  const blob=await engine.create({...draft,reason});
+  const blob=await engine.create({...draft,reason,otherReason:'ย้ายสถานศึกษา'});
   assert.equal(blob.type,'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
   const xml=new TextDecoder().decode(captured.get('word/document.xml').data);
   const footer=new TextDecoder().decode(captured.get('word/footer1.xml').data);
@@ -44,7 +44,10 @@ const draft={
   assert(xml.includes('MISS EXAMPLE STUDENT'));
   assert(xml.includes('AB1234567'));
   assert(xml.includes('เยอรมนี'));
-  assert(xml.includes('เนื่องจากนักศึกษา'+reason));
+  assert(xml.includes('เนื่องจากนักศึกษา'+(reason==='others'?'ย้ายสถานศึกษา':reason)));
+  assert(xml.includes('w:line="385"'));
+  assert(xml.includes('w:val="38"'));
+  assert(xml.includes('w:trHeight w:val="420"'));
   assert(xml.includes('ผู้บัญชาการสำนักงานตรวจคนเข้าเมือง'));
   assert(xml.includes('มหาวิทยาลัยกรุงเทพจะไม่รับผิดชอบ')||
      xml.includes('มหาวิทยาลัยกรุงเทพจะไม่รับผิดชอบการกระทำ'));
@@ -65,19 +68,28 @@ const draft={
  assert(!safeXml.includes('>MS EXAMPLE & STUDENT <DEMO><'));
  assert.equal(engine.validate({...draft,documentNo:'มกท/ศนช. 55/2569'}).documentNo,'มกท/ศนช. 55/2569');
  await assert.rejects(engine.create({...draft,reason:'อื่น ๆ'}),/Select a cancellation reason/);
+ await assert.rejects(engine.create({...draft,reason:'others',otherReason:''}),/other cancellation reason/);
+ await assert.rejects(engine.create({...draft,reason:'others',otherReason:'English only'}),/other cancellation reason/);
+ const withPrefix=engine.validate({...draft,reason:'others',otherReason:'นักศึกษาย้ายสถานศึกษา'});
+ assert.equal(withPrefix.reason,'ย้ายสถานศึกษา');
  await assert.rejects(engine.create({...draft,nationalityThai:'German'}),/nationality in Thai/);
  await assert.rejects(engine.create({...draft,fullName:''}),/full name/);
  await assert.rejects(engine.create({...draft,issueDate:'2026-02-30'}),/invalid/);
  for(const id of ['cancelView','cancelLetterForm','cancelDocumentNo','cancelIssueDate',
   'cancelReason','cancelFullName','cancelNationality','cancelPassportNo',
-  'cancelExpectedDate','cancelSignatory','cancelGenerate','cancelPreview']){
+  'cancelExpectedDate','cancelSignatory','cancelGenerate','cancelPreview',
+  'cancelNationalitySuggestions','cancelOtherReason','cancelOtherReasonWrap']){
    assert(html.includes('id="'+id+'"'),'Missing cancel form element: '+id);
  }
  assert(html.includes('data-view="cancel"'));
  assert(html.includes('cancel-letter.js?v='));
  assert(app.includes("cancel: ['cancelView'"));
  assert(app.includes("bindCancelLetter();"));
+ assert(app.includes('bindCancelNationalityAutocomplete();'));
+ assert(app.includes("function cancelNationalityMatches("));
+ assert(app.includes('editDistance(t,q)<=1'));
+ assert(app.includes("updateCancelReasonField();"));
  assert(app.includes("outputType:'cancel_letter'"));
  assert(sw.includes("'./cancel-letter.js'"),'Offline PWA must cache the Word engine');
- console.log('Visa cancellation letter tests passed: Thai source wording, six reasons, A4, dates, uppercase, signer, safety and UI.');
+ console.log('Visa cancellation letter tests passed: seven reasons including custom Thai text, autocomplete, enhanced A4 layout and UI.');
 })().catch(e=>{console.error(e);process.exitCode=1});
