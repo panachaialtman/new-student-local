@@ -45,7 +45,10 @@ const draft={
   assert(xml.includes('AB1234567'));
   assert(xml.includes('เยอรมนี'));
   assert(xml.includes('เนื่องจากนักศึกษา'+(reason==='others'?'ย้ายสถานศึกษา':reason)));
-  assert(xml.includes('w:line="385"'));
+  assert(xml.includes('w:line="435"'));
+  assert(captured.has('word/settings.xml')&&captured.has('word/styles.xml'));
+  assert(new TextDecoder().decode(captured.get('word/settings.xml').data).includes('compatibilityMode'));
+  assert(new TextDecoder().decode(captured.get('word/styles.xml').data).includes('TH SarabunPSK'));
   assert(xml.includes('w:val="38"'));
   assert(xml.includes('w:trHeight w:val="420"'));
   assert(xml.includes('ผู้บัญชาการสำนักงานตรวจคนเข้าเมือง'));
