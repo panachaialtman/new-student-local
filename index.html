@@ -122,15 +122,21 @@
                   <option value="จะใช้วีซ่าประเภทอื่น">จะใช้วีซ่าประเภทอื่น</option>
                   <option value="ลาพัก">ลาพัก</option>
                   <option value="ได้สัญชาติไทย">ได้สัญชาติไทย</option>
+                  <option value="others">Others — specify manually</option>
                 </select>
+              </label>
+              <label class="cancel-field cancel-span cancel-other-field" id="cancelOtherReasonWrap" hidden>Specify other reason (Thai)
+                <textarea id="cancelOtherReason" name="otherReason" maxlength="400" rows="2" placeholder="เช่น ย้ายสถานศึกษา"></textarea>
+                <small>The custom reason will be inserted into the Thai letter after “เนื่องจากนักศึกษา”.</small>
               </label>
               <label class="cancel-field cancel-span">4. Name (uppercase)
                 <input id="cancelFullName" name="fullName" type="text" required maxlength="180" placeholder="MISS EXAMPLE STUDENT" spellcheck="false" />
                 <small>Include MR., MRS., MS. or MISS where applicable. Converted to uppercase in Word.</small>
               </label>
-              <label class="cancel-field">5. Nationality (Thai)
-                <input id="cancelNationality" name="nationalityThai" type="text" required maxlength="100" placeholder="เยอรมนี" spellcheck="false" />
-                <small>Type a Thai nationality freely; no suggestion is required.</small>
+              <label class="cancel-field cancel-nationality-field">5. Nationality (Thai)
+                <input id="cancelNationality" name="nationalityThai" type="text" required maxlength="100" placeholder="Search Myanmar, เมียนมา, Germany…" autocomplete="off" aria-autocomplete="list" aria-controls="cancelNationalitySuggestions" aria-expanded="false" role="combobox" spellcheck="false" />
+                <div id="cancelNationalitySuggestions" class="cancel-nat-suggestions" role="listbox" hidden></div>
+                <small>Search in English or Thai and select the Thai result, or enter a Thai nationality manually.</small>
               </label>
               <label class="cancel-field">6. Passport number (uppercase)
                 <input id="cancelPassportNo" name="passportNo" type="text" required maxlength="70" placeholder="AB1234567" spellcheck="false" />
@@ -450,7 +456,7 @@
   <script src="zip.js"></script>
   <script src="builtin-templates.js"></script>
   <script src="docx-engine.js?v=045"></script>
-  <script src="cancel-letter.js?v=002"></script>
+  <script src="cancel-letter.js?v=003"></script>
   <script src="excel-export.js"></script>
   <script src="hub-reference.js?v=053"></script>
   <script src="student-memory.js?v=4"></script>
