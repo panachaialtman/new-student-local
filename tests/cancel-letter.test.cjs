@@ -49,7 +49,8 @@ const example={
    assert(doc.includes('MISS EXAMPLE STUDENT'));
    assert(doc.includes('AB1234567'));
    assert(doc.includes('เมียนมา'));
-   assert(doc.includes('เนื่องจากนักศึกษา'+(reason==='others'?'ย้ายสถานศึกษา':reason)));
+   const visibleText=doc.replace(/<[^>]+>/g,'');
+   assert(visibleText.includes('เนื่องจากนักศึกษา'+(reason==='others'?'ย้ายสถานศึกษา':reason)),'The highlighted reason must follow the Thai label');
    assert(doc.includes('ผู้บัญชาการสำนักงานตรวจคนเข้าเมือง'));
    assert(doc.includes('มหาวิทยาลัยกรุงเทพ'));
    assert(doc.includes('อธิการบดี'));
