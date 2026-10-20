@@ -1,94 +1,82 @@
-/* BUIC Current Letter — browser-only Thai cancellation letters.
-   The A4 template was rendered and inspected against the original BU form.
-   No student or passport data is uploaded: values are merged locally into OOXML. */
+
 (() => {
-  'use strict';
-  const MIME='application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-  const BUNDLE='templates-data/cancel_template_part1.txt';
-  const MONTHS=['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
-  const REASONS=Object.freeze(['พ้นสภาพ','สำเร็จการศึกษา','ลาออก','จะใช้วีซ่าประเภทอื่น','ลาพัก','ได้สัญชาติไทย','others']);
-  const enc=new TextEncoder(),dec=new TextDecoder('utf-8');
-  let bundlePromise=null;
-  const clean=v=>String(v==null?'':v).trim();
-  const xml=v=>String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
-
-  function thaiDate(raw){
-    const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(clean(raw));
-    if(!m)throw Error('Choose a valid document date and cancellation date.');
-    const y=Number(m[1]),month=Number(m[2]),day=Number(m[3]);
-    const date=new Date(y,month-1,day);
-    if(y<1900||y>2200||date.getFullYear()!==y||date.getMonth()!==month-1||date.getDate()!==day)
-      throw Error('One of the selected dates is invalid.');
-    return day+' '+MONTHS[month]+' '+(y+543);
-  }
-  function validate(raw){
-    const v=raw||{},number=clean(v.documentNo);
-    const fullName=clean(v.fullName).toUpperCase(),passportNo=clean(v.passportNo).toUpperCase();
-    const nationalityThai=clean(v.nationalityThai),reason=clean(v.reason),signer=v.signatory||{};
-    if(!number||number.length>100)throw Error('Enter a document number (maximum 100 characters).');
-    if(!REASONS.includes(reason))throw Error('Select a cancellation reason.');
-    const custom=clean(v.otherReason).replace(/^นักศึกษา\s*/,'');
-    if(reason==='others'&&(!custom||custom.length>300||!/[ก-๙]/.test(custom)))
-      throw Error('Please enter an other cancellation reason in Thai (maximum 300 characters).');
-    if(!fullName||fullName.length>180)throw Error('Enter the student’s full name.');
-    if(!passportNo||passportNo.length>70)throw Error('Enter a passport number.');
-    if(!nationalityThai||nationalityThai.length>100||!/[ก-๙]/.test(nationalityThai)||/[A-Za-z]/.test(nationalityThai))
-      throw Error('Enter the nationality in Thai.');
-    const name=clean(signer.name),role=clean(signer.role);
-    if(!name||!role)throw Error('Select a valid signatory.');
-    const rawNumber=number.replace(/^(?:ที่\s*)?มกท\/ศนช\.\s*/,'').trim();
-    if(!rawNumber)throw Error('Enter the document number after มกท/ศนช.');
-    return {
-      documentNo:'มกท/ศนช. '+rawNumber,
-      rawNumber,issueDate:thaiDate(v.issueDate),cancelDate:thaiDate(v.cancelDate),
-      reason:reason==='others'?custom:reason,reasonCode:reason,
-      fullName,passportNo,nationalityThai,signerName:name,signerRole:role
-    };
-  }
-
-  async function loadBundle(){
-    if(!bundlePromise){
-      bundlePromise=(async()=>{
-        const response=await fetch(BUNDLE,{cache:'no-store'});
-        if(!response.ok)throw Error('The cancellation Word template could not be loaded. Refresh and try again.');
-        const base64=(await response.text()).trim();
-        const bytes=Uint8Array.from(atob(base64),c=>c.charCodeAt(0));
-        const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
-        const data=JSON.parse(await new Response(stream).text());
-        if(!data['word/document.xml']||!data['word/footer1.xml']||!data['word/styles.xml'])
-          throw Error('The cancellation Word template is incomplete.');
-        return data;
-      })().catch(err=>{bundlePromise=null;throw err});
-    }
-    return bundlePromise;
-  }
-
-  function fillDocument(template,valid){
-    const reps={
-      DOCUMENT_NO:valid.rawNumber,
-      ISSUE_DATE_TH:valid.issueDate,
-      REASON:valid.reason,
-      FULL_NAME:valid.fullName,
-      NATIONALITY_TH:valid.nationalityThai,
-      PASSPORT_NO:valid.passportNo,
-      CANCEL_DATE_TH:valid.cancelDate,
-      SIGNER_NAME:valid.signerName,
-      SIGNER_ROLE:valid.signerRole
-    };
-    let word=template;
-    for(const [key,value] of Object.entries(reps)){
-      const token='{{'+key+'}}',pieces=word.split(token);
-      if(pieces.length!==2)throw Error('The Word template is missing its '+key+' field.');
-      word=pieces[0]+xml(value)+pieces[1];
-    }
-    return word;
-  }
-  async function create(raw){
-    if(!window.ZipLite?.writeZip)throw Error('The document engine is unavailable. Refresh the page.');
-    const valid=validate(raw),bundle=await loadBundle();
-    const files=new Map(Object.entries(bundle).map(([name,text])=>
-      [name,{name,data:enc.encode(name==='word/document.xml'?fillDocument(text,valid):text)}]));
-    return new Blob([await window.ZipLite.writeZip(files)],{type:MIME});
-  }
-  window.BUICCancelLetter=Object.freeze({create,validate,thaiDate,REASONS});
+'use strict';
+const MIME='application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+const MONTHS=['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const REASONS=Object.freeze(['พ้นสภาพ','สำเร็จการศึกษา','ลาออก','จะใช้วีซ่าประเภทอื่น','ลาพัก','ได้สัญชาติไทย','others']);
+const NS='http://schemas.openxmlformats.org/wordprocessingml/2006/main',enc=new TextEncoder();
+const clean=v=>String(v??'').trim();
+const xml=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
+function thaiDate(value){
+  const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(clean(value));
+  if(!m)throw Error('Choose a valid document date and cancellation date.');
+  const [year,month,day]=m.slice(1).map(Number),d=new Date(year,month-1,day);
+  if(year<1900||year>2200||d.getFullYear()!==year||d.getMonth()!==month-1||d.getDate()!==day)throw Error('One of the selected dates is invalid.');
+  return `${day} ${MONTHS[month]} ${year+543}`;
+}
+function validate(raw){
+  const v=raw||{},number=clean(v.documentNo),reason=clean(v.reason),other=clean(v.otherReason).replace(/^นักศึกษา\s{0,}/,''),signer=v.signatory||{};
+  const fullName=clean(v.fullName).toUpperCase(),passportNo=clean(v.passportNo).toUpperCase(),nationalityThai=clean(v.nationalityThai);
+  if(!number||number.length>100)throw Error('Enter a document number (maximum 100 characters).');
+  if(!REASONS.includes(reason))throw Error('Select a cancellation reason.');
+  if(reason==='others'&&(!other||other.length>300||!/[ก-๙]/.test(other)))throw Error('Please enter an other cancellation reason in Thai (maximum 300 characters).');
+  if(!fullName||fullName.length>180)throw Error('Enter the student’s full name.');
+  if(!passportNo||passportNo.length>70)throw Error('Enter a passport number.');
+  if(!nationalityThai||nationalityThai.length>100||!/[ก-๙]/.test(nationalityThai)||/[A-Za-z]/.test(nationalityThai))throw Error('Enter the nationality in Thai.');
+  const signerName=clean(signer.name),signerRole=clean(signer.role);
+  if(!signerName||!signerRole)throw Error('Select a valid signatory.');
+  const rawNumber=number.replace(/^(?:ที่\s{0,})?มกท\/ศนช\.\s{0,}/,'').trim();
+  if(!rawNumber)throw Error('Enter the document number after มกท/ศนช.');
+  return {rawNumber,documentNo:'มกท/ศนช. '+rawNumber,issueDate:thaiDate(v.issueDate),cancelDate:thaiDate(v.cancelDate),
+    reason:reason==='others'?other:reason,reasonCode:reason,fullName,passportNo,nationalityThai,signerName,signerRole};
+}
+function run(text,highlight=false){
+  return `<w:r><w:rPr><w:rFonts w:ascii="TH SarabunPSK" w:hAnsi="TH SarabunPSK" w:eastAsia="TH SarabunPSK" w:cs="TH SarabunPSK"/><w:sz w:val="32"/><w:szCs w:val="32"/>${highlight?'<w:highlight w:val="yellow"/>':''}</w:rPr><w:t xml:space="preserve">${xml(text)}</w:t></w:r>`;
+}
+function p(parts,{before=0,after=0,left=0,right=0,first=0,align='left',line=360,keep=false}={}){
+  const runs=Array.isArray(parts)?parts:[String(parts).startsWith('<w:r>')?parts:run(parts)];
+  return `<w:p><w:pPr><w:spacing w:before="${before}" w:after="${after}" w:line="${line}" w:lineRule="atLeast"/>${left||right||first?`<w:ind w:left="${left}" w:right="${right}" w:firstLine="${first}"/>`:''}<w:jc w:val="${align}"/>${keep?'<w:keepNext/>':''}</w:pPr>${runs.join('')}</w:p>`;
+}
+const cell=(parts,width)=>`<w:tc><w:tcPr><w:tcW w:w="${width}" w:type="dxa"/><w:tcMar><w:top w:w="0" w:type="dxa"/><w:bottom w:w="0" w:type="dxa"/><w:left w:w="0" w:type="dxa"/><w:right w:w="0" w:type="dxa"/></w:tcMar></w:tcPr>${parts}</w:tc>`;
+function table(rows,widths,indent=0){
+  const total=widths.reduce((s,w)=>s+w,0);
+  return `<w:tbl><w:tblPr><w:tblW w:w="${total}" w:type="dxa"/><w:tblInd w:w="${indent}" w:type="dxa"/><w:tblLayout w:type="fixed"/><w:tblBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="nil"/><w:right w:val="nil"/><w:insideH w:val="nil"/><w:insideV w:val="nil"/></w:tblBorders></w:tblPr><w:tblGrid>${widths.map(w=>`<w:gridCol w:w="${w}"/>`).join('')}</w:tblGrid>${rows.map(r=>`<w:tr><w:trPr><w:cantSplit/></w:trPr>${r.map((c,i)=>cell(c,widths[i])).join('')}</w:tr>`).join('')}</w:tbl>`;
+}
+function documentXml(v){
+  const data=[['ชื่อ – นามสกุล',v.fullName],['สัญชาติ',v.nationalityThai],['หมายเลขหนังสือเดินทาง',v.passportNo],['วันที่ขอยกเลิกวีซ่า',v.cancelDate]];
+  const details=table(data.map(([label,value])=>[p(run(label),{line:370}),p(run(value,true),{line:370})]),[3450,3450],1500);
+  const opening=p([run('มหาวิทยาลัยกรุงเทพ ใคร่ขอความอนุเคราะห์ สำนักงานตรวจคนเข้าเมืองในการยกเลิกการตรวจลงตราวีซ่านักศึกษา เนื่องจากนักศึกษา'),
+    run(v.reason,true),run(' ดังรายละเอียดต่อไปนี้')],{first:590,after:190,line:385});
+  const responsibility=p('ในการนี้เมื่อนักศึกษายกเลิกวีซ่านักศึกษามหาวิทยาลัยกรุงเทพแล้ว มหาวิทยาลัยกรุงเทพจะไม่รับผิดชอบการกระทำใด ๆ อันเนื่องด้วยตัวบุคคลดังได้กล่าวมาแล้วข้างต้น ทั้งนี้ รวมถึงการออกเอกสารรับรองทุกประเภท อาทิ การต่ออายุหนังสือเดินทาง การแจ้งรายงานตัว 90 วัน และการเดินทางเข้าออกราชอาณาจักรไทย',
+    {first:590,before:210,after:200,line:385});
+  const body=[
+    p([run('ที่ มกท/ศนช. '),run(v.rawNumber,true)],{after:145}),
+    p(run(v.issueDate,true),{align:'right',right:2400,after:310}),
+    p([run('เรื่อง  '),run('ขอความอนุเคราะห์ยกเลิกการตรวจลงตราวีซ่านักศึกษา')],{after:150}),
+    p([run('เรียน  '),run('ผู้บัญชาการสำนักงานตรวจคนเข้าเมือง')],{after:260}),
+    opening,details,responsibility,
+    p('จึงเรียนมาเพื่อโปรดพิจารณาอนุเคราะห์ยกเลิกการตรวจลงตราวีซ่าดังกล่าวด้วย จักเป็นพระคุณยิ่ง',{first:590,after:230,line:385}),
+    p('ขอแสดงความนับถือ',{left:2300,align:'center',after:600}),
+    p('('+v.signerName+')',{left:2300,align:'center',keep:true}),
+    p(v.signerRole,{left:2300,align:'center',keep:true}),
+    p('อธิการบดี',{left:2300,align:'center'}),
+    `<w:sectPr><w:footerReference w:type="default" r:id="rId1"/><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1050" w:right="1150" w:bottom="1120" w:left="2350" w:header="450" w:footer="500" w:gutter="0"/></w:sectPr>`
+  ].join('');
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="${NS}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:body>${body}</w:body></w:document>`;
+}
+function parts(v){
+  const doc=documentXml(v);
+  const footer=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:ftr xmlns:w="${NS}">${p('ศูนย์นานาชาติ',{line:320})}${p('โทร 0 2407 3888 ต่อ 2441',{line:320})}</w:ftr>`;
+  const styles=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="${NS}"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="TH SarabunPSK" w:hAnsi="TH SarabunPSK" w:eastAsia="TH SarabunPSK" w:cs="TH SarabunPSK"/><w:sz w:val="32"/><w:szCs w:val="32"/><w:lang w:val="en-US" w:eastAsia="th-TH"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:before="0" w:after="0" w:line="360" w:lineRule="atLeast"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style></w:styles>`;
+  const settings=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:settings xmlns:w="${NS}"><w:compat><w:compatSetting w:name="compatibilityMode" w:uri="http://schemas.microsoft.com/office/word" w:val="15"/></w:compat><w:themeFontLang w:val="en-US" w:eastAsia="th-TH"/></w:settings>`;
+  const types=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/><Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>`;
+  const pkg=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>`;
+  const rel=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings" Target="settings.xml"/></Relationships>`;
+  return new Map([['[Content_Types].xml',types],['_rels/.rels',pkg],['word/document.xml',doc],['word/_rels/document.xml.rels',rel],['word/footer1.xml',footer],['word/styles.xml',styles],['word/settings.xml',settings]].map(([name,value])=>[name,{name,data:enc.encode(value)}]));
+}
+async function create(raw){
+  if(!window.ZipLite?.writeZip)throw Error('The Word document engine is unavailable. Refresh the page.');
+  return new Blob([await window.ZipLite.writeZip(parts(validate(raw)))],{type:MIME});
+}
+window.BUICCancelLetter=Object.freeze({create,validate,thaiDate,REASONS});
 })();
