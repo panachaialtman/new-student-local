@@ -34,7 +34,7 @@ const example={
  signatory:{name:'ผู้ช่วยศาสตราจารย์ ดร. สมยศ วัฒนากมลชัย',role:'รองอธิการบดีสายนานาชาติ ปฏิบัติหน้าที่แทน'}
 };
 (async()=>{
- assert.equal(Object.keys(reference).length,9,'Template parts must be complete');
+ assert.equal(Object.keys(reference).length,7,'Source-derived Word template parts must be complete');
  assert(reference['word/document.xml'].includes('{{DOCUMENT_NO}}'));
  assert(!reference['word/document.xml'].includes('MISS EXAMPLE STUDENT'),'Do not ship personal data in template');
  for(const reason of reasons){
@@ -42,7 +42,9 @@ const example={
    assert.equal(blob.type,'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
    const doc=new TextDecoder().decode(captured.get('word/document.xml').data);
    const footer=new TextDecoder().decode(captured.get('word/footer1.xml').data);
-   assert(doc.includes('มกท/ศนช. '));
+   // The source Word letter splits its heading over multiple styled runs.
+   assert(doc.includes('มกท')&&doc.includes('ศนช'));
+   assert(doc.includes('<w:tab/>'),'Original tab positions must be preserved');
    assert(doc.includes('0042/2569'));
    assert(doc.includes('20 ตุลาคม 2569'));
    assert(doc.includes('28 ตุลาคม 2569'));
@@ -56,8 +58,14 @@ const example={
    assert(doc.includes('อธิการบดี'));
    assert(doc.includes('ผู้ช่วยศาสตราจารย์ ดร. สมยศ วัฒนากมลชัย'));
    assert(!doc.includes('{{DOCUMENT_NO}}'),'Template placeholder must be resolved');
-   assert.equal((doc.match(/<w:highlight w:val="yellow"\/>/g)||[]).length,7,
-     'Every editable document field must keep its yellow Word highlight');
+   const highlighted=[...doc.matchAll(/<w:r(?:\s[^>]*)?>([\s\S]*?)<\/w:r>/g)]
+     .map(m=>m[1]).filter(part=>part.includes('w:highlight w:val="yellow"'));
+   assert(highlighted.length>=7,'Original highlights must not be stripped');
+   for(const value of ['0042/2569','20 ตุลาคม 2569',
+      reason==='others'?'ย้ายสถานศึกษา':reason,
+      'MISS EXAMPLE STUDENT','เมียนมา','AB1234567','28 ตุลาคม 2569'])
+     assert(highlighted.some(part=>part.includes(value)),
+       'Editable field must keep its yellow highlight: '+value);
    for(const value of ['0042/2569','20 ตุลาคม 2569',
      reason==='others'?'ย้ายสถานศึกษา':reason,
      'MISS EXAMPLE STUDENT','เมียนมา','AB1234567','28 ตุลาคม 2569']){
@@ -67,7 +75,8 @@ const example={
    assert(footer.includes('ศูนย์นานาชาติ'));
    assert(footer.includes('โทร 0 2407 3888 ต่อ 2441'));
    assert(doc.includes('w:w="11906"')&&doc.includes('w:h="16838"'),'A4 pages');
-   assert((doc.match(/<w:tbl>/g)||[]).length>=2,'Details and right-side signature blocks');
+   assert(!doc.includes('<w:tbl>'),'Use the original paragraph/tab layout, not reconstructed tables');
+   assert((doc.match(/<w:tab\s*\/>/g)||[]).length>=8,'Retain original paragraph tabs and label positions');
    for(const name of ['[Content_Types].xml','_rels/.rels','word/document.xml',
        'word/footer1.xml','word/settings.xml','word/styles.xml'])
      assert(captured.has(name),'Missing DOCX part: '+name);
