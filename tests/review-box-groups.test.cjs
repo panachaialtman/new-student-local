@@ -198,8 +198,8 @@ const needle="  boot();\n})();";
 assert(app.endsWith(needle+'\n')||app.endsWith(needle));
 const appContext={window:{},document:{},console,Date,Math,Set,Map,Intl,Number,String,Array,RegExp};
 vm.runInNewContext(app.replace(needle,
-  "  window.__groupTest={state,caseLabels,labelForCase,caseGroupNumber,caseGroupSelectLabel,filteredCases,nationalityMatches,nationalityField,nationalitySelectionValid,normalizeDrafts,valuesForSwitchedCaseType,countryOptions};\n})();"),appContext);
-const {state,caseLabels,labelForCase,caseGroupNumber,caseGroupSelectLabel,filteredCases,nationalityMatches,nationalityField,nationalitySelectionValid,normalizeDrafts,valuesForSwitchedCaseType,countryOptions}=appContext.window.__groupTest;
+  "  window.__groupTest={state,caseLabels,labelForCase,caseGroupNumber,caseGroupSelectLabel,filteredCases,nationalityMatches,cancelNationalityMatches,nationalityField,nationalitySelectionValid,normalizeDrafts,valuesForSwitchedCaseType,countryOptions};\n})();"),appContext);
+const {state,caseLabels,labelForCase,caseGroupNumber,caseGroupSelectLabel,filteredCases,nationalityMatches,cancelNationalityMatches,nationalityField,nationalitySelectionValid,normalizeDrafts,valuesForSwitchedCaseType,countryOptions}=appContext.window.__groupTest;
 // Nationality: search can be English/Thai country or demonym, selected value Thai only.
 state.nationalities=[
  {thai:'เมียนมา',english:'Myanmar',aliases:['Burma','พม่า']},
@@ -215,6 +215,11 @@ for(const query of ['myanmar','Burma','Burmese','พม่า','เมียน�
   assert(nationalityMatches(state.nationalities[0],query),
     query+' must find the Myanmar Thai-nationality option');
 }
+assert.equal(cancelNationalityMatches('Myanmar')[0].thai,'เมียนมา','English input suggests Thai nationality');
+assert.equal(cancelNationalityMatches('Myanmr')[0].thai,'เมียนมา','Minor English typo must still suggest Thai');
+assert.equal(cancelNationalityMatches('พม่า')[0].thai,'เมียนมา','Thai aliases suggest standardized Thai nationality');
+assert.equal(cancelNationalityMatches('เยอรมัน')[0].thai,'เยอรมนี','Old demonyms find approved Thai label');
+assert.equal(cancelNationalityMatches('อังกฤษ')[0].thai,'อังกฤษ','Thai input finds Thai nationality');
 assert(nationalityMatches(state.nationalities[1],'Thai'));
 assert(nationalityMatches(state.nationalities[2],'Chinese'));
 for(const term of ['Germany','German','เยอรมนี','เยอรมัน','Federal Republic of Germany']){
