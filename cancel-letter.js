@@ -58,17 +58,17 @@
       '<w:keepLines/></w:pPr>'+run(value,!!o.bold)+'</w:p>';
   }
   function tableRows(data){
-    const widths=[3500,6200],rows=data.map(pair=>
+    const widths=[3500,5600],rows=data.map(pair=>
       '<w:tr><w:trPr><w:cantSplit/></w:trPr>'+pair.map((val,i)=>
       '<w:tc><w:tcPr><w:tcW w:w="'+widths[i]+'" w:type="dxa"/>'+
       '<w:tcMar><w:top w:w="10" w:type="dxa"/><w:bottom w:w="10" w:type="dxa"/>'+
       '<w:left w:w="50" w:type="dxa"/><w:right w:w="40" w:type="dxa"/></w:tcMar></w:tcPr>'+
       para(val,{after:0})+'</w:tc>').join('')+'</w:tr>').join('');
-    return '<w:tbl><w:tblPr><w:tblW w:w="9700" w:type="dxa"/>'+
-      '<w:tblInd w:w="400" w:type="dxa"/>'+
+    return '<w:tbl><w:tblPr><w:tblW w:w="9100" w:type="dxa"/>'+
+      '<w:tblInd w:w="200" w:type="dxa"/>'+
       '<w:tblBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="nil"/>'+
       '<w:right w:val="nil"/><w:insideH w:val="nil"/><w:insideV w:val="nil"/></w:tblBorders>'+
-      '</w:tblPr><w:tblGrid><w:gridCol w:w="3500"/><w:gridCol w:w="6200"/></w:tblGrid>'+
+      '</w:tblPr><w:tblGrid><w:gridCol w:w="3500"/><w:gridCol w:w="5600"/></w:tblGrid>'+
       rows+'</w:tbl>';
   }
   function parts(v){
