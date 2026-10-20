@@ -2620,7 +2620,7 @@
     const form=el('cancelLetterForm');
     return {
       documentNo:form.elements.documentNo.value,issueDate:form.elements.issueDate.value,
-      reason:form.elements.reason.value,fullName:form.elements.fullName.value,
+      reason:form.elements.reason.value,otherReason:form.elements.otherReason.value,fullName:form.elements.fullName.value,
       nationalityThai:form.elements.nationalityThai.value,passportNo:form.elements.passportNo.value,
       cancelDate:form.elements.cancelDate.value,
       signatory:signatoryProfile(form.elements.signatory.value)
@@ -2636,18 +2636,114 @@
     const num=String(v.documentNo||'').trim();
     set('cancelPreviewNo',num?(num.startsWith('มกท/ศนช.')?num:'มกท/ศนช. '+num):'มกท/ศนช. —');
     set('cancelPreviewDate',thaiOr(v.issueDate,'วันที่เอกสาร'));
-    set('cancelPreviewReason',v.reason||'…');
+    set('cancelPreviewReason',v.reason==='others' ? (v.otherReason.trim()||'ระบุเหตุผลอื่น…') : (v.reason||'…'));
     set('cancelPreviewName',String(v.fullName||'').trim().toUpperCase()||'—');
     set('cancelPreviewNationality',String(v.nationalityThai||'').trim()||'—');
     set('cancelPreviewPassport',String(v.passportNo||'').trim().toUpperCase()||'—');
     set('cancelPreviewExpected',thaiOr(v.cancelDate,'—'));
     el('cancelSignaturePreview').innerHTML=signatoryPreview(form.elements.signatory.value);
   }
+  function updateCancelReasonField(){
+    const custom=el('cancelOtherReasonWrap'),other=el('cancelOtherReason');
+    if(!custom||!other)return;
+    const selected=el('cancelReason')?.value==='others';
+    custom.hidden=!selected;
+    other.required=selected;
+  }
+  function cancelNationalityMatches(search,items=state.nationalities){
+    const q=nationalitySearchKey(search);
+    if(!q)return [];
+    const editDistance=(a,b)=>{
+      if(Math.abs(a.length-b.length)>2)return 3;
+      let p=Array.from({length:b.length+1},(_,i)=>i);
+      for(let i=1;i<=a.length;i++){
+        const cur=[i];
+        for(let j=1;j<=b.length;j++)
+          cur[j]=Math.min(cur[j-1]+1,p[j]+1,p[j-1]+Number(a[i-1]!==b[j-1]));
+        p=cur;
+      }
+      return p[b.length];
+    };
+    const options=items.map(item=>{
+      const hay=[item.english,item.thai,item.countryThai,item.countryEnglish,
+        item.nationalityThai,item.nationalityEnglish,...(item.aliases||[]),
+        ...(EXTRA_NATIONALITY_TERMS[item.english]||[])].map(nationalitySearchKey).filter(Boolean);
+      let score=99;
+      if(hay.some(t=>t===q))score=0;
+      else if(hay.some(t=>t.startsWith(q)))score=1;
+      else if(nationalityMatches(item,search))score=2;
+      else if(q.length>=4 && hay.some(t=>editDistance(t,q)<=1))score=3;
+      else if(q.length>=6 && hay.some(t=>editDistance(t,q)<=2))score=4;
+      return {item,score};
+    }).filter(x=>x.score<99).sort((a,b)=>a.score-b.score||a.item.english.localeCompare(b.item.english));
+    return options.slice(0,8).map(x=>x.item);
+  }
+  function bindCancelNationalityAutocomplete(){
+    const input=el('cancelNationality'),popup=el('cancelNationalitySuggestions');
+    if(!input||!popup)return;
+    let candidates=[],active=-1;
+    function hide(){
+      popup.hidden=true;popup.replaceChildren();candidates=[];active=-1;
+      input.setAttribute('aria-expanded','false');input.removeAttribute('aria-activedescendant');
+    }
+    function choose(index){
+      const row=candidates[index];if(!row)return;
+      input.value=row.thai||row.nationalityThai;
+      input.dispatchEvent(new Event('input',{bubbles:true}));
+      hide();input.focus();
+    }
+    function redraw(){
+      const q=input.value.trim();
+      candidates=cancelNationalityMatches(q);
+      popup.replaceChildren();active=-1;
+      if(!q||!candidates.length){hide();return;}
+      for(const [i,item] of candidates.entries()){
+        const button=document.createElement('button');
+        button.type='button';button.className='cancel-nat-option';
+        button.id='cancel-nat-opt-'+i;
+        button.setAttribute('role','option');
+        button.setAttribute('aria-selected','false');
+        const thai=document.createElement('strong');thai.textContent=item.thai||item.nationalityThai;
+        const en=document.createElement('span');en.textContent=[item.english,item.countryThai].filter(Boolean).join(' · ');
+        button.append(thai,en);
+        button.addEventListener('pointerdown',e=>e.preventDefault());
+        button.addEventListener('click',()=>choose(i));
+        popup.append(button);
+      }
+      popup.hidden=false;input.setAttribute('aria-expanded','true');
+    }
+    function move(direction){
+      if(popup.hidden)redraw();
+      if(!candidates.length)return;
+      active=(active+direction+candidates.length)%candidates.length;
+      popup.querySelectorAll('[role="option"]').forEach((node,i)=>{
+        const selected=i===active;
+        node.classList.toggle('active',selected);
+        node.setAttribute('aria-selected',String(selected));
+        if(selected)node.scrollIntoView({block:'nearest'});
+      });
+      input.setAttribute('aria-activedescendant','cancel-nat-opt-'+active);
+    }
+    input.addEventListener('input',redraw);
+    input.addEventListener('focus',()=>{if(input.value.trim())redraw()});
+    input.addEventListener('keydown',e=>{
+      if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();move(e.key==='ArrowDown'?1:-1)}
+      else if(e.key==='Enter'&&!popup.hidden){e.preventDefault();choose(active>=0?active:0)}
+      else if(e.key==='Escape')hide();
+    });
+    input.addEventListener('blur',()=>setTimeout(hide,140));
+    document.addEventListener('pointerdown',e=>{
+      if(!input.contains(e.target)&&!popup.contains(e.target))hide();
+    });
+  }
   function bindCancelLetter(){
     const form=el('cancelLetterForm');
     if(!form)return;
     form.elements.signatory.innerHTML=signatoryOptions(state.settings.signatory);
     form.elements.issueDate.value=todayIso();
+    bindCancelNationalityAutocomplete();
+    updateCancelReasonField();
+    form.elements.reason.addEventListener('change',updateCancelReasonField);
     form.addEventListener('input',updateCancelPreview);
     form.addEventListener('change',updateCancelPreview);
     for(const key of ['fullName','passportNo']){
@@ -2660,6 +2756,8 @@
       queueMicrotask(()=>{
         form.elements.issueDate.value=todayIso();
         form.elements.signatory.value=state.settings.signatory;
+        updateCancelReasonField();
+        el('cancelNationalitySuggestions').hidden=true;
         updateCancelPreview();
       });
     });
