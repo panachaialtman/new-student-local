@@ -32,7 +32,7 @@
         <button class="nav-item" data-view="workspace" data-case-category="non_o">
           <span class="nav-icon">↗</span><span>Non-O → ED transfer</span>
         </button>
-        <button class="nav-item" data-view="placeholder" data-placeholder="cancel">
+        <button class="nav-item" data-view="cancel">
           <span class="nav-icon">×</span><span>Cancel</span>
         </button>
         <button class="nav-item" data-view="placeholder" data-placeholder="graduated">
@@ -47,7 +47,7 @@
         <button class="nav-item nav-settings" data-view="settings">
           <span class="nav-icon">⚙</span><span>Workspace settings</span>
         </button>
-        <div class="version-row"><span>Visa Workspace</span><span>v0.3.20 Web</span></div>
+        <div class="version-row"><span>Visa Workspace</span><span>v0.3.21 Web</span></div>
       </div>
     </aside>
 
@@ -94,6 +94,79 @@
             <h3>No cases match this view</h3>
             <p>Change the filter or add a new student case.</p>
           </div>
+        </div>
+      </section>
+
+      <section class="view" id="cancelView" aria-label="Visa cancellation letter">
+        <div class="section-head">
+          <div><h2>Student visa cancellation letter</h2>
+            <p>Prepare the Thai cancellation letter for Immigration. Word generation happens only in this browser.</p></div>
+        </div>
+        <div class="cancel-workspace">
+          <form id="cancelLetterForm" class="content-card cancel-form" autocomplete="off">
+            <div class="cancel-card-head"><strong>Cancellation details</strong><span>8 required fields</span></div>
+            <div class="cancel-form-grid">
+              <label class="cancel-field">1. Document number
+                <input id="cancelDocumentNo" name="documentNo" type="text" required maxlength="100" placeholder="0000/2569" />
+                <small>Prefix มกท/ศนช. is added automatically unless already entered.</small>
+              </label>
+              <label class="cancel-field">2. Document date
+                <input id="cancelIssueDate" name="issueDate" type="date" required />
+              </label>
+              <label class="cancel-field cancel-span">3. Reason for cancellation
+                <select id="cancelReason" name="reason" required>
+                  <option value="">Select cancellation reason</option>
+                  <option value="พ้นสภาพ">พ้นสภาพ</option>
+                  <option value="สำเร็จการศึกษา">สำเร็จการศึกษา</option>
+                  <option value="ลาออก">ลาออก</option>
+                  <option value="จะใช้วีซ่าประเภทอื่น">จะใช้วีซ่าประเภทอื่น</option>
+                  <option value="ลาพัก">ลาพัก</option>
+                  <option value="ได้สัญชาติไทย">ได้สัญชาติไทย</option>
+                </select>
+              </label>
+              <label class="cancel-field cancel-span">4. Name (uppercase)
+                <input id="cancelFullName" name="fullName" type="text" required maxlength="180" placeholder="MISS EXAMPLE STUDENT" spellcheck="false" />
+                <small>Include MR., MRS., MS. or MISS where applicable. Converted to uppercase in Word.</small>
+              </label>
+              <label class="cancel-field">5. Nationality (Thai)
+                <input id="cancelNationality" name="nationalityThai" type="text" required maxlength="100" placeholder="เยอรมนี" spellcheck="false" />
+                <small>Type a Thai nationality freely; no suggestion is required.</small>
+              </label>
+              <label class="cancel-field">6. Passport number (uppercase)
+                <input id="cancelPassportNo" name="passportNo" type="text" required maxlength="70" placeholder="AB1234567" spellcheck="false" />
+              </label>
+              <label class="cancel-field">7. Expected cancellation date
+                <input id="cancelExpectedDate" name="cancelDate" type="date" required />
+              </label>
+              <label class="cancel-field">8. Signature / signatory
+                <select id="cancelSignatory" name="signatory" required></select>
+                <small>Printed name and position, with space for an approved physical signature.</small>
+              </label>
+            </div>
+            <div class="cancel-actions">
+              <button class="btn subtle" type="reset" id="cancelReset">Clear form</button>
+              <button class="btn primary" type="submit" id="cancelGenerate">Download cancellation letter (.docx)</button>
+            </div>
+            <p class="cancel-privacy">Student details stay in your browser. The Word file is generated locally and is not automatically signed or submitted to Immigration.</p>
+          </form>
+          <aside class="content-card cancel-preview-card">
+            <div class="cancel-card-head"><strong>Letter preview</strong><span>Thai · A4</span></div>
+            <div class="cancel-paper" id="cancelPreview" aria-live="polite">
+              <p><strong>ที่ <span id="cancelPreviewNo">มกท/ศนช. —</span></strong></p>
+              <p class="cancel-right" id="cancelPreviewDate">วันที่เอกสาร</p>
+              <p>เรื่อง ขอความอนุเคราะห์ยกเลิกการตรวจลงตราวีซ่านักศึกษา</p>
+              <p>เรียน ผู้บัญชาการสำนักงานตรวจคนเข้าเมือง</p>
+              <p>มหาวิทยาลัยกรุงเทพ ใคร่ขอความอนุเคราะห์ สำนักงานตรวจคนเข้าเมืองในการยกเลิกการตรวจลงตราวีซ่านักศึกษา เนื่องจากนักศึกษา<span id="cancelPreviewReason">…</span> ดังรายละเอียดต่อไปนี้</p>
+              <dl>
+                <dt>ชื่อ – นามสกุล</dt><dd id="cancelPreviewName">—</dd>
+                <dt>สัญชาติ</dt><dd id="cancelPreviewNationality">—</dd>
+                <dt>หมายเลขหนังสือเดินทาง</dt><dd id="cancelPreviewPassport">—</dd>
+                <dt>วันที่ขอยกเลิกวีซ่า</dt><dd id="cancelPreviewExpected">—</dd>
+              </dl>
+              <p class="cancel-preview-note">The remaining request, responsibility statement, signature block and International Center telephone are included in the generated Word letter.</p>
+              <div id="cancelSignaturePreview"></div>
+            </div>
+          </aside>
         </div>
       </section>
 
@@ -377,6 +450,7 @@
   <script src="zip.js"></script>
   <script src="builtin-templates.js"></script>
   <script src="docx-engine.js?v=045"></script>
+  <script src="cancel-letter.js?v=001"></script>
   <script src="excel-export.js"></script>
   <script src="hub-reference.js?v=053"></script>
   <script src="student-memory.js?v=4"></script>
