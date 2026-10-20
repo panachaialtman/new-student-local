@@ -2460,19 +2460,25 @@
       const students = historyStudents(batch);
       const type = batch.outputType === 'student_list'
         ? 'student_list'
-        : batch.outputType === 'individual_letter'
-          ? 'individual_letter'
-          : 'letters';
+        : batch.outputType === 'cancel_letter'
+          ? 'cancel_letter'
+          : batch.outputType === 'individual_letter'
+            ? 'individual_letter'
+            : 'letters';
       const title = type === 'student_list'
-        ? `Student list · ${batch.count} student${batch.count === 1 ? '' : 's'}`
-        : type === 'individual_letter'
-          ? 'Individual Word letter'
-          : `${batch.count} Word letter${batch.count === 1 ? '' : 's'}`;
+        ? 'Student list · ' + batch.count + ' student' + (batch.count === 1 ? '' : 's')
+        : type === 'cancel_letter'
+          ? 'Student visa cancellation letter'
+          : type === 'individual_letter'
+            ? 'Individual Word letter'
+            : batch.count + ' Word letter' + (batch.count === 1 ? '' : 's');
       const outputLabel = type === 'student_list'
         ? 'Student list exported'
-        : type === 'individual_letter'
-          ? 'Individual Word letter exported'
-          : 'Word letters exported';
+        : type === 'cancel_letter'
+          ? 'Cancellation letter exported'
+          : type === 'individual_letter'
+            ? 'Individual Word letter exported'
+            : 'Word letters exported';
       const signer = type === 'student_list' ? '' : ` · ${escapeHtml(signatoryProfile(batch.signatory).name)}`;
       const details = students.length
         ? `<div class="history-student-table"><div class="history-student-head"><span>Document</span><span>Student name</span><span>Student ID</span></div>${students.map((student) => `<div class="history-student-row"><span>${escapeHtml(student.documentNo || '—')}</span><strong>${escapeHtml(student.fullName || 'Student details unavailable')}</strong><span>${escapeHtml(student.studentId || '—')}</span></div>`).join('')}</div>`
@@ -2582,6 +2588,7 @@
     const map = {
       workspace: ['workspaceView', ...categories[state.activeCategory]],
       placeholder: ['placeholderView', placeholders[placeholderKey] || '', ''],
+      cancel: ['cancelView', 'Cancel', 'STUDENT VISA CANCELLATION'],
       batches: ['batchesView', 'Generation history', 'DOCUMENT OUTPUT'],
       programs: ['programsView', 'Academic programs', 'REFERENCE DATA'],
       settings: ['settingsView', 'Workspace settings', 'CONFIGURATION'],
@@ -2598,13 +2605,89 @@
     document.querySelector(activeNav)?.classList.add('active');
     el('pageTitle').textContent = title;
     el('pageEyebrow').textContent = eyebrow;
-    const reserved = view === 'placeholder';
+    const reserved = view === 'placeholder' || view === 'cancel';
     if (el('draftsBtn')) { el('draftsBtn').hidden = reserved; el('draftsBtn').classList.toggle('hidden', reserved); }
     if (el('addStudentBtn')) { el('addStudentBtn').hidden = reserved; el('addStudentBtn').classList.toggle('hidden', reserved); }
+    if (view === 'cancel') updateCancelPreview();
     if (view === 'programs') renderProgramTable();
     if (view === 'batches') renderBatchHistory();
     if (view === 'settings') { switchSettingsTab(activeSettingsTab); refreshTemplateStatus().catch(console.error); }
     if (window.innerWidth <= 880) el('sidebar').classList.remove('open');
+  }
+
+  // Cancel Letter is separate from current student cases and the Hub.
+  function getCancelLetterFields(){
+    const form=el('cancelLetterForm');
+    return {
+      documentNo:form.elements.documentNo.value,issueDate:form.elements.issueDate.value,
+      reason:form.elements.reason.value,fullName:form.elements.fullName.value,
+      nationalityThai:form.elements.nationalityThai.value,passportNo:form.elements.passportNo.value,
+      cancelDate:form.elements.cancelDate.value,
+      signatory:signatoryProfile(form.elements.signatory.value)
+    };
+  }
+  function updateCancelPreview(){
+    const form=el('cancelLetterForm');
+    if(!form)return;
+    const v=getCancelLetterFields();
+    const set=(id,value)=>{if(el(id))el(id).textContent=value;};
+    const thaiOr=(date,fallback)=>{if(!date)return fallback;
+      try{return BUICCancelLetter.thaiDate(date)}catch(_){return fallback}};
+    const num=String(v.documentNo||'').trim();
+    set('cancelPreviewNo',num?(num.startsWith('มกท/ศนช.')?num:'มกท/ศนช. '+num):'มกท/ศนช. —');
+    set('cancelPreviewDate',thaiOr(v.issueDate,'วันที่เอกสาร'));
+    set('cancelPreviewReason',v.reason||'…');
+    set('cancelPreviewName',String(v.fullName||'').trim().toUpperCase()||'—');
+    set('cancelPreviewNationality',String(v.nationalityThai||'').trim()||'—');
+    set('cancelPreviewPassport',String(v.passportNo||'').trim().toUpperCase()||'—');
+    set('cancelPreviewExpected',thaiOr(v.cancelDate,'—'));
+    el('cancelSignaturePreview').innerHTML=signatoryPreview(form.elements.signatory.value);
+  }
+  function bindCancelLetter(){
+    const form=el('cancelLetterForm');
+    if(!form)return;
+    form.elements.signatory.innerHTML=signatoryOptions(state.settings.signatory);
+    form.elements.issueDate.value=todayIso();
+    form.addEventListener('input',updateCancelPreview);
+    form.addEventListener('change',updateCancelPreview);
+    for(const key of ['fullName','passportNo']){
+      form.elements[key].addEventListener('blur',()=>{
+        form.elements[key].value=form.elements[key].value.toUpperCase().trim();
+        updateCancelPreview();
+      });
+    }
+    form.addEventListener('reset',()=>{
+      queueMicrotask(()=>{
+        form.elements.issueDate.value=todayIso();
+        form.elements.signatory.value=state.settings.signatory;
+        updateCancelPreview();
+      });
+    });
+    form.addEventListener('submit',async event=>{
+      event.preventDefault();
+      if(!form.reportValidity())return;
+      const button=el('cancelGenerate'),old=button.textContent;
+      button.disabled=true;button.textContent='Generating Word letter…';
+      try{
+        const fields=getCancelLetterFields();
+        const valid=BUICCancelLetter.validate(fields);
+        const blob=await BUICCancelLetter.create(fields);
+        const filename='Student_Visa_Cancellation_'+fields.issueDate.replaceAll('-','')+'_'+
+          fields.passportNo.trim().toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,16)+'.docx';
+        downloadBlob(blob,filename);
+        state.batches.unshift({
+          id:uid('cancel'),createdAt:new Date().toISOString(),issueDate:fields.issueDate,
+          documentNumbers:[valid.documentNo],
+          students:[{documentNo:valid.documentNo,studentId:'',fullName:valid.fullName}],
+          count:1,signatory:form.elements.signatory.value,
+          outputType:'cancel_letter',reason:valid.reason,cancelDate:fields.cancelDate,filename
+        });
+        persist();renderBatchHistory();
+        toast('Cancellation letter created','DOCX downloaded. Review and sign before submitting to Immigration.');
+      }catch(err){toast('Cannot generate cancellation letter',err.message||String(err),true)}
+      finally{button.disabled=false;button.textContent=old}
+    });
+    updateCancelPreview();
   }
 
   function toast(title, message, isError = false) {
@@ -2690,6 +2773,7 @@
     el('generateBatchBtn').addEventListener('click', generateBatch);
     el('generateListBtn').addEventListener('click', generateStudentList);
     el('generateIndividualBtn').addEventListener('click', generateIndividual);
+    bindCancelLetter();
 
     el('drawerBackdrop').addEventListener('click', closeDrawer);
     el('closeDrawerBtn').addEventListener('click', closeDrawer);
