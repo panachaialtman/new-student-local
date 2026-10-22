@@ -61,7 +61,7 @@ const base={documentNo:'5343',issueDate:'2026-10-28',cancelDate:'2025-07-02',
     'Maintain all seven Word yellow highlights');
   assert(!doc.includes('<w:tbl>'),'No reconstructed fixed-width tables');
   assert.equal((doc.match(/<w:tab\s*\/>/g)||[]).length,
-               (docMaster.match(/<w:tab\s*\/>/g)||[]).length,'Original tabs preserved');
+               (docMaster.match(/<w:tab\s*\/>/g)||[]).length-1,'Retain every original tab except the replaced intro indent');
   assert(doc.includes('w:top="1440"')&&doc.includes('w:left="1440"'),
     'Original margin positions preserved');
   // Explicit Thai proofing prevents red Word spellcheck marks and restores
