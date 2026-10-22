@@ -104,11 +104,11 @@
         </div>
         <div class="cancel-workspace">
           <form id="cancelLetterForm" class="content-card cancel-form" autocomplete="off">
-            <div class="cancel-card-head"><strong>Cancellation details</strong><span>8 required fields</span></div>
+            <div class="cancel-card-head"><strong>Cancellation details</strong><span>8 letter fields · optional Student ID for filename</span></div>
             <div class="cancel-form-grid">
               <label class="cancel-field">1. Document number
                 <input id="cancelDocumentNo" name="documentNo" type="text" required maxlength="100" placeholder="0000/2569" />
-                <small>Prefix มกท/ศนช. is added automatically unless already entered.</small>
+                <small>Enter 5343 to generate มกท/ศนช. 5343/2569 (year taken from the document date).</small>
               </label>
               <label class="cancel-field">2. Document date
                 <input id="cancelIssueDate" name="issueDate" type="date" required />
@@ -140,6 +140,10 @@
               </label>
               <label class="cancel-field">6. Passport number (uppercase)
                 <input id="cancelPassportNo" name="passportNo" type="text" required maxlength="70" placeholder="AB1234567" spellcheck="false" />
+              </label>
+              <label class="cancel-field cancel-span">Student ID (for filename)
+                <input id="cancelStudentId" name="studentId" type="text" maxlength="30" placeholder="1670228350" autocomplete="off" spellcheck="false"/>
+                <small>Optional; adds _StudentID to the download name. Example: จดหมายยกเลิกวีซ่า Mr. Tangguang Han_HJ2331449_1670228350.docx</small>
               </label>
               <label class="cancel-field">7. Expected cancellation date
                 <input id="cancelExpectedDate" name="cancelDate" type="date" required />
@@ -456,7 +460,7 @@
   <script src="zip.js"></script>
   <script src="builtin-templates.js"></script>
   <script src="docx-engine.js?v=045"></script>
-  <script src="cancel-letter.js?v=008"></script>
+  <script src="cancel-letter.js?v=009"></script>
   <script src="excel-export.js"></script>
   <script src="hub-reference.js?v=053"></script>
   <script src="student-memory.js?v=4"></script>
