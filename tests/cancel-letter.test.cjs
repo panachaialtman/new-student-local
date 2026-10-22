@@ -1,60 +1,85 @@
-
-const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+/* Staff-approved manual cancellation letter: layout-preservation regression. */
+const assert=require('node:assert/strict');
+const fs=require('node:fs'),zlib=require('node:zlib'),vm=require('node:vm');
 const {TextEncoder,TextDecoder}=require('node:util');
-const source=fs.readFileSync('cancel-letter.js','utf8');
+const src=fs.readFileSync('cancel-letter.js','utf8');
 const app=fs.readFileSync('app.js','utf8');
 const html=fs.readFileSync('index.html','utf8');
 const worker=fs.readFileSync('sw.js','utf8');
-let captured,builds=0;
-const ctx={window:{ZipLite:{writeZip:async m=>{captured=m;builds++;return Uint8Array.from([80,75,3,4]);}}},TextEncoder,TextDecoder,Blob,Date,Map,Uint8Array};
-vm.runInNewContext(source,ctx);
-const generator=ctx.window.BUICCancelLetter;
-const reasons=['พ้นสภาพ','สำเร็จการศึกษา','ลาออก','จะใช้วีซ่าประเภทอื่น','ลาพัก','ได้สัญชาติไทย','others'];
-assert.deepEqual(Array.from(generator.REASONS),reasons);
-const sample={documentNo:'0020/2569',issueDate:'2026-10-20',cancelDate:'2026-10-29',
-  reason:'พ้นสภาพ',otherReason:'',fullName:'miss qa student',nationalityThai:'เมียนมา',passportNo:'qa1234567',
-  signatory:{name:'ผู้ช่วยศาสตราจารย์ ดร. สมยศ วัฒนากมลชัย',role:'รองอธิการบดีสายนานาชาติ ปฏิบัติหน้าที่แทน'}};
+const templateText=fs.readFileSync('templates-data/cancel_manual_master.txt','utf8').trim();
+const template=JSON.parse(zlib.gunzipSync(Buffer.from(templateText,'base64')).toString('utf8'));
+const docMaster=template['word/document.xml'];
+let written,fetchCount=0;
+const context={window:{ZipLite:{writeZip:async files=>{written=files;return Uint8Array.from([80,75,3,4]);}}},
+ TextEncoder,TextDecoder,Blob,Map,Uint8Array,Date,
+ atob:s=>Buffer.from(s,'base64').toString('binary'),DecompressionStream,Response,
+ fetch:async url=>{
+   assert.equal(url,'./templates-data/cancel_manual_master.txt');
+   fetchCount++;return {ok:true,text:async()=>templateText};
+ }};
+vm.runInNewContext(src,context);
+const generator=context.window.BUICCancelLetter;
+assert(generator&&typeof generator.create==='function');
+assert.equal(Object.keys(template).length,8);
+assert(!docMaster.includes('MR. TANGGUANG HAN'),'Private student name must not ship in template');
+assert(!docMaster.includes('HJ2331449'),'Private passport must not ship in template');
+assert(!docMaster.includes('1670228350'),'Private student ID must not ship in template');
+assert.equal((docMaster.match(/<w:highlight w:val="yellow"\/>/g)||[]).length,7);
+assert(!docMaster.includes('<w:tbl>'),'Staff template uses tab-aligned paragraphs, not generated tables');
+assert((docMaster.match(/<w:tab\s*\/>/g)||[]).length>=20);
+assert(docMaster.includes('w:top="1440"')&&docMaster.includes('w:left="1440"'),
+  'Preserve original one-inch margins');
+assert(Object.keys(template).every(name=>!name.includes('docProps')),'Sanitize metadata');
+const base={documentNo:'5343',issueDate:'2026-10-28',cancelDate:'2025-07-02',
+ reason:'ลาออก',fullName:'mr. tangguang han',nationalityThai:'จีน',passportNo:'hj2331449',
+ studentId:'1670228350',otherReason:'',
+ signatory:{name:'ผู้ช่วยศาสตราจารย์ ดร. ดวงธิดา นันทาภิรัตน์',
+ role:'ผู้ช่วยอธิการบดีสายนานาชาติ ปฏิบัติหน้าที่แทน'}};
 (async()=>{
-  assert.equal(generator.thaiDate('2026-10-20'),'20 ตุลาคม 2569');
-  assert.equal(generator.thaiDate('2026-05-20'),'20 พฤษภาคม 2569');
-  assert.equal(generator.thaiDate('2026-12-20'),'20 ธันวาคม 2569');
-  for(const reason of reasons){
-    const blob=await generator.create({...sample,reason,otherReason:'ย้ายสถานศึกษา'});
-    assert.equal(blob.type,'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-    assert.equal(captured.size,7);
-    const doc=new TextDecoder().decode(captured.get('word/document.xml').data);
-    const footer=new TextDecoder().decode(captured.get('word/footer1.xml').data);
-    assert(doc.includes('0020/2569'));
-    assert(doc.includes('20 ตุลาคม 2569'));
-    assert(doc.includes('29 ตุลาคม 2569'));
-    assert(doc.includes('MISS QA STUDENT')&&doc.includes('QA1234567')&&doc.includes('เมียนมา'));
-    assert(doc.includes(reason==='others'?'ย้ายสถานศึกษา':reason));
-    assert.equal((doc.match(/<w:highlight w:val="yellow"\/>/g)||[]).length,7);
-    assert.equal((doc.match(/<w:tbl>/g)||[]).length,1,'Only the invisible student-details table is allowed');
-    assert(!doc.includes('<w:tab'),'No legacy tab characters or manual aligning tabs');
-    assert(doc.includes('w:w="11906" w:h="16838"'),'A4 paper size');
-    assert(doc.includes('w:pgMar w:top="1050"'),'Compact predictable page margins');
-    assert(doc.includes('TH SarabunPSK'));
-    assert(doc.includes('ขอแสดงความนับถือ')&&doc.includes('อธิการบดี'));
-    assert(footer.includes('ศูนย์นานาชาติ')&&footer.includes('0 2407 3888 ต่อ 2441'));
-    for(const part of ['[Content_Types].xml','_rels/.rels','word/document.xml',
-      'word/_rels/document.xml.rels','word/footer1.xml','word/styles.xml','word/settings.xml']){
-      assert(captured.has(part),'Missing DOCX part '+part);
-    }
-  }
-  await generator.create({...sample,fullName:'ms example & student <qa>',passportNo:'ab&12<3>'});
-  const escaped=new TextDecoder().decode(captured.get('word/document.xml').data);
-  assert(escaped.includes('MS EXAMPLE &amp; STUDENT &lt;QA&gt;'));
-  assert(escaped.includes('AB&amp;12&lt;3&gt;'));
-  assert(!escaped.includes('{{'),'No unresolved fields');
-  assert.equal(generator.validate({...sample,documentNo:'มกท/ศนช. 42/2569'}).rawNumber,'42/2569');
-  await assert.rejects(generator.create({...sample,reason:'unrecognized'}),/cancellation reason/);
-  await assert.rejects(generator.create({...sample,reason:'others',otherReason:''}),/other cancellation reason/);
-  await assert.rejects(generator.create({...sample,nationalityThai:'Myanmar'}),/nationality in Thai/);
-  await assert.rejects(generator.create({...sample,issueDate:'2026-02-30'}),/invalid/);
-  assert(html.includes('data-view="cancel"')&&html.includes('cancel-letter.js?v='));
-  assert(app.includes('bindCancelLetter();')&&app.includes('bindCancelNationalityAutocomplete();')&&app.includes('updateCancelReasonField();'));
-  assert(worker.includes("'./cancel-letter.js'"));
-  assert(!worker.includes("'./templates-data/cancel_template_part1.txt'"),'Do not keep deprecated generated template cached');
-  console.log('Cancellation DOCX from-scratch tests passed: reason options, Thai dates, 7 highlights, A4 layout, XML safety and UI.');
-})().catch(e=>{console.error(e);process.exitCode=1;});
+ assert.equal(generator.validate(base).documentNo,'มกท/ศนช. 5343/2569');
+ assert.equal(generator.filename(base),
+   'จดหมายยกเลิกวีซ่า Mr. Tangguang Han_HJ2331449_1670228350.docx');
+ assert.equal(generator.filename({...base,studentId:''}),
+   'จดหมายยกเลิกวีซ่า Mr. Tangguang Han_HJ2331449.docx');
+ assert.equal(generator.thaiDate('2026-05-20'),'20 พฤษภาคม 2569');
+ assert.equal(generator.thaiDate('2026-12-20'),'20 ธันวาคม 2569');
+ const reasons=['พ้นสภาพ','สำเร็จการศึกษา','ลาออก','จะใช้วีซ่าประเภทอื่น','ลาพัก','ได้สัญชาติไทย','others'];
+ assert.equal(Array.from(generator.REASONS).join('|'),reasons.join('|'));
+ for(const reason of reasons){
+  const output=await generator.create({...base,reason,otherReason:'ย้ายสถานศึกษา'});
+  assert.equal(output.type,'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+  assert.equal(written.size,8,'Keep every Word template part');
+  const doc=new TextDecoder().decode(written.get('word/document.xml').data);
+  assert(doc.includes('5343/2569'));
+  assert(doc.includes('28 ตุลาคม 2569')&&doc.includes('2 กรกฎาคม 2568'));
+  assert(doc.includes('MR. TANGGUANG HAN')&&doc.includes('HJ2331449'));
+  assert(doc.includes('เนื่องจากนักศึกษา')&&doc.includes(reason==='others'?'ย้ายสถานศึกษา':reason));
+  assert(doc.includes('ผู้ช่วยศาสตราจารย์ ดร. ดวงธิดา นันทาภิรัตน์'));
+  assert(doc.includes('ผู้ช่วยอธิการบดีสายนานาชาติ ปฏิบัติหน้าที่แทน'));
+  assert(!doc.includes('{{'),'No unresolved placeholders');
+  assert.equal((doc.match(/<w:highlight w:val="yellow"\/>/g)||[]).length,7,
+    'Maintain all seven Word yellow highlights');
+  assert(!doc.includes('<w:tbl>'),'No reconstructed fixed-width tables');
+  assert.equal((doc.match(/<w:tab\s*\/>/g)||[]).length,
+               (docMaster.match(/<w:tab\s*\/>/g)||[]).length,'Original tabs preserved');
+  assert(doc.includes('w:top="1440"')&&doc.includes('w:left="1440"'),
+    'Original margin positions preserved');
+  for(const p of ['word/document.xml','word/styles.xml','word/settings.xml','word/fontTable.xml',
+    'word/theme/theme1.xml','word/_rels/document.xml.rels','[Content_Types].xml','_rels/.rels'])
+    assert(written.has(p),'Missing Word component '+p);
+ }
+ assert.equal(fetchCount,1,'Load sanitized template once; never cache filled student records');
+ await generator.create({...base,fullName:'mr & example <student>',passportNo:'ab&123'});
+ const xml=new TextDecoder().decode(written.get('word/document.xml').data);
+ assert(xml.includes('MR &amp; EXAMPLE &lt;STUDENT&gt;')&&xml.includes('AB&amp;123'));
+ assert.equal(generator.validate({...base,documentNo:'มกท/ศนช. 5343/2569'}).rawNumber,'5343/2569');
+ await assert.rejects(generator.create({...base,reason:'unknown'}),/cancellation reason/);
+ await assert.rejects(generator.create({...base,reason:'others',otherReason:''}),/other cancellation reason/);
+ await assert.rejects(generator.create({...base,nationalityThai:'China'}),/nationality in Thai/);
+ await assert.rejects(generator.create({...base,studentId:'../../'}),/Student ID/);
+ assert(html.includes('id="cancelStudentId"')&&html.includes('cancel-letter.js?v='));
+ assert(app.includes('BUICCancelLetter.filename(fields)'));
+ assert(app.includes('bindCancelNationalityAutocomplete();')&&app.includes('updateCancelReasonField();'));
+ assert(worker.includes("'./templates-data/cancel_manual_master.txt'"));
+ console.log('Manual-format Cancel Letter tests passed: source geometry, Word runs, highlights, filename, all seven reasons and safety.');
+})().catch(err=>{console.error(err);process.exitCode=1});
