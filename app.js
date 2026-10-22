@@ -2622,6 +2622,7 @@
       documentNo:form.elements.documentNo.value,issueDate:form.elements.issueDate.value,
       reason:form.elements.reason.value,otherReason:form.elements.otherReason.value,fullName:form.elements.fullName.value,
       nationalityThai:form.elements.nationalityThai.value,passportNo:form.elements.passportNo.value,
+      studentId:form.elements.studentId.value,
       cancelDate:form.elements.cancelDate.value,
       signatory:signatoryProfile(form.elements.signatory.value)
     };
@@ -2634,7 +2635,9 @@
     const thaiOr=(date,fallback)=>{if(!date)return fallback;
       try{return BUICCancelLetter.thaiDate(date)}catch(_){return fallback}};
     const num=String(v.documentNo||'').trim();
-    set('cancelPreviewNo',num?(num.startsWith('มกท/ศนช.')?num:'มกท/ศนช. '+num):'มกท/ศนช. —');
+    const base=num.replace(/^(?:ที่\s*)?มกท\/ศนช\.\s*/,'').trim();
+    const year=v.issueDate?String(Number(v.issueDate.slice(0,4))+543):'—';
+    set('cancelPreviewNo',base?'มกท/ศนช. '+(/\/\d{4}$/.test(base)?base:base+'/'+year):'มกท/ศนช. —');
     set('cancelPreviewDate',thaiOr(v.issueDate,'วันที่เอกสาร'));
     set('cancelPreviewReason',v.reason==='others' ? (v.otherReason.trim()||'ระบุเหตุผลอื่น…') : (v.reason||'…'));
     set('cancelPreviewName',String(v.fullName||'').trim().toUpperCase()||'—');
@@ -2770,13 +2773,12 @@
         const fields=getCancelLetterFields();
         const valid=BUICCancelLetter.validate(fields);
         const blob=await BUICCancelLetter.create(fields);
-        const filename='Student_Visa_Cancellation_'+fields.issueDate.replaceAll('-','')+'_'+
-          fields.passportNo.trim().toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,16)+'.docx';
+        const filename=BUICCancelLetter.filename(fields);
         downloadBlob(blob,filename);
         state.batches.unshift({
           id:uid('cancel'),createdAt:new Date().toISOString(),issueDate:fields.issueDate,
           documentNumbers:[valid.documentNo],
-          students:[{documentNo:valid.documentNo,studentId:'',fullName:valid.fullName}],
+          students:[{documentNo:valid.documentNo,studentId:valid.studentId,fullName:valid.fullName}],
           count:1,signatory:form.elements.signatory.value,
           outputType:'cancel_letter',reason:valid.reason,cancelDate:fields.cancelDate,filename
         });
