@@ -71,6 +71,9 @@ const base={documentNo:'5343',issueDate:'2026-10-28',cancelDate:'2025-07-02',
   assert((doc.match(/<w:lang w:val="th-TH"/g)||[]).length>=20,
     'All cancellation letter runs must receive Thai proofing language');
   assert(doc.includes('มหาวิทยาลัยกรุงเทพ ใคร่ขอความอนุเคราะห์'));
+  assert(doc.includes('การตรวจลงตรา'+String.fromCharCode(0x200B)+'วีซ่านักศึกษา'),'Expected invisible Thai line-break opportunity');
+  assert(!doc.includes('การตรวจลงตรา วีซ่านักศึกษา'),'Do not insert a visible space');
+
   const styles=new TextDecoder().decode(written.get('word/styles.xml').data);
   assert(styles.includes('w:val="th-TH"')&&styles.includes('<w:noProof/>'),
     'Default style must inherit Thai language and disable proofing');
