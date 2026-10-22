@@ -100,6 +100,11 @@ const base={documentNo:'5343',issueDate:'2026-10-28',cancelDate:'2025-07-02',
  const xml=new TextDecoder().decode(written.get('word/document.xml').data);
  assert(xml.includes('MR &amp; EXAMPLE &lt;STUDENT&gt;')&&xml.includes('AB&amp;123'));
  assert.equal(generator.validate({...base,documentNo:'มกท/ศนช. 5343/2569'}).rawNumber,'5343/2569');
+ assert(html.includes('id="cancelOtherReason" name="otherReason" maxlength="300"'),
+   'The Other reason form limit must match the generator’s 300-character limit');
+ assert.equal(generator.validate({...base,reason:'others',otherReason:'ก'.repeat(300)}).reason.length,300);
+ assert.throws(()=>generator.validate({...base,reason:'others',otherReason:'ก'.repeat(301)}),
+   /other cancellation reason/);
  await assert.rejects(generator.create({...base,reason:'unknown'}),/cancellation reason/);
  await assert.rejects(generator.create({...base,reason:'others',otherReason:''}),/other cancellation reason/);
  await assert.rejects(generator.create({...base,nationalityThai:'China'}),/nationality in Thai/);
