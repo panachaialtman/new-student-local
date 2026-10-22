@@ -114,7 +114,16 @@ function documentThaiProofing(xml){
   if(!revised.includes('<w:ind w:right="-180"')){
    throw Error('Cancellation master has changed its introductory paragraph.');
   }
-  return revised.replace('<w:ind w:right="-180"/>','<w:ind w:right="-180" w:firstLine="720"/>');
+  revised=revised.replace('<w:ind w:right="-180"/>','<w:ind w:right="-180" w:firstLine="720"/>');
+  // MS Word sometimes treats this compound Thai expression as a single
+  // unbreakable sequence. U+200B is an INVISIBLE, optional word boundary:
+  // it permits natural wrapping without inserting a printed space or a hard
+  // line break. Limit the change to this opening paragraph, not the heading.
+  const thaiBoundary='การตรวจลงตราวีซ่านักศึกษา';
+  if(!revised.includes(thaiBoundary)){
+    throw Error('The Thai visa-cancellation wording has changed in the letter master.');
+  }
+  return revised.replace(thaiBoundary,'การตรวจลงตรา\u200Bวีซ่านักศึกษา');
  });
  if(introCount!==1)throw Error('The introductory paragraph was not found uniquely.');
  return xml.replace(/<w:r(?:\s[^>]*)?>[\s\S]*?<\/w:r>/g,run=>{
