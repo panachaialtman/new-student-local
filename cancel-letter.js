@@ -5,7 +5,7 @@
 (()=>{'use strict';
 const MIME='application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 const BUNDLE='./templates-data/cancel_manual_master.txt';
-const MONTHS=['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const MONTHS=['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
 const REASONS=Object.freeze(['พ้นสภาพ','สำเร็จการศึกษา','ลาออก','จะใช้วีซ่าประเภทอื่น','ลาพัก','ได้สัญชาติไทย','others']);
 const encoder=new TextEncoder();
 let bundlePromise;
