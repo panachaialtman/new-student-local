@@ -98,11 +98,57 @@ function merge(template,valid){
  }
  return xml;
 }
+// The converted .doc master inherited an English/Chinese/Hindi default
+// proofing profile even though every visible paragraph uses Thai typography.
+// Word therefore underlines Thai text and can wrap long Thai syllables as
+// English "words". Explicit Thai script language fixes both behaviors.
+const THAI_LANG='<w:lang w:val="th-TH" w:eastAsia="th-TH" w:bidi="th-TH"/>';
+function documentThaiProofing(xml){
+ let introCount=0;
+ xml=xml.replace(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g, p=>{
+  if(!p.includes('มหาวิทยาลัยกรุงเทพ ใคร่ขอความอนุเคราะห์ สำนักงานตรวจคนเข้าเมือง'))return p;
+  introCount++;
+  // A first-line indent replaces the 14pt tab used in the old .doc.
+  // Tabs can force odd Thai line breaks even when the text itself fits.
+  let revised=p.replace(/<w:r><w:rPr>[\s\S]*?<\/w:rPr><w:tab\/><\/w:r>/,'');
+  if(!revised.includes('<w:ind w:right="-180"')){
+   throw Error('Cancellation master has changed its introductory paragraph.');
+  }
+  return revised.replace('<w:ind w:right="-180"/>','<w:ind w:right="-180" w:firstLine="720"/>');
+ });
+ if(introCount!==1)throw Error('The introductory paragraph was not found uniquely.');
+ return xml.replace(/<w:r(?:\s[^>]*)?>[\s\S]*?<\/w:r>/g,run=>{
+   run=run.replace(/<w:lang\b[^>]*\/>/g,'');
+   const rpr=run.match(/<w:rPr(?:\s[^>]*)?>/);
+   if(!rpr)return run.replace(/^(<w:r(?:\s[^>]*)?>)/,
+     '$1<w:rPr><w:noProof/>'+THAI_LANG+'</w:rPr>');
+   if(!run.includes('<w:noProof/>'))run=run.replace(rpr[0],rpr[0]+'<w:noProof/>');
+   return run.replace('</w:rPr>',THAI_LANG+'</w:rPr>');
+ });
+}
+function styleThaiProofing(xml){
+ // Repair language inheritance, not the approved TH SarabunPSK typography.
+ return xml.replace(/<w:docDefaults>[\s\S]*?<\/w:docDefaults>/,defaults=>{
+  let fixed=defaults.replace(/<w:lang\b[^>]*\/>/g,THAI_LANG);
+  fixed=fixed.replace(/<w:rFonts\b[^>]*\/>/,
+   '<w:rFonts w:ascii="TH SarabunPSK" w:hAnsi="TH SarabunPSK" w:eastAsia="TH SarabunPSK" w:cs="TH SarabunPSK"/>');
+  if(!fixed.includes('<w:noProof/>'))
+   fixed=fixed.replace(/<w:rPr>/,'<w:rPr><w:noProof/>');
+  return fixed;
+ });
+}
+function settingsThaiProofing(xml){
+ return xml.replace(/<w:autoHyphenation\b[^>]*\/>/,
+  '<w:autoHyphenation w:val="false"/>');
+}
 async function create(raw){
  if(!window.ZipLite?.writeZip)throw Error('The Word engine is unavailable. Refresh the page.');
  const valid=validate(raw),bundle=await loadBundle();
  const entries=new Map(Object.entries(bundle).map(([name,source])=>[name,{
-  name,data:encoder.encode(name==='word/document.xml'?merge(source,valid):source)
+  name,data:encoder.encode(name==='word/document.xml'
+    ?documentThaiProofing(merge(source,valid))
+    :name==='word/styles.xml'?styleThaiProofing(source)
+    :name==='word/settings.xml'?settingsThaiProofing(source):source)
  }]));
  return new Blob([await window.ZipLite.writeZip(entries)],{type:MIME});
 }
