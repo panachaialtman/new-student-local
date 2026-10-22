@@ -64,6 +64,18 @@ const base={documentNo:'5343',issueDate:'2026-10-28',cancelDate:'2025-07-02',
                (docMaster.match(/<w:tab\s*\/>/g)||[]).length,'Original tabs preserved');
   assert(doc.includes('w:top="1440"')&&doc.includes('w:left="1440"'),
     'Original margin positions preserved');
+  // Explicit Thai proofing prevents red Word spellcheck marks and restores
+  // Thai dictionary segmentation. The first paragraph no longer uses a tab.
+  assert(doc.includes('w:firstLine="720"'),'Thai intro must have a stable first-line indent');
+  assert(doc.includes('<w:noProof/>'),'Word must not underline Thai as misspelled');
+  assert((doc.match(/<w:lang w:val="th-TH"/g)||[]).length>=20,
+    'All cancellation letter runs must receive Thai proofing language');
+  assert(doc.includes('มหาวิทยาลัยกรุงเทพ ใคร่ขอความอนุเคราะห์'));
+  const styles=new TextDecoder().decode(written.get('word/styles.xml').data);
+  assert(styles.includes('w:val="th-TH"')&&styles.includes('<w:noProof/>'),
+    'Default style must inherit Thai language and disable proofing');
+  assert(styles.includes('w:ascii="TH SarabunPSK"'),
+    'TH Sarabun font must remain the document default');
   for(const p of ['word/document.xml','word/styles.xml','word/settings.xml','word/fontTable.xml',
     'word/theme/theme1.xml','word/_rels/document.xml.rels','[Content_Types].xml','_rels/.rels'])
     assert(written.has(p),'Missing Word component '+p);
