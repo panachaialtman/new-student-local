@@ -61,36 +61,33 @@ const base={documentNo:'5343',issueDate:'2026-10-28',cancelDate:'2025-07-02',
     'Maintain all seven Word yellow highlights');
   assert(!doc.includes('<w:tbl>'),'No reconstructed fixed-width tables');
   assert.equal((doc.match(/<w:tab\s*\/>/g)||[]).length,
-               (docMaster.match(/<w:tab\s*\/>/g)||[]).length-1,'Retain every original tab except the replaced intro indent');
+               (docMaster.match(/<w:tab\s*\/>/g)||[]).length,'Retain every original tab without alteration');
   assert(doc.includes('w:top="1440"')&&doc.includes('w:left="1440"'),
     'Original margin positions preserved');
-  // Explicit Thai proofing prevents red Word spellcheck marks and restores
-  // Thai dictionary segmentation. The first paragraph no longer uses a tab.
-  assert(doc.includes('w:firstLine="720"'),'Thai intro must have a stable first-line indent');
-  assert(doc.includes('<w:noProof/>'),'Word must not underline Thai as misspelled');
-  assert((doc.match(/<w:lang w:val="th-TH"/g)||[]).length>=20,
-    'All cancellation letter runs must receive Thai proofing language');
-  assert(doc.includes('มหาวิทยาลัยกรุงเทพ ใคร่ขอความอนุเคราะห์'));
-  // The staff verified that Word's Keep Text Only makes Thai wrapping normal:
-  // collapse old fragmented/overformatted runs into three clean runs, with the
-  // middle one carrying the highlighted reason only.
-  assert(doc.includes('การตรวจลงตราวีซ่านักศึกษา'),'Thai text must be continuous');
-  assert(!doc.includes(String.fromCharCode(0x200B)),'No artificial soft breaks should remain');
-  const originalIntro='มหาวิทยาลัยกรุงเทพ ใคร่ขอความอนุเคราะห์ สำนักงานตรวจคนเข้าเมืองในการยกเลิกการตรวจลงตราวีซ่านักศึกษา เนื่องจากนักศึกษา';
-  assert(doc.includes('<w:r><w:t xml:space="preserve">'+originalIntro+'</w:t></w:r>'),
-    'The Thai introduction must be one clean inherited-format run');
-  assert(doc.includes('<w:r><w:rPr><w:highlight w:val="yellow"/></w:rPr><w:t xml:space="preserve">'+
-    (reason==='others'?'ย้ายสถานศึกษา':reason)+'</w:t></w:r>'),
-    'Only the cancellation reason should carry a yellow highlight');
-  assert(doc.includes('<w:r><w:t xml:space="preserve"> ดังรายละเอียดต่อไปนี้</w:t></w:r>'),
-    'The trailing text must also be an unformatted run');
-  assert(!doc.includes('การตรวจลงตรา วีซ่านักศึกษา'),'Do not insert a visible space');
-
-  const styles=new TextDecoder().decode(written.get('word/styles.xml').data);
-  assert(styles.includes('w:val="th-TH"')&&styles.includes('<w:noProof/>'),
-    'Default style must inherit Thai language and disable proofing');
-  assert(styles.includes('w:ascii="TH SarabunPSK"'),
-    'TH Sarabun font must remain the document default');
+  // Literal placeholder replacement is intentional: do not alter the original
+  // Thai text runs, line wrapping, run formatting, paragraph geometry or styles.
+  const expectedFields={
+   DOC_NUMBER:'5343/2569',ISSUE_DATE:'28 ตุลาคม 2569',
+   REASON:reason==='others'?'ย้ายสถานศึกษา':reason,
+   FULL_NAME:'MR. TANGGUANG HAN',NATIONALITY_TH:'จีน',
+   PASSPORT_NO:'HJ2331449',CANCEL_DATE:'2 กรกฎาคม 2568',
+   SIGNER_NAME:'ผู้ช่วยศาสตราจารย์ ดร. ดวงธิดา นันทาภิรัตน์',
+   SIGNER_ROLE:'ผู้ช่วยอธิการบดีสายนานาชาติ ปฏิบัติหน้าที่แทน'
+  };
+  const escapeXml=value=>String(value).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
+  let expected=docMaster;
+  for(const [key,value] of Object.entries(expectedFields)){
+   const token='{{'+key+'}}';
+   assert.equal(expected.split(token).length,2,'Exactly one approved token '+key);
+   expected=expected.replace(token,escapeXml(value));
+  }
+  assert.equal(doc,expected,'Only placeholder values may change in the manual Word master');
+  for(const [part,originalXml] of Object.entries(template)){
+   if(part==='word/document.xml')continue;
+   assert.equal(new TextDecoder().decode(written.get(part).data),originalXml,
+     'Word part '+part+' must remain byte-for-byte unchanged');
+  }
   for(const p of ['word/document.xml','word/styles.xml','word/settings.xml','word/fontTable.xml',
     'word/theme/theme1.xml','word/_rels/document.xml.rels','[Content_Types].xml','_rels/.rels'])
     assert(written.has(p),'Missing Word component '+p);
@@ -113,5 +110,5 @@ const base={documentNo:'5343',issueDate:'2026-10-28',cancelDate:'2025-07-02',
  assert(app.includes('BUICCancelLetter.filename(fields)'));
  assert(app.includes('bindCancelNationalityAutocomplete();')&&app.includes('updateCancelReasonField();'));
  assert(worker.includes("'./templates-data/cancel_manual_master.txt'"));
- console.log('Manual-format Cancel Letter tests passed: source geometry, Word runs, highlights, filename, all seven reasons and safety.');
+ console.log('Cancel Letter tests passed: exact staff master retention, placeholder-only values, seven highlights, all reasons, filename and safety.');
 })().catch(err=>{console.error(err);process.exitCode=1});
