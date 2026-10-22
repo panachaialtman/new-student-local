@@ -71,6 +71,18 @@ async function loadBundle(){
  }
  return bundlePromise;
 }
+function splitHighlightedTabs(source){
+ // In the original DOC two tab stops share a run with the student value.
+ // Keep the tab stops in an unhighlighted run and highlight only the value,
+ // without changing their positions or paragraph formatting.
+ return source.replace(
+  /<w:r>(<w:rPr>(?:(?!<\/w:rPr>)[\s\S])*?<w:highlight w:val="yellow"\/>(?:(?!<\/w:rPr>)[\s\S])*?<\/w:rPr>)((?:<w:tab\/>)+)(<w:t[^>]*>\{\{(?:FULL_NAME|PASSPORT_NO)\}\}<\/w:t>)<\/w:r>/g,
+  (all,properties,tabs,word)=>{
+   const neutral=properties.replace('<w:highlight w:val="yellow"/>','');
+   return '<w:r>'+neutral+tabs+'</w:r><w:r>'+properties+word+'</w:r>';
+  }
+ );
+}
 function merge(template,valid){
  const fields={
   DOC_NUMBER:valid.rawNumber,ISSUE_DATE:valid.issueDate,REASON:valid.reason,
@@ -78,7 +90,7 @@ function merge(template,valid){
   PASSPORT_NO:valid.passportNo,CANCEL_DATE:valid.cancelDate,
   SIGNER_NAME:valid.signerName,SIGNER_ROLE:valid.signerRole
  };
- let xml=template;
+ let xml=splitHighlightedTabs(template);
  for(const [field,value] of Object.entries(fields)){
   const token='{{'+field+'}}';
   if(xml.split(token).length!==2)throw Error('Template contains a missing or duplicate '+field+' field.');
