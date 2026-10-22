@@ -71,7 +71,20 @@ const base={documentNo:'5343',issueDate:'2026-10-28',cancelDate:'2025-07-02',
   assert((doc.match(/<w:lang w:val="th-TH"/g)||[]).length>=20,
     'All cancellation letter runs must receive Thai proofing language');
   assert(doc.includes('มหาวิทยาลัยกรุงเทพ ใคร่ขอความอนุเคราะห์'));
-  assert(doc.includes('การตรวจลงตรา'+String.fromCharCode(0x200B)+'วีซ่านักศึกษา'),'Expected invisible Thai line-break opportunity');
+  // The staff verified that Word's Keep Text Only makes Thai wrapping normal:
+  // collapse old fragmented/overformatted runs into three clean runs, with the
+  // middle one carrying the highlighted reason only.
+  assert(doc.includes('การตรวจลงตราวีซ่านักศึกษา'),'Thai text must be continuous');
+  assert(!doc.includes(String.fromCharCode(0x200B)),'No artificial soft breaks should remain');
+  const intro=doc.match(/<w:p(?:\\s[^>]*)?>[\\s\\S]*?<\\/w:p>/g)
+    .find(p=>p.includes('มหาวิทยาลัยกรุงเทพ ใคร่ขอความอนุเคราะห์'));
+  assert(intro,'Expected the opening Thai paragraph');
+  assert.equal((intro.match(/<w:r>/g)||[]).length,3,
+    'Clean text, highlighted reason, and clean trailing text should be separate');
+  assert.equal((intro.match(/<w:rPr>/g)||[]).length,2,
+    'Only the paragraph properties and highlighted reason may have formatting');
+  assert(intro.includes('<w:highlight w:val="yellow"/>'),
+    'The cancellation reason must remain highlighted');
   assert(!doc.includes('การตรวจลงตรา วีซ่านักศึกษา'),'Do not insert a visible space');
 
   const styles=new TextDecoder().decode(written.get('word/styles.xml').data);
