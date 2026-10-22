@@ -76,15 +76,14 @@ const base={documentNo:'5343',issueDate:'2026-10-28',cancelDate:'2025-07-02',
   // middle one carrying the highlighted reason only.
   assert(doc.includes('การตรวจลงตราวีซ่านักศึกษา'),'Thai text must be continuous');
   assert(!doc.includes(String.fromCharCode(0x200B)),'No artificial soft breaks should remain');
-  const intro=doc.match(/<w:p(?:\\s[^>]*)?>[\\s\\S]*?<\\/w:p>/g)
-    .find(p=>p.includes('มหาวิทยาลัยกรุงเทพ ใคร่ขอความอนุเคราะห์'));
-  assert(intro,'Expected the opening Thai paragraph');
-  assert.equal((intro.match(/<w:r>/g)||[]).length,3,
-    'Clean text, highlighted reason, and clean trailing text should be separate');
-  assert.equal((intro.match(/<w:rPr>/g)||[]).length,2,
-    'Only the paragraph properties and highlighted reason may have formatting');
-  assert(intro.includes('<w:highlight w:val="yellow"/>'),
-    'The cancellation reason must remain highlighted');
+  const originalIntro='มหาวิทยาลัยกรุงเทพ ใคร่ขอความอนุเคราะห์ สำนักงานตรวจคนเข้าเมืองในการยกเลิกการตรวจลงตราวีซ่านักศึกษา เนื่องจากนักศึกษา';
+  assert(doc.includes('<w:r><w:t xml:space="preserve">'+originalIntro+'</w:t></w:r>'),
+    'The Thai introduction must be one clean inherited-format run');
+  assert(doc.includes('<w:r><w:rPr><w:highlight w:val="yellow"/></w:rPr><w:t xml:space="preserve">'+
+    (reason==='others'?'ย้ายสถานศึกษา':reason)+'</w:t></w:r>'),
+    'Only the cancellation reason should carry a yellow highlight');
+  assert(doc.includes('<w:r><w:t xml:space="preserve"> ดังรายละเอียดต่อไปนี้</w:t></w:r>'),
+    'The trailing text must also be an unformatted run');
   assert(!doc.includes('การตรวจลงตรา วีซ่านักศึกษา'),'Do not insert a visible space');
 
   const styles=new TextDecoder().decode(written.get('word/styles.xml').data);
