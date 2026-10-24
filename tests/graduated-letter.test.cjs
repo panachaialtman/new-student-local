@@ -96,7 +96,7 @@ const base={documentNo:'5343',issueDate:'2026-10-24',birthDate:'2000-10-25',
  }
  assert.equal(alternate,baseline,
    'Only field values and exactly three signature text nodes may change');
- assert.equal((alternate.match(/<w:highlight w:val="yellow"\\/>/g)||[]).length,11);
+ assert.equal(alternate.split('<w:highlight w:val="yellow"/>').length-1,11);
  for(const [part,sourceXml] of Object.entries(template)){
   if(part==='word/document.xml')continue;
   assert.equal(new TextDecoder().decode(written.get(part).data),sourceXml,
