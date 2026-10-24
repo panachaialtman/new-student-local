@@ -22,7 +22,7 @@ assert(template['word/footer1.xml'].includes('0 2407 3888'));
 assert(original.includes('footerReference'));
 // The original compacted website master has ten nonempty Word paragraphs.
 // Its missing section spacing caused the very cramped Word screenshot.
-const paragraphs=xml=>(xml.match(/<w:p(?:\\s[^>]*)?>[\\s\\S]*?<\\/w:p>/g)||[]);
+const paragraphs=xml=>(xml.match(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g)||[]);
 assert.equal(paragraphs(original).length,10);
 const spacingAfter=[360,360,180,360,360,360,480,0,0,0];
 let written,loads=0;
