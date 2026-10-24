@@ -97,12 +97,39 @@ function merge(documentXml,v){
  if(xml.includes('{{'))throw Error('Criminal Record template contains unresolved fields.');
  return xml;
 }
+// The earlier one-page conversion removed the intentional separation
+// between letter sections. Restore measured Word paragraph spacing in twips
+// (and natural line leading for the two body paragraphs), without inserting
+// blank text, moving signatures, or changing any field highlights or footer.
+function restoreLetterSpacing(xml){
+ const after=[360,360,180,360,360,360,480,0,0,0];
+ let index=0;
+ const restored=xml.replace(/<w:p(?:\\s[^>]*)?>[\\s\\S]*?<\\/w:p>/g,paragraph=>{
+  const i=index++;
+  if(i>=after.length)throw Error('Criminal Record master paragraph count changed.');
+  const pprEnd=paragraph.indexOf('</w:pPr>');
+  if(pprEnd<0)throw Error('Criminal Record paragraph properties missing: '+i);
+  const ppr=paragraph.slice(0,pprEnd);
+  const match=ppr.match(/<w:spacing\\b[^>]*\\/>/);
+  if(!match||!/w:before="\\d+"/.test(match[0])||!/w:after="\\d+"/.test(match[0]))
+   throw Error('Criminal Record paragraph spacing differs from approved master: '+i);
+  let spacing=match[0].replace(/w:before="\\d+"/,'w:before="0"')
+   .replace(/w:after="\\d+"/,'w:after="'+after[i]+'"');
+  if(i===4||i===5){
+   if(/w:line=/.test(spacing))throw Error('Unexpected line height in body paragraph '+i);
+   spacing=spacing.replace('<w:spacing','<w:spacing w:lineRule="auto" w:line="257"');
+  }
+  return ppr.replace(match[0],spacing)+paragraph.slice(pprEnd);
+ });
+ if(index!==after.length)throw Error('Criminal Record Word paragraphs missing.');
+ return restored;
+}
 async function create(raw){
  if(!window.ZipLite?.writeZip)throw Error('Word generation engine unavailable. Refresh the page.');
  const v=validate(raw),files=await loadBundle();
  const entries=new Map(Object.entries(files).map(([name,source])=>{
   let data;
-  if(name==='word/document.xml')data=encoder.encode(merge(source,v));
+  if(name==='word/document.xml')data=encoder.encode(restoreLetterSpacing(merge(source,v)));
   else if(typeof source==='string'&&source.startsWith('BASE64:'))
    data=Uint8Array.from(atob(source.slice(7)),c=>c.charCodeAt(0));
   else data=encoder.encode(source);

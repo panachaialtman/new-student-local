@@ -20,6 +20,11 @@ assert.equal((original.match(/<w:highlight w:val="yellow"\/>/g)||[]).length,11);
 assert(template['word/footer1.xml'].includes('ศูนย์นานาชาติ'));
 assert(template['word/footer1.xml'].includes('0 2407 3888'));
 assert(original.includes('footerReference'));
+// The original compacted website master has ten nonempty Word paragraphs.
+// Its missing section spacing caused the very cramped Word screenshot.
+const paragraphs=xml=>(xml.match(/<w:p(?:\\s[^>]*)?>[\\s\\S]*?<\\/w:p>/g)||[]);
+assert.equal(paragraphs(original).length,10);
+const spacingAfter=[360,360,180,360,360,360,480,0,0,0];
 let written,loads=0;
 const context={window:{ZipLite:{writeZip:async files=>{
  written=files;
@@ -60,6 +65,21 @@ const base={documentNo:'5343',issueDate:'2026-10-24',
                       valid.policePlace,valid.majorThai,valid.facultyThai,thai])
    assert(xml.includes(value),'Field absent: '+value);
   assert(!xml.includes('{{'),'No unresolved placeholders');
+  // Preserve original text/fields and formatting except intentional
+  // paragraph spacing; the final layout remains a single-page letter.
+  const parts=paragraphs(xml);
+  assert.equal(parts.length,10);
+  for(const [i,p] of parts.entries()){
+   const ppr=p.slice(0,p.indexOf('</w:pPr>'));
+   const spacing=ppr.match(/<w:spacing\\b[^>]*\\/>/)?.[0];
+   assert(spacing,'Paragraph '+i+' must have spacing');
+   assert(spacing.includes('w:before="0"'),'No extra before-gap paragraph '+i);
+   assert(spacing.includes('w:after="'+spacingAfter[i]+'"'),
+     'Correct approved section gap '+i);
+   if(i===4||i===5)
+    assert(spacing.includes('w:line="257"')&&spacing.includes('w:lineRule="auto"'),
+      'Natural Thai body line leading');
+  }
   assert.equal((xml.match(/<w:highlight w:val="yellow"\/>/g)||[]).length,11);
   for(const [name,text] of Object.entries(template)){
    if(name==='word/document.xml')continue;
@@ -95,5 +115,5 @@ const base={documentNo:'5343',issueDate:'2026-10-24',
  assert(app.includes('countryOfficialThai'));
  assert(app.includes('FULL_NAME_2')===false,'Name repetition is generated from single form field');
  assert(worker.includes("'./templates-data/criminal_record_master.txt'"));
- console.log('Criminal Record tests passed: all 11 highlights, country/nationality, three degrees, two names, two signers, one-page footer and isolation.');
+ console.log('Criminal Record tests passed: restored section spacing, all 11 highlights, Thai fields, both names and signers, footer and isolation.');
 })().catch(err=>{console.error(err);process.exitCode=1});
