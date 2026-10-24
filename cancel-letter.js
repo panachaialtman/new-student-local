@@ -95,14 +95,14 @@ function restoreOriginalIntro(xml,valid){
  const middle='วีซ่านักศึกษา เนื่องจากนักศึกษา';
  const ending='ดังรายละเอียดต่อไปนี้';
  let count=0;
- const restored=xml.replace(/<w:p(?:\\s[^>]*)?>[\\s\\S]*?<\\/w:p>/g,paragraph=>{
+ const restored=xml.replace(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g,paragraph=>{
   if(!paragraph.includes(first))return paragraph;
   count++;
   const end=paragraph.indexOf('</w:pPr>');
   if(end<0)throw Error('Cancellation introductory paragraph properties were not found.');
   const position=end+'</w:pPr>'.length;
   const prefix=paragraph.slice(0,position),body=paragraph.slice(position,-'</w:p>'.length);
-  const runs=body.match(/<w:r(?:\\s[^>]*)?>[\\s\\S]*?<\\/w:r>/g);
+  const runs=body.match(/<w:r(?:\s[^>]*)?>[\s\S]*?<\/w:r>/g);
   if(!runs||runs.length!==4||runs.join('')!==body)
    throw Error('Cancellation introductory paragraph differs from the approved template.');
   const plain=first+'า'+middle;
@@ -112,7 +112,7 @@ function restoreOriginalIntro(xml,valid){
      !runs[2].includes(escapeXml(valid.reason)+' ')||
      !runs[3].includes('<w:t>'+ending+'</w:t>'))
    throw Error('Cancellation introductory paragraph wording or highlights changed.');
-  const runProperties=run=>run.match(/<w:rPr>[\\s\\S]*?<\\/w:rPr>/)?.[0];
+  const runProperties=run=>run.match(/<w:rPr>[\s\S]*?<\/w:rPr>/)?.[0];
   const normal=runProperties(runs[1]),highlight=runProperties(runs[2]);
   if(!normal||!highlight)throw Error('Cancellation paragraph run formatting is missing.');
   const textRun=(text,properties=normal,preserve=false)=>

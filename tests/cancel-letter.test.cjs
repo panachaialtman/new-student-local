@@ -84,14 +84,14 @@ const base={documentNo:'5343',issueDate:'2026-10-28',cancelDate:'2025-07-02',
    placeholderMerged=placeholderMerged.replace(token,escapeXml(value));
   }
   const getIntro=source=>{
-   const ps=source.match(/<w:p(?:\\s[^>]*)?>[\\s\\S]*?<\\/w:p>/g)||[];
+   const ps=source.match(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g)||[];
    const found=ps.filter(p=>p.includes('มหาวิทยาลัยกรุงเทพ ใคร่ขอความอนุเคราะห์'));
    assert.equal(found.length,1,'Exactly one introduction');
    return found[0];
   };
   const oldIntro=getIntro(placeholderMerged),newIntro=getIntro(doc);
-  const oldRuns=oldIntro.match(/<w:r(?:\\s[^>]*)?>[\\s\\S]*?<\\/w:r>/g)||[];
-  const newRuns=newIntro.match(/<w:r(?:\\s[^>]*)?>[\\s\\S]*?<\\/w:r>/g)||[];
+  const oldRuns=oldIntro.match(/<w:r(?:\s[^>]*)?>[\s\S]*?<\/w:r>/g)||[];
+  const newRuns=newIntro.match(/<w:r(?:\s[^>]*)?>[\s\S]*?<\/w:r>/g)||[];
   assert.equal(oldRuns.length,4,'Current sanitized master has four converted runs');
   assert.equal(newRuns.length,7,'Restore exact seven original runs');
   assert(newRuns[0].includes('<w:tab/>'),'Retain approved first-line tab');
@@ -103,8 +103,8 @@ const base={documentNo:'5343',issueDate:'2026-10-28',cancelDate:'2025-07-02',
   assert(newRuns[5].includes('<w:t xml:space="preserve"> </w:t>') &&
     !newRuns[5].includes('w:highlight'));
   assert(newRuns[6].includes('<w:t>ดังรายละเอียดต่อไปนี้</w:t>'));
-  const originalVisible=oldIntro.match(/<w:t(?:\\s[^>]*)?>([\\s\\S]*?)<\\/w:t>/g)||[];
-  const rebuiltVisible=newIntro.match(/<w:t(?:\\s[^>]*)?>([\\s\\S]*?)<\\/w:t>/g)||[];
+  const originalVisible=oldIntro.match(/<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>/g)||[];
+  const rebuiltVisible=newIntro.match(/<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>/g)||[];
   const textOnly=items=>items.map(x=>x.replace(/<[^>]*>/g,'')).join('');
   assert.equal(textOnly(rebuiltVisible),textOnly(originalVisible),
     'Intro wording and spaces must remain exactly the same');
