@@ -2799,7 +2799,7 @@
     const v=criminalFields();
     const set=(id,value)=>{if(el(id))el(id).textContent=value||'—';};
     const raw=String(v.documentNo||'').trim()
-      .replace(/^(?:ที่\\s*)?มกท\\/ศนช\\.\\s*/,'').replace(/\\/\\d{4}$/,'');
+      .replace(/^(?:ที่\s*)?มกท\/ศนช\.\s*/,'').replace(/\/\d{4}$/,'');
     const year=v.issueDate?String(Number(v.issueDate.slice(0,4))+543):'—';
     set('criminalPreviewNo',raw?raw+'/'+year:'—');
     let date='—';
