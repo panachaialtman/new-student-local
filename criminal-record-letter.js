@@ -104,17 +104,17 @@ function merge(documentXml,v){
 function restoreLetterSpacing(xml){
  const after=[360,360,180,360,360,360,480,0,0,0];
  let index=0;
- const restored=xml.replace(/<w:p(?:\\s[^>]*)?>[\\s\\S]*?<\\/w:p>/g,paragraph=>{
+ const restored=xml.replace(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g,paragraph=>{
   const i=index++;
   if(i>=after.length)throw Error('Criminal Record master paragraph count changed.');
   const pprEnd=paragraph.indexOf('</w:pPr>');
   if(pprEnd<0)throw Error('Criminal Record paragraph properties missing: '+i);
   const ppr=paragraph.slice(0,pprEnd);
-  const match=ppr.match(/<w:spacing\\b[^>]*\\/>/);
-  if(!match||!/w:before="\\d+"/.test(match[0])||!/w:after="\\d+"/.test(match[0]))
+  const match=ppr.match(/<w:spacing\b[^>]*\/>/);
+  if(!match||!/w:before="\d+"/.test(match[0])||!/w:after="\d+"/.test(match[0]))
    throw Error('Criminal Record paragraph spacing differs from approved master: '+i);
-  let spacing=match[0].replace(/w:before="\\d+"/,'w:before="0"')
-   .replace(/w:after="\\d+"/,'w:after="'+after[i]+'"');
+  let spacing=match[0].replace(/w:before="\d+"/,'w:before="0"')
+   .replace(/w:after="\d+"/,'w:after="'+after[i]+'"');
   if(i===4||i===5){
    if(/w:line=/.test(spacing))throw Error('Unexpected line height in body paragraph '+i);
    spacing=spacing.replace('<w:spacing','<w:spacing w:lineRule="auto" w:line="257"');
