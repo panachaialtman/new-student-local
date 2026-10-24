@@ -232,13 +232,17 @@
                   <option value="master">Master’s degree — 2-year curriculum (ปริญญาโท)</option>
                 </select>
               </label>
+              <label class="cancel-field cancel-span">10. Signature / signatory
+                <select id="gradSignatory" name="signatory" required></select>
+                <small>Select the university signatory for the signed Word letter.</small>
+              </label>
             </div>
             <div class="cancel-actions">
               <button class="btn subtle" id="gradFillTest" type="button">Fill test case</button>
               <button class="btn subtle" id="gradReset" type="reset">Clear form</button>
               <button class="btn primary" id="gradGenerate" type="submit">Download Graduated letter (.docx)</button>
             </div>
-            <p class="cancel-privacy">The original Word wording, layout, yellow highlights and bold student fields are retained. The university signatory remains the one printed in the supplied master.</p>
+            <p class="cancel-privacy">The original Word wording, layout, yellow highlights and bold student fields are retained. The selected signatory’s name and position are inserted without altering the signature paragraph layout.</p>
           </form>
           <aside class="content-card cancel-preview-card">
             <div class="cancel-card-head"><strong>Letter preview</strong><span>ED Plus · Thai · Buddhist Era</span></div>
@@ -251,6 +255,7 @@
               <p>เรียน ผู้บัญชาการสำนักงานตรวจคนเข้าเมือง</p>
               <p><strong><mark id="gradPreviewName">ชื่อ – นามสกุล</mark></strong> อายุ <strong><mark id="gradPreviewAge">—</mark></strong> ปี สัญชาติ <strong><mark id="gradPreviewNationality">—</mark></strong> ถือหนังสือเดินทางเลขที่ <strong><mark id="gradPreviewPassport">—</mark></strong> เกิดวันที่ <strong><mark id="gradPreviewBirthDate">—</mark></strong> ใน<mark id="gradPreviewMajor">สาขาวิชา—</mark> <mark id="gradPreviewFaculty">—</mark> ระดับปริญญา<mark id="gradPreviewDegree">ตรี</mark> ระยะเวลาหลักสูตร <mark id="gradPreviewYears">4</mark> ปี</p>
               <p class="cancel-preview-note">This preview shows the editable fields; the downloaded DOCX retains the full original official letter and signature block. Please review it before use.</p>
+              <div id="gradSignaturePreview"></div>
             </div>
           </aside>
         </div>
@@ -537,11 +542,11 @@
   <script src="builtin-templates.js"></script>
   <script src="docx-engine.js?v=045"></script>
   <script src="cancel-letter.js?v=017"></script>
-  <script src="graduated-letter.js?v=001"></script>
+  <script src="graduated-letter.js?v=002"></script>
   <script src="excel-export.js"></script>
   <script src="hub-reference.js?v=053"></script>
   <script src="student-memory.js?v=4"></script>
-  <script src="app.js?v=060"></script>
+  <script src="app.js?v=061"></script>
   <script src="ui-enhancements.js?v=036"></script>
   <script>
     // The standalone escape hatch is offered only when this workspace is embedded.

@@ -2626,7 +2626,8 @@
       fullName:f.elements.fullName.value,birthDate:f.elements.birthDate.value,
       nationalityThai:f.elements.nationalityThai.value,passportNo:f.elements.passportNo.value,
       majorThai:f.elements.majorThai.value,facultyThai:f.elements.facultyThai.value,
-      degreeLevel:f.elements.degreeLevel.value};
+      degreeLevel:f.elements.degreeLevel.value,
+      signatory:f.elements.signatory.value};
   }
   function refreshGraduatedReferences(){
     const majors=el('gradMajorSuggestions'),faculties=el('gradFacultySuggestions'),
@@ -2689,11 +2690,14 @@
     set('gradPreviewFaculty',f.facultyThai||'—');
     set('gradPreviewDegree',f.degreeLevel==='master'?'โท':'ตรี');
     set('gradPreviewYears',f.degreeLevel==='master'?'2':'4');
+    el('gradSignaturePreview').innerHTML=signatoryPreview(f.signatory);
   }
   function bindGraduatedLetter(){
     const f=el('graduatedLetterForm');if(!f)return;
     refreshGraduatedReferences();
     f.elements.issueDate.value=todayIso();
+    f.elements.signatory.innerHTML=signatoryOptions(state.settings.signatory);
+    f.elements.signatory.value=normalizeSignatoryKey(state.settings.signatory);
     const syncProgram=()=>{
       const item=graduatedProgramMatch(f.elements.majorThai.value);
       if(!item)return;
@@ -2708,13 +2712,17 @@
     f.addEventListener('input',updateGraduatedPreview);
     f.addEventListener('change',updateGraduatedPreview);
     f.addEventListener('reset',()=>{
-      queueMicrotask(()=>{f.elements.issueDate.value=todayIso();updateGraduatedPreview()});
+      queueMicrotask(()=>{
+        f.elements.issueDate.value=todayIso();
+        f.elements.signatory.value=normalizeSignatoryKey(state.settings.signatory);
+        updateGraduatedPreview();
+      });
     });
     el('gradFillTest').addEventListener('click',()=>{
       const sample={documentNo:'9999',issueDate:todayIso(),fullName:'MR. EXAMPLE STUDENT',
         birthDate:'2000-10-25',nationalityThai:'เมียนมา',passportNo:'TEST123456',
         majorThai:'สาขาวิชาบริหารธุรกิจ',facultyThai:'วิทยาลัยนานาชาติ',
-        degreeLevel:'bachelor'};
+        degreeLevel:'bachelor',signatory:normalizeSignatoryKey(state.settings.signatory)};
       for(const [name,value] of Object.entries(sample))f.elements[name].value=value;
       updateGraduatedPreview();
       toast('Graduated test case filled','Synthetic information only; no student record saved.');
@@ -2735,7 +2743,7 @@
           id:uid('graduated'),createdAt:new Date().toISOString(),issueDate:fields.issueDate,
           documentNumbers:['มกท/ศนช. '+valid.rawNumber+'/'+valid.issueYear],
           students:[{documentNo:valid.rawNumber,fullName:valid.fullName}],
-          count:1,outputType:'graduated_edplus',filename
+          count:1,outputType:'graduated_edplus',signatory:fields.signatory,filename
         });
         persist();renderBatchHistory();
         toast('Graduated letter created','DOCX downloaded. Check the final Word layout before use.');

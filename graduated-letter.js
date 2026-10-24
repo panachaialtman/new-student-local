@@ -5,6 +5,12 @@ const MIME='application/vnd.openxmlformats-officedocument.wordprocessingml.docum
 const BUNDLE='./templates-data/graduated_edplus_master.txt';
 const MONTHS=['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
 const encoder=new TextEncoder();
+const SIGNATORIES=Object.freeze({
+ somyot:Object.freeze({name:'ผู้ช่วยศาสตราจารย์ ดร. สมยศ วัฒนากมลชัย',
+                       role:'รองอธิการบดีสายนานาชาติ ปฏิบัติหน้าที่แทน'}),
+ duangthida:Object.freeze({name:'ผู้ช่วยศาสตราจารย์ ดร. ดวงธิดา นันทาภิรัตน์',
+                           role:'ผู้ช่วยอธิการบดีสายนานาชาติ ปฏิบัติหน้าที่แทน'})
+});
 let bundlePromise;
 const clean=x=>String(x??'').trim();
 const escapeXml=x=>String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
@@ -41,6 +47,9 @@ function validate(raw={}){
  const majorThai=clean(raw.majorThai).replace(/^สาขาวิชา\s*/,'');
  const facultyThai=clean(raw.facultyThai);
  const degreeLevel=clean(raw.degreeLevel);
+ // Older forms without a selection retain the original staff template signer.
+ const signatory=clean(raw.signatory)||'somyot';
+ if(!Object.hasOwn(SIGNATORIES,signatory))throw Error('Select an approved signatory.');
  if(!fullName||fullName.length>180)throw Error('Enter the student’s full name.');
  if(!passportNo||passportNo.length>70)throw Error('Enter the passport number.');
  if(!nationalityThai||nationalityThai.length>100||!/[ก-๙]/.test(nationalityThai)||/[a-z]/i.test(nationalityThai))
@@ -55,7 +64,7 @@ function validate(raw={}){
   fullName,age:String(age),nationalityThai,passportNo,birthDate:thaiDate(birthDate),
   majorThai:'สาขาวิชา'+majorThai,facultyThai,
   degreeSuffix:degreeLevel==='bachelor'?'ตรี':'โท',
-  duration:degreeLevel==='bachelor'?'4':'2',degreeLevel};
+  duration:degreeLevel==='bachelor'?'4':'2',degreeLevel,signatory};
 }
 function filename(raw){
  const v=validate(raw);
@@ -91,13 +100,32 @@ function merge(xml,data){
  if(xml.includes('{{'))throw Error('Graduated letter has unresolved text fields.');
  return xml;
 }
+// Preserve the supplied signature paragraphs (and tabs) byte-for-byte for
+// the original signatory. For the alternative, swap only three text values:
+// the first and last name and the title in the position line.
+function selectSignatory(xml,key){
+ if(key==='somyot')return xml;
+ if(key!=='duangthida')throw Error('Select an approved signatory.');
+ for(const [previous,next] of [
+  ['สมยศ','ดวงธิดา'],
+  ['วัฒนากมลชัย','นันทาภิรัตน์'],
+  ['รองอธิการบดีสายนานาชาติ','ผู้ช่วยอธิการบดีสายนานาชาติ']
+ ]){
+  const token='<w:t>'+previous+'</w:t>';
+  if(xml.split(token).length!==2)
+   throw Error('Graduated signatory differs from the approved master: '+previous);
+  xml=xml.replace(token,'<w:t>'+escapeXml(next)+'</w:t>');
+ }
+ return xml;
+}
 async function create(raw){
  if(!window.ZipLite?.writeZip)throw Error('The Word engine is unavailable. Refresh the page.');
  const data=validate(raw),files=await loadBundle();
  const entries=new Map(Object.entries(files).map(([name,source])=>[name,{
-  name,data:encoder.encode(name==='word/document.xml'?merge(source,data):source)
+  name,data:encoder.encode(name==='word/document.xml'
+   ?selectSignatory(merge(source,data),data.signatory):source)
  }]));
  return new Blob([await window.ZipLite.writeZip(entries)],{type:MIME});
 }
-window.BUICGraduatedLetter=Object.freeze({create,validate,filename,thaiDate,ageAt});
+window.BUICGraduatedLetter=Object.freeze({create,validate,filename,thaiDate,ageAt,SIGNATORIES});
 })();
