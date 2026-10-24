@@ -94,6 +94,12 @@ const base={documentNo:'5343',issueDate:'2026-10-28',cancelDate:'2025-07-02',
   const newRuns=newIntro.match(/<w:r(?:\s[^>]*)?>[\s\S]*?<\/w:r>/g)||[];
   assert.equal(oldRuns.length,4,'Current sanitized master has four converted runs');
   assert.equal(newRuns.length,7,'Restore exact seven original runs');
+  for(const [i,run] of newRuns.entries()){
+   assert.equal((run.match(/<w:lang w:val="th-TH" w:eastAsia="th-TH" w:bidi="th-TH"\/>/g)||[]).length,1,
+     'Set actual Thai language on intro run '+i+', not merely in document defaults');
+  }
+  assert(!newIntro.includes('\u200B')&&!newIntro.includes('<w:br'),
+    'No invisible word separators or forced line breaks');
   assert(newRuns[0].includes('<w:tab/>'),'Retain approved first-line tab');
   assert(newRuns[1].includes('มหาวิทยาลัยกรุงเทพ ใคร่ขอความอนุเคราะห์ สำนักงานตรวจคนเข้าเมืองในการยกเลิกการตรวจลงตร'));
   assert(newRuns[2].includes('<w:t>า</w:t>'));

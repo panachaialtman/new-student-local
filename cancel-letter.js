@@ -1,6 +1,6 @@
 /* BUIC Current Letter — approved cancellation Word master.
-   Only the original introduction's run segmentation and document proofing
-   defaults are repaired; all source text, geometry and other sections remain.
+   Only the original introduction's run segmentation, explicit Thai text language
+   and document proofing defaults are repaired. Text and geometry stay unchanged.
    Student details are merged locally without uploading personal information. */
 (()=>{'use strict';
 const MIME='application/vnd.openxmlformats-officedocument.wordprocessingml.document';
@@ -115,11 +115,21 @@ function restoreOriginalIntro(xml,valid){
   const runProperties=run=>run.match(/<w:rPr>[\s\S]*?<\/w:rPr>/)?.[0];
   const normal=runProperties(runs[1]),highlight=runProperties(runs[2]);
   if(!normal||!highlight)throw Error('Cancellation paragraph run formatting is missing.');
+  // Word was still treating these Thai characters as English even though the
+  // document's default proofing language was changed. Specify th-TH directly
+  // on every intro run to enable Thai dictionary-based word wrapping.
+  // Do not modify any text, spaces, highlights, tab stops or geometry.
+  const thaiLanguage='<w:lang w:val="th-TH" w:eastAsia="th-TH" w:bidi="th-TH"/>';
+  const withThaiLanguage=properties=>{
+   if(/<w:lang\b/.test(properties))throw Error('Unexpected language override in the approved intro.');
+   return properties.replace('</w:rPr>',thaiLanguage+'</w:rPr>');
+  };
   const textRun=(text,properties=normal,preserve=false)=>
-   '<w:r>'+properties+'<w:t'+(preserve?' xml:space="preserve"':'')+'>'+
+   '<w:r>'+withThaiLanguage(properties)+'<w:t'+(preserve?' xml:space="preserve"':'')+'>'+
    escapeXml(text)+'</w:t></w:r>';
+  const indentedTab=runs[0].replace('</w:rPr>',thaiLanguage+'</w:rPr>');
   return prefix+[
-   runs[0],textRun(first),textRun('า'),textRun(middle),
+   indentedTab,textRun(first),textRun('า'),textRun(middle),
    textRun(valid.reason,highlight),textRun(' ',normal,true),textRun(ending)
   ].join('')+'</w:p>';
  });
