@@ -112,8 +112,21 @@ function restoreOriginalIntro(xml,valid){
    throw Error('Cancellation introduction differs from the approved master.');
   const ppr=prefix.replace('<w:pStyle w:val="Normal"/>',
    '<w:pStyle w:val="BUICCancelIntro"/>');
+  // Compatibility-mode Word can treat the long, space-free Thai phrase as one
+  // unbreakable unit, despite th-TH proofing and clean runs. Offer explicit
+  // zero-width break OPPORTUNITIES only at genuine Thai word-group boundaries.
+  // Unlike the old single boundary near วีซ่า, these also cover the earlier
+  // part of the phrase that Word was moving wholesale to the following line.
+  // No visible text or mandatory line break is introduced.
+  const optionalBreak='\u200B';
+  const breakableBefore=before
+   .replace('สำนักงานตรวจคนเข้าเมืองในการยกเลิกการตรวจลงตราวีซ่านักศึกษา',
+    ['สำนักงาน','ตรวจคนเข้าเมือง','ในการยกเลิก','การตรวจลงตรา','วีซ่านักศึกษา'].join(optionalBreak))
+   .replace('เนื่องจากนักศึกษา',['เนื่องจาก','นักศึกษา'].join(optionalBreak));
+  if(breakableBefore.split(optionalBreak).join('')!==before)
+   throw Error('Thai line-break segmentation must preserve the exact approved wording.');
   return ppr+runs[0]+
-   '<w:r><w:t>'+before+'</w:t></w:r>'+
+   '<w:r><w:t>'+breakableBefore+'</w:t></w:r>'+
    '<w:r><w:rPr><w:highlight w:val="yellow"/></w:rPr><w:t>'+
      escapeXml(valid.reason)+'</w:t></w:r>'+
    '<w:r><w:t xml:space="preserve"> '+ending+'</w:t></w:r></w:p>';

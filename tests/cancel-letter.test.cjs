@@ -95,9 +95,16 @@ const base={documentNo:'5343',issueDate:'2026-10-28',cancelDate:'2025-07-02',
   assert.equal(oldRuns.length,4,'Current sanitized master has four converted runs');
   assert.equal(newRuns.length,4,'Intro uses first-line tab plus three clean runs');
   assert(newRuns[0].includes('<w:tab/>'),'Preserve approved leading tab');
-  assert.equal(newRuns[1],
-    '<w:r><w:t>มหาวิทยาลัยกรุงเทพ ใคร่ขอความอนุเคราะห์ สำนักงานตรวจคนเข้าเมืองในการยกเลิกการตรวจลงตราวีซ่านักศึกษา เนื่องจากนักศึกษา</w:t></w:r>',
-    'Continuous Thai text has no character-level legacy formatting');
+  const softBreak='\u200B';
+  const segmented='มหาวิทยาลัยกรุงเทพ ใคร่ขอความอนุเคราะห์ '+
+    ['สำนักงาน','ตรวจคนเข้าเมือง','ในการยกเลิก','การตรวจลงตรา','วีซ่านักศึกษา'].join(softBreak)+
+    ' '+['เนื่องจาก','นักศึกษา'].join(softBreak);
+  assert.equal(newRuns[1],'<w:r><w:t>'+segmented+'</w:t></w:r>',
+    'Clean Thai run must have explicit break opportunities throughout the previously unbreakable phrase');
+  assert.equal((newRuns[1].match(/\u200B/g)||[]).length,5,
+    'Five invisible Thai word-group boundaries are required, including early in the phrase');
+  assert(!newRuns[1].includes('<w:br')&&!newRuns[1].includes('<w:cr'),
+    'Never force a specific line break');
   assert.equal(newRuns[2],
     '<w:r><w:rPr><w:highlight w:val="yellow"/></w:rPr><w:t>'+
      escapeXml(expectedFields.REASON)+'</w:t></w:r>',
@@ -106,7 +113,9 @@ const base={documentNo:'5343',issueDate:'2026-10-28',cancelDate:'2025-07-02',
     '<w:r><w:t xml:space="preserve"> ดังรายละเอียดต่อไปนี้</w:t></w:r>',
     'Space and trailing Thai text are an unformatted run');
   assert(newIntro.includes('<w:pStyle w:val="BUICCancelIntro"/>'));
-  assert(!newIntro.includes('\u200B')&&!newIntro.includes('<w:br'));
+  assert(!newIntro.includes('<w:br')&&!newIntro.includes('<w:cr'));
+  assert.equal(newIntro.split(softBreak).length-1,5,
+    'Exactly five optional boundaries within the introductory Thai phrase');
   for(const [label,value] of [['ชื่อ – นามสกุล','MR. TANGGUANG HAN'],
                                ['หมายเลขหนังสือเดินทาง','HJ2331449']]){
    const found=(doc.match(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g)||[])
@@ -123,8 +132,8 @@ const base={documentNo:'5343',issueDate:'2026-10-28',cancelDate:'2025-07-02',
   const originalVisible=oldIntro.match(/<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>/g)||[];
   const rebuiltVisible=newIntro.match(/<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>/g)||[];
   const textOnly=items=>items.map(x=>x.replace(/<[^>]*>/g,'')).join('');
-  assert.equal(textOnly(rebuiltVisible),textOnly(originalVisible),
-    'Intro wording and spaces must remain exactly the same');
+  assert.equal(textOnly(rebuiltVisible).split(softBreak).join(''),textOnly(originalVisible),
+    'Optional Thai line-break boundaries must not change visible wording or spaces');
   assert.equal(newIntro.slice(0,newIntro.indexOf('</w:pPr>'))
       .replace('w:pStyle w:val="BUICCancelIntro"','w:pStyle w:val="Normal"'),
     oldIntro.slice(0,oldIntro.indexOf('</w:pPr>')),
@@ -182,5 +191,5 @@ const base={documentNo:'5343',issueDate:'2026-10-28',cancelDate:'2025-07-02',
  assert(app.includes('BUICCancelLetter.filename(fields)'));
  assert(app.includes('bindCancelNationalityAutocomplete();')&&app.includes('updateCancelReasonField();'));
  assert(worker.includes("'./templates-data/cancel_manual_master.txt'"));
- console.log('Cancel Letter tests passed: clean Thai text, localized highlights, sample fill, seven reasons and layout safety.');
+ console.log('Cancel Letter tests passed: Thai word-group wrapping boundaries, identical visible text, name/passport highlights, sample fill, seven reasons and layout safety.');
 })().catch(err=>{console.error(err);process.exitCode=1});
