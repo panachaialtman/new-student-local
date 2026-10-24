@@ -53,7 +53,9 @@ const base={documentNo:'5343',issueDate:'2026-10-28',cancelDate:'2025-07-02',
   assert(doc.includes('5343/2569'));
   assert(doc.includes('28 ตุลาคม 2569')&&doc.includes('2 กรกฎาคม 2568'));
   assert(doc.includes('MR. TANGGUANG HAN')&&doc.includes('HJ2331449'));
-  assert(doc.includes('เนื่องจากนักศึกษา')&&doc.includes(reason==='others'?'ย้ายสถานศึกษา':reason));
+  assert(doc.split('\u200B').join('').includes('เนื่องจากนักศึกษา')&&
+    doc.includes(reason==='others'?'ย้ายสถานศึกษา':reason),
+    'Optional Thai break markers must not change the printed introduction');
   assert(doc.includes('ผู้ช่วยศาสตราจารย์ ดร. ดวงธิดา นันทาภิรัตน์'));
   assert(doc.includes('ผู้ช่วยอธิการบดีสายนานาชาติ ปฏิบัติหน้าที่แทน'));
   assert(!doc.includes('{{'),'No unresolved placeholders');
