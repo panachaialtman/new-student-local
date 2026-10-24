@@ -93,40 +93,64 @@ const base={documentNo:'5343',issueDate:'2026-10-28',cancelDate:'2025-07-02',
   const oldRuns=oldIntro.match(/<w:r(?:\s[^>]*)?>[\s\S]*?<\/w:r>/g)||[];
   const newRuns=newIntro.match(/<w:r(?:\s[^>]*)?>[\s\S]*?<\/w:r>/g)||[];
   assert.equal(oldRuns.length,4,'Current sanitized master has four converted runs');
-  assert.equal(newRuns.length,7,'Restore exact seven original runs');
-  for(const [i,run] of newRuns.entries()){
-   assert.equal((run.match(/<w:lang w:val="th-TH" w:eastAsia="th-TH" w:bidi="th-TH"\/>/g)||[]).length,1,
-     'Set actual Thai language on intro run '+i+', not merely in document defaults');
+  assert.equal(newRuns.length,4,'Intro uses first-line tab plus three clean runs');
+  assert(newRuns[0].includes('<w:tab/>'),'Preserve approved leading tab');
+  assert.equal(newRuns[1],
+    '<w:r><w:t>มหาวิทยาลัยกรุงเทพ ใคร่ขอความอนุเคราะห์ สำนักงานตรวจคนเข้าเมืองในการยกเลิกการตรวจลงตราวีซ่านักศึกษา เนื่องจากนักศึกษา</w:t></w:r>',
+    'Continuous Thai text has no character-level legacy formatting');
+  assert.equal(newRuns[2],
+    '<w:r><w:rPr><w:highlight w:val="yellow"/></w:rPr><w:t>'+
+     escapeXml(expectedFields.REASON)+'</w:t></w:r>',
+    'Only the reason is highlighted; no legacy character-level formatting');
+  assert.equal(newRuns[3],
+    '<w:r><w:t xml:space="preserve"> ดังรายละเอียดต่อไปนี้</w:t></w:r>',
+    'Space and trailing Thai text are an unformatted run');
+  assert(newIntro.includes('<w:pStyle w:val="BUICCancelIntro"/>'));
+  assert(!newIntro.includes('\u200B')&&!newIntro.includes('<w:br'));
+  for(const [label,value] of [['ชื่อ – นามสกุล','MR. TANGGUANG HAN'],
+                               ['หมายเลขหนังสือเดินทาง','HJ2331449']]){
+   const found=(doc.match(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g)||[])
+     .filter(p=>p.includes('<w:t>'+label+'</w:t>'));
+   assert.equal(found.length,1);
+   const fieldRuns=found[0].match(/<w:r(?:\s[^>]*)?>[\s\S]*?<\/w:r>/g)||[];
+   assert.equal(fieldRuns.length,3,'Label, unhighlighted tabs, highlighted value');
+   assert(fieldRuns[1].includes('<w:tab/>')&&!fieldRuns[1].includes('<w:highlight'),
+      label+' tabs cannot be highlighted');
+   assert(fieldRuns[2].includes('<w:highlight w:val="yellow"/>')&&
+      fieldRuns[2].includes('<w:t>'+value+'</w:t>')&&!fieldRuns[2].includes('<w:tab/>'),
+      label+' value alone is highlighted');
   }
-  assert(!newIntro.includes('\u200B')&&!newIntro.includes('<w:br'),
-    'No invisible word separators or forced line breaks');
-  assert(newRuns[0].includes('<w:tab/>'),'Retain approved first-line tab');
-  assert(newRuns[1].includes('มหาวิทยาลัยกรุงเทพ ใคร่ขอความอนุเคราะห์ สำนักงานตรวจคนเข้าเมืองในการยกเลิกการตรวจลงตร'));
-  assert(newRuns[2].includes('<w:t>า</w:t>'));
-  assert(newRuns[3].includes('<w:t>วีซ่านักศึกษา เนื่องจากนักศึกษา</w:t>'));
-  assert(newRuns[4].includes('<w:highlight w:val="yellow"/>') &&
-    newRuns[4].includes('<w:t>'+escapeXml(expectedFields.REASON)+'</w:t>'));
-  assert(newRuns[5].includes('<w:t xml:space="preserve"> </w:t>') &&
-    !newRuns[5].includes('w:highlight'));
-  assert(newRuns[6].includes('<w:t>ดังรายละเอียดต่อไปนี้</w:t>'));
   const originalVisible=oldIntro.match(/<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>/g)||[];
   const rebuiltVisible=newIntro.match(/<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>/g)||[];
   const textOnly=items=>items.map(x=>x.replace(/<[^>]*>/g,'')).join('');
   assert.equal(textOnly(rebuiltVisible),textOnly(originalVisible),
     'Intro wording and spaces must remain exactly the same');
-  assert.equal(newIntro.slice(0,newIntro.indexOf('</w:pPr>')),
+  assert.equal(newIntro.slice(0,newIntro.indexOf('</w:pPr>'))
+      .replace('w:pStyle w:val="BUICCancelIntro"','w:pStyle w:val="Normal"'),
     oldIntro.slice(0,oldIntro.indexOf('</w:pPr>')),
-    'Paragraph indent/style/geometry must remain identical');
-  assert.equal(doc.replace(newIntro,'__ONLY_INTRO_CHANGED__'),
-    placeholderMerged.replace(oldIntro,'__ONLY_INTRO_CHANGED__'),
-    'Never modify any text or layout outside the introduction');
+    'The custom style may change but the indentation/geometry may not');
+  const mask=(xml)=>{
+   for(const [i,label] of ['มหาวิทยาลัยกรุงเทพ ใคร่ขอความอนุเคราะห์',
+                            'ชื่อ – นามสกุล','หมายเลขหนังสือเดินทาง'].entries()){
+    const found=(xml.match(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g)||[])
+      .filter(p=>p.includes(label));
+    assert.equal(found.length,1,'One approved paragraph '+label);
+    xml=xml.replace(found[0],'__APPROVED_EDIT_'+i+'__');
+   }
+   return xml;
+  };
+  assert.equal(mask(doc),mask(placeholderMerged),'All other letter paragraphs unchanged');
   const styles=new TextDecoder().decode(written.get('word/styles.xml').data);
   const oldDefault='<w:lang w:val="en-US" w:eastAsia="zh-CN" w:bidi="hi-IN"/>';
   const newDefault='<w:noProof/><w:lang w:val="th-TH" w:eastAsia="th-TH" w:bidi="th-TH"/>';
   const oldNormal='<w:lang w:val="en-US" w:bidi="th-TH" w:eastAsia="zh-CN"/>';
   const newNormal='<w:lang w:val="th-TH" w:bidi="th-TH" w:eastAsia="th-TH"/>';
-  assert.equal(styles,template['word/styles.xml'].replace(oldDefault,newDefault)
-    .replace(oldNormal,newNormal),'Only Thai proofing defaults may change');
+  const introStyle=styles.match(/<w:style w:type="paragraph" w:styleId="BUICCancelIntro">[\s\S]*?<\/w:style>/)?.[0];
+  assert(introStyle&&introStyle.includes('w:ascii="TH SarabunPSK"')&&
+    introStyle.includes('<w:sz w:val="32"/>')&&introStyle.includes('w:val="th-TH"'));
+  assert.equal(styles.replace(introStyle,''),
+    template['word/styles.xml'].replace(oldDefault,newDefault).replace(oldNormal,newNormal),
+    'Only Thai proofing defaults and the introductory style may change');
   for(const [part,originalXml] of Object.entries(template)){
    if(part==='word/document.xml'||part==='word/styles.xml')continue;
    assert.equal(new TextDecoder().decode(written.get(part).data),originalXml,
@@ -151,8 +175,12 @@ const base={documentNo:'5343',issueDate:'2026-10-28',cancelDate:'2025-07-02',
  await assert.rejects(generator.create({...base,nationalityThai:'China'}),/nationality in Thai/);
  await assert.rejects(generator.create({...base,studentId:'../../'}),/Student ID/);
  assert(html.includes('id="cancelStudentId"')&&html.includes('cancel-letter.js?v='));
+ assert(html.includes('id="cancelTestCase"'));
+ assert(app.includes("fullName:'MR. EXAMPLE STUDENT'")&&
+   app.includes("passportNo:'TEST123456'")&&
+   app.includes("form.elements[key].value=value"));
  assert(app.includes('BUICCancelLetter.filename(fields)'));
  assert(app.includes('bindCancelNationalityAutocomplete();')&&app.includes('updateCancelReasonField();'));
  assert(worker.includes("'./templates-data/cancel_manual_master.txt'"));
- console.log('Cancel Letter tests passed: original 7-run intro, Thai proofing, unchanged body/layout, seven highlights, all reasons and safety.');
+ console.log('Cancel Letter tests passed: clean Thai text, localized highlights, sample fill, seven reasons and layout safety.');
 })().catch(err=>{console.error(err);process.exitCode=1});

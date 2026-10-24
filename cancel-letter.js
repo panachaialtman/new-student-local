@@ -87,54 +87,57 @@ function merge(template,valid){
  return xml;
 }
 
-// The legacy DOC conversion flattened this one paragraph. Restore its exact
-// original seven-run layout, including the separate unhighlighted space after
-// the reason. All other paragraphs, tabs, wording and geometry stay untouched.
+// Simulate Word "Keep Text Only": clean continuous Thai before the reason,
+// preserve the existing first-line tab and paragraph geometry, and apply the
+// approved 16pt TH SarabunPSK via a dedicated paragraph style.
 function restoreOriginalIntro(xml,valid){
- const first='มหาวิทยาลัยกรุงเทพ ใคร่ขอความอนุเคราะห์ สำนักงานตรวจคนเข้าเมืองในการยกเลิกการตรวจลงตร';
- const middle='วีซ่านักศึกษา เนื่องจากนักศึกษา';
+ const before='มหาวิทยาลัยกรุงเทพ ใคร่ขอความอนุเคราะห์ สำนักงานตรวจคนเข้าเมืองในการยกเลิกการตรวจลงตราวีซ่านักศึกษา เนื่องจากนักศึกษา';
  const ending='ดังรายละเอียดต่อไปนี้';
  let count=0;
- const restored=xml.replace(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g,paragraph=>{
-  if(!paragraph.includes(first))return paragraph;
+ const output=xml.replace(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g,p=>{
+  if(!p.includes(before))return p;
   count++;
-  const end=paragraph.indexOf('</w:pPr>');
-  if(end<0)throw Error('Cancellation introductory paragraph properties were not found.');
-  const position=end+'</w:pPr>'.length;
-  const prefix=paragraph.slice(0,position),body=paragraph.slice(position,-'</w:p>'.length);
+  const end=p.indexOf('</w:pPr>');
+  if(end<0)throw Error('Intro paragraph properties are missing.');
+  const pos=end+'</w:pPr>'.length;
+  const prefix=p.slice(0,pos),body=p.slice(pos,-'</w:p>'.length);
   const runs=body.match(/<w:r(?:\s[^>]*)?>[\s\S]*?<\/w:r>/g);
-  if(!runs||runs.length!==4||runs.join('')!==body)
-   throw Error('Cancellation introductory paragraph differs from the approved template.');
-  const plain=first+'า'+middle;
-  if(!runs[0].includes('<w:tab/>')||
-     !runs[1].includes('<w:t>'+plain+'</w:t>')||
+  if(!runs||runs.length!==4||runs.join('')!==body||
+     !prefix.includes('<w:pStyle w:val="Normal"/>')||
+     !runs[0].includes('<w:tab/>')||
+     !runs[1].includes('<w:t>'+before+'</w:t>')||
      !runs[2].includes('<w:highlight w:val="yellow"/>')||
      !runs[2].includes(escapeXml(valid.reason)+' ')||
      !runs[3].includes('<w:t>'+ending+'</w:t>'))
-   throw Error('Cancellation introductory paragraph wording or highlights changed.');
-  const runProperties=run=>run.match(/<w:rPr>[\s\S]*?<\/w:rPr>/)?.[0];
-  const normal=runProperties(runs[1]),highlight=runProperties(runs[2]);
-  if(!normal||!highlight)throw Error('Cancellation paragraph run formatting is missing.');
-  // Word was still treating these Thai characters as English even though the
-  // document's default proofing language was changed. Specify th-TH directly
-  // on every intro run to enable Thai dictionary-based word wrapping.
-  // Do not modify any text, spaces, highlights, tab stops or geometry.
-  const thaiLanguage='<w:lang w:val="th-TH" w:eastAsia="th-TH" w:bidi="th-TH"/>';
-  const withThaiLanguage=properties=>{
-   if(/<w:lang\b/.test(properties))throw Error('Unexpected language override in the approved intro.');
-   return properties.replace('</w:rPr>',thaiLanguage+'</w:rPr>');
-  };
-  const textRun=(text,properties=normal,preserve=false)=>
-   '<w:r>'+withThaiLanguage(properties)+'<w:t'+(preserve?' xml:space="preserve"':'')+'>'+
-   escapeXml(text)+'</w:t></w:r>';
-  const indentedTab=runs[0].replace('</w:rPr>',thaiLanguage+'</w:rPr>');
-  return prefix+[
-   indentedTab,textRun(first),textRun('า'),textRun(middle),
-   textRun(valid.reason,highlight),textRun(' ',normal,true),textRun(ending)
-  ].join('')+'</w:p>';
+   throw Error('Cancellation introduction differs from the approved master.');
+  const ppr=prefix.replace('<w:pStyle w:val="Normal"/>',
+   '<w:pStyle w:val="BUICCancelIntro"/>');
+  return ppr+runs[0]+
+   '<w:r><w:t>'+before+'</w:t></w:r>'+
+   '<w:r><w:rPr><w:highlight w:val="yellow"/></w:rPr><w:t>'+
+     escapeXml(valid.reason)+'</w:t></w:r>'+
+   '<w:r><w:t xml:space="preserve"> '+ending+'</w:t></w:r></w:p>';
  });
- if(count!==1)throw Error('Cancellation introductory paragraph was not found uniquely.');
- return restored;
+ if(count!==1)throw Error('Expected exactly one Cancel introduction.');
+ return output;
+}
+// Tabs are positioning instructions and must never carry yellow highlighting.
+// Split only the name and passport placeholder runs, preserving their tabs.
+function splitHighlightedValueTabs(xml){
+ const seen=new Set();
+ const output=xml.replace(/<w:r(?:\s[^>]*)?>[\s\S]*?<\/w:r>/g,run=>{
+  const key=['FULL_NAME','PASSPORT_NO'].find(k=>run.includes('{{'+k+'}}'));
+  if(!key)return run;
+  if(seen.has(key))throw Error('Duplicate '+key+' highlighted field.');
+  const m=/^<w:r>(<w:rPr>[\s\S]*?<\/w:rPr>)((?:<w:tab\/>)+)(<w:t(?:\s[^>]*)?>\{\{(?:FULL_NAME|PASSPORT_NO)\}\}<\/w:t>)<\/w:r>$/.exec(run);
+  if(!m||!m[1].includes('<w:highlight w:val="yellow"/>'))
+   throw Error('Highlighted '+key+' differs from approved Word master.');
+  seen.add(key);
+  const neutral=m[1].replace('<w:highlight w:val="yellow"/>','');
+  return '<w:r>'+neutral+m[2]+'</w:r><w:r>'+m[1]+m[3]+'</w:r>';
+ });
+ if(seen.size!==2)throw Error('Name/passport highlight runs missing.');
+ return output;
 }
 // Red underlines come from the converted DOC's en-US / Chinese defaults.
 // Fix only the default proofing and Normal-style language. Do not alter
@@ -146,7 +149,17 @@ function thaiProofingStyles(xml){
  const newNormal='<w:lang w:val="th-TH" w:bidi="th-TH" w:eastAsia="th-TH"/>';
  if(xml.split(oldDefault).length!==2||xml.split(oldNormal).length!==2)
   throw Error('Cancellation Word proofing styles differ from the approved template.');
- return xml.replace(oldDefault,newDefault).replace(oldNormal,newNormal);
+ const proofed=xml.replace(oldDefault,newDefault).replace(oldNormal,newNormal);
+ const introStyle='<w:style w:type="paragraph" w:styleId="BUICCancelIntro">'+
+  '<w:name w:val="BUIC Cancel Intro"/><w:basedOn w:val="Normal"/>'+
+  '<w:rPr><w:rFonts w:ascii="TH SarabunPSK" w:hAnsi="TH SarabunPSK" '+
+  'w:eastAsia="TH SarabunPSK" w:cs="TH SarabunPSK"/>'+
+  '<w:sz w:val="32"/><w:szCs w:val="32"/><w:noProof/>'+
+  '<w:lang w:val="th-TH" w:eastAsia="th-TH" w:bidi="th-TH"/>'+
+  '</w:rPr></w:style>';
+ if(!proofed.includes('</w:styles>')||proofed.includes('w:styleId="BUICCancelIntro"'))
+  throw Error('Cancellation styles unexpectedly changed.');
+ return proofed.replace('</w:styles>',introStyle+'</w:styles>');
 }
 
 async function create(raw){
@@ -154,7 +167,7 @@ async function create(raw){
  const valid=validate(raw),bundle=await loadBundle();
  const entries=new Map(Object.entries(bundle).map(([name,source])=>[name,{
   name,data:encoder.encode(name==='word/document.xml'
-   ?restoreOriginalIntro(merge(source,valid),valid)
+   ?restoreOriginalIntro(merge(splitHighlightedValueTabs(source),valid),valid)
    :name==='word/styles.xml'?thaiProofingStyles(source):source)
  }]));
  return new Blob([await window.ZipLite.writeZip(entries)],{type:MIME});

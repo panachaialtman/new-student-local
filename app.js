@@ -2744,6 +2744,24 @@
     if(!form)return;
     form.elements.signatory.innerHTML=signatoryOptions(state.settings.signatory);
     form.elements.issueDate.value=todayIso();
+    el('cancelTestCase').addEventListener('click',()=>{
+      // Synthetic values for layout checks. Do not save or submit them.
+      const date=new Date();
+      date.setDate(date.getDate()+7);
+      const iso=d=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),
+                     String(d.getDate()).padStart(2,'0')].join('-');
+      const sample={documentNo:'9999',issueDate:todayIso(),
+        reason:'สำเร็จการศึกษา',otherReason:'',
+        fullName:'MR. EXAMPLE STUDENT',nationalityThai:'เมียนมา',
+        passportNo:'TEST123456',studentId:'0000000000',
+        cancelDate:iso(date),signatory:state.settings.signatory};
+      for(const [key,value] of Object.entries(sample))form.elements[key].value=value;
+      const popup=el('cancelNationalitySuggestions');
+      popup.hidden=true;popup.replaceChildren();
+      updateCancelReasonField();
+      updateCancelPreview();
+      toast('Test case filled','Sample details ready. No student record was saved.');
+    });
     bindCancelNationalityAutocomplete();
     updateCancelReasonField();
     form.elements.reason.addEventListener('change',updateCancelReasonField);
