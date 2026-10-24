@@ -24,7 +24,8 @@ assert(original.includes('footerReference'));
 // Its missing section spacing caused the very cramped Word screenshot.
 const paragraphs=xml=>(xml.match(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g)||[]);
 assert.equal(paragraphs(original).length,10);
-const spacingAfter=[360,360,180,360,360,360,480,0,0,0];
+const spacingBefore=[280,0,0,0,0,0,0,0,0,0];
+const spacingAfter=[340,340,280,425,315,300,720,0,0,0];
 let written,loads=0;
 const context={window:{ZipLite:{writeZip:async files=>{
  written=files;
@@ -73,7 +74,8 @@ const base={documentNo:'5343',issueDate:'2026-10-24',
    const ppr=p.slice(0,p.indexOf('</w:pPr>'));
    const spacing=ppr.match(/<w:spacing\b[^>]*\/>/)?.[0];
    assert(spacing,'Paragraph '+i+' must have spacing');
-   assert(spacing.includes('w:before="0"'),'No extra before-gap paragraph '+i);
+   assert(spacing.includes('w:before="'+spacingBefore[i]+'"'),
+     'Opening top breathing room and exact original-inspired before-gap '+i);
    assert(spacing.includes('w:after="'+spacingAfter[i]+'"'),
      'Correct approved section gap '+i);
    if(i===4||i===5)
@@ -115,5 +117,5 @@ const base={documentNo:'5343',issueDate:'2026-10-24',
  assert(app.includes('countryOfficialThai'));
  assert(app.includes('FULL_NAME_2')===false,'Name repetition is generated from single form field');
  assert(worker.includes("'./templates-data/criminal_record_master.txt'"));
- console.log('Criminal Record tests passed: restored section spacing, all 11 highlights, Thai fields, both names and signers, footer and isolation.');
+ console.log('Criminal Record tests passed: original-inspired section rhythm, all 11 highlights, Thai fields, both names and signers, footer and isolation.');
 })().catch(err=>{console.error(err);process.exitCode=1});

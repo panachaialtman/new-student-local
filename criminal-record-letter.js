@@ -97,12 +97,15 @@ function merge(documentXml,v){
  if(xml.includes('{{'))throw Error('Criminal Record template contains unresolved fields.');
  return xml;
 }
-// The earlier one-page conversion removed the intentional separation
-// between letter sections. Restore measured Word paragraph spacing in twips
-// (and natural line leading for the two body paragraphs), without inserting
-// blank text, moving signatures, or changing any field highlights or footer.
+// Match the approved legacy Word letter's section rhythm, not a condensed
+// one-page layout. The original has an opening spacer and distinct gaps after
+// date, subject, recipient, main request, and greeting/signature. These twip
+// values preserve equivalent visual spacing without rewriting Thai text,
+// inserting fake line breaks, or moving fields from their original paragraphs.
+// The smaller fallback gaps also accommodate longer faculty and country names.
 function restoreLetterSpacing(xml){
- const after=[360,360,180,360,360,360,480,0,0,0];
+ const before=[280,0,0,0,0,0,0,0,0,0];
+ const after=[340,340,280,425,315,300,720,0,0,0];
  let index=0;
  const restored=xml.replace(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g,paragraph=>{
   const i=index++;
@@ -113,7 +116,7 @@ function restoreLetterSpacing(xml){
   const match=ppr.match(/<w:spacing\b[^>]*\/>/);
   if(!match||!/w:before="\d+"/.test(match[0])||!/w:after="\d+"/.test(match[0]))
    throw Error('Criminal Record paragraph spacing differs from approved master: '+i);
-  let spacing=match[0].replace(/w:before="\d+"/,'w:before="0"')
+  let spacing=match[0].replace(/w:before="\d+"/,'w:before="'+before[i]+'"')
    .replace(/w:after="\d+"/,'w:after="'+after[i]+'"');
   if(i===4||i===5){
    if(/w:line=/.test(spacing))throw Error('Unexpected line height in body paragraph '+i);
