@@ -988,6 +988,7 @@
         el('partnerCountrySuggestions').innerHTML = countryOptions();
         renderProgramTable();
         refreshGraduatedReferences();
+        refreshCriminalReferences();
         // Student cases, imported Word templates, history and local settings are untouched.
         hubStatus('Hub v' + result.version + ' · updated ' + (result.counts?.programs ?? result.programs.length) + ' programs, ' + (result.counts?.nationalities ?? result.nationalities.length) + ' nationalities');
       } else if (result.status === 'unchanged') {
@@ -2591,6 +2592,7 @@
       placeholder: ['placeholderView', placeholders[placeholderKey] || '', ''],
       cancel: ['cancelView', 'Cancel', 'STUDENT VISA CANCELLATION'],
       graduated: ['graduatedView','Graduated','GRADUATED · ED PLUS'],
+      criminal: ['criminalView','Criminal Record','CRIMINAL RECORD LETTER'],
       batches: ['batchesView', 'Generation history', 'DOCUMENT OUTPUT'],
       programs: ['programsView', 'Academic programs', 'REFERENCE DATA'],
       settings: ['settingsView', 'Workspace settings', 'CONFIGURATION'],
@@ -2607,11 +2609,12 @@
     document.querySelector(activeNav)?.classList.add('active');
     el('pageTitle').textContent = title;
     el('pageEyebrow').textContent = eyebrow;
-    const reserved = view === 'placeholder' || view === 'cancel' || view === 'graduated';
+    const reserved = view === 'placeholder' || view === 'cancel' || view === 'graduated' || view === 'criminal';
     if (el('draftsBtn')) { el('draftsBtn').hidden = reserved; el('draftsBtn').classList.toggle('hidden', reserved); }
     if (el('addStudentBtn')) { el('addStudentBtn').hidden = reserved; el('addStudentBtn').classList.toggle('hidden', reserved); }
     if (view === 'cancel') updateCancelPreview();
     if (view === 'graduated') updateGraduatedPreview();
+    if (view === 'criminal') updateCriminalPreview();
     if (view === 'programs') renderProgramTable();
     if (view === 'batches') renderBatchHistory();
     if (view === 'settings') { switchSettingsTab(activeSettingsTab); refreshTemplateStatus().catch(console.error); }
@@ -2751,6 +2754,147 @@
       finally{button.disabled=false;button.textContent=old}
     });
     updateGraduatedPreview();
+  }
+
+
+  // Criminal Record request — separate from current student cases.
+  function criminalFields(){
+    const f=el('criminalLetterForm');
+    return {documentNo:f.elements.documentNo.value,
+      issueDate:f.elements.issueDate.value,policePlace:f.elements.policePlace.value,
+      fullName:f.elements.fullName.value,countryFullThai:f.elements.countryFullThai.value,
+      passportNo:f.elements.passportNo.value,nationalityThai:f.elements.nationalityThai.value,
+      degreeLevel:f.elements.degreeLevel.value,majorThai:f.elements.majorThai.value,
+      facultyThai:f.elements.facultyThai.value,signatory:f.elements.signatory.value};
+  }
+  function refreshCriminalReferences(){
+    const countries=el('criminalCountrySuggestions'),
+      nationalities=el('criminalNationalitySuggestions'),
+      majors=el('criminalMajorSuggestions'),faculties=el('criminalFacultySuggestions');
+    if(!countries||!nationalities||!majors||!faculties)return;
+    for(const root of [countries,nationalities,majors,faculties])root.replaceChildren();
+    const add=(element,value,label,seen)=>{
+      if(!value||seen.has(value))return;
+      seen.add(value);
+      const row=document.createElement('option');
+      row.value=value;if(label)row.label=label;
+      element.append(row);
+    };
+    const countrySeen=new Set(),nationalitySeen=new Set(),
+      majorSeen=new Set(),facultySeen=new Set();
+    for(const n of state.nationalities){
+      const full=n.countryOfficialThai||n.countryThai||n.thai;
+      const nationality=n.nationalityThai||n.thai;
+      add(countries,full,n.english||'',countrySeen);
+      add(nationalities,nationality,n.english||'',nationalitySeen);
+    }
+    for(const p of state.programs){
+      add(majors,p.programThai,
+        [p.programEnglish,p.facultyThai].filter(Boolean).join(' · '),majorSeen);
+      add(faculties,p.facultyThai,p.facultyEnglish||'',facultySeen);
+    }
+  }
+  function updateCriminalPreview(){
+    const f=el('criminalLetterForm');if(!f)return;
+    const v=criminalFields();
+    const set=(id,value)=>{if(el(id))el(id).textContent=value||'—';};
+    const raw=String(v.documentNo||'').trim()
+      .replace(/^(?:ที่\\s*)?มกท\\/ศนช\\.\\s*/,'').replace(/\\/\\d{4}$/,'');
+    const year=v.issueDate?String(Number(v.issueDate.slice(0,4))+543):'—';
+    set('criminalPreviewNo',raw?raw+'/'+year:'—');
+    let date='—';
+    try{if(v.issueDate)date=BUICCriminalRecord.thaiDate(v.issueDate)}catch(_){}
+    set('criminalPreviewDate',date);
+    set('criminalPreviewPlace',v.policePlace);
+    set('criminalPreviewName',v.fullName.toUpperCase());
+    set('criminalPreviewNameAgain',v.fullName.toUpperCase());
+    set('criminalPreviewCountry',v.countryFullThai);
+    set('criminalPreviewPassport',v.passportNo.toUpperCase());
+    set('criminalPreviewNationality',v.nationalityThai);
+    set('criminalPreviewDegree',({bachelor:'ปริญญาตรี',master:'ปริญญาโท',
+      doctoral:'ปริญญาเอก'})[v.degreeLevel]||'—');
+    set('criminalPreviewMajor',v.majorThai);
+    set('criminalPreviewFaculty',v.facultyThai);
+    el('criminalSignaturePreview').innerHTML=signatoryPreview(v.signatory);
+  }
+  function bindCriminalLetter(){
+    const f=el('criminalLetterForm');if(!f)return;
+    refreshCriminalReferences();
+    f.elements.issueDate.value=todayIso();
+    f.elements.signatory.innerHTML=signatoryOptions(state.settings.signatory);
+    f.elements.signatory.value=normalizeSignatoryKey(state.settings.signatory);
+    const linkedCountry=()=>{
+      const nation=String(f.elements.nationalityThai.value).trim();
+      const item=state.nationalities.find(n=>
+        [n.nationalityThai,n.thai,n.english].filter(Boolean)
+          .some(t=>String(t).toLowerCase()===nation.toLowerCase()));
+      if(!item)return;
+      const field=f.elements.countryFullThai;
+      const suggested=item.countryOfficialThai||item.countryThai||item.thai;
+      if(!field.value.trim()||field.dataset.autoFromNationality===field.value){
+        field.value=suggested;
+        field.dataset.autoFromNationality=suggested;
+      }
+      updateCriminalPreview();
+    };
+    f.elements.nationalityThai.addEventListener('change',linkedCountry);
+    f.elements.nationalityThai.addEventListener('blur',linkedCountry);
+    f.elements.majorThai.addEventListener('change',()=>{
+      const value=String(f.elements.majorThai.value).trim();
+      const item=state.programs.find(p=>[p.programThai,p.programEnglish]
+        .some(x=>String(x||'').toLowerCase()===value.toLowerCase()));
+      if(!item)return;
+      f.elements.majorThai.value=item.programThai;
+      if(item.facultyThai)f.elements.facultyThai.value=item.facultyThai;
+      if(['bachelor','master','doctoral'].includes(item.degreeLevel))
+        f.elements.degreeLevel.value=item.degreeLevel;
+      updateCriminalPreview();
+    });
+    f.addEventListener('input',updateCriminalPreview);
+    f.addEventListener('change',updateCriminalPreview);
+    f.addEventListener('reset',()=>{
+      queueMicrotask(()=>{
+        f.elements.issueDate.value=todayIso();
+        f.elements.signatory.value=normalizeSignatoryKey(state.settings.signatory);
+        f.elements.countryFullThai.dataset.autoFromNationality='';
+        updateCriminalPreview();
+      });
+    });
+    el('criminalFillTest').addEventListener('click',()=>{
+      const sample={documentNo:'9999',issueDate:todayIso(),
+        policePlace:'ศูนย์พิสูจน์หลักฐาน 1',fullName:'MR. EXAMPLE STUDENT',
+        countryFullThai:'สาธารณรัฐแห่งสหภาพเมียนมา',passportNo:'TEST123456',
+        nationalityThai:'เมียนมา',degreeLevel:'master',
+        majorThai:'สาขาวิชาการสื่อสารสากล (หลักสูตรนานาชาติ)',
+        facultyThai:'คณะนิเทศศาสตร์',
+        signatory:normalizeSignatoryKey(state.settings.signatory)};
+      for(const [k,v] of Object.entries(sample))f.elements[k].value=v;
+      updateCriminalPreview();
+      toast('Criminal Record test case filled','Synthetic values only; no student record was saved.');
+    });
+    f.addEventListener('submit',async event=>{
+      event.preventDefault();
+      if(!f.reportValidity())return;
+      const button=el('criminalGenerate'),old=button.textContent;
+      button.disabled=true;button.textContent='Generating Word letter…';
+      try{
+        const fields=criminalFields();
+        const data=BUICCriminalRecord.validate(fields);
+        const blob=await BUICCriminalRecord.create(fields);
+        const filename=BUICCriminalRecord.filename(fields);
+        downloadBlob(blob,filename);
+        state.batches.unshift({
+          id:uid('criminal'),createdAt:new Date().toISOString(),issueDate:fields.issueDate,
+          documentNumbers:['มกท/ศนช. '+data.number+'/'+data.year],
+          students:[{documentNo:data.number,fullName:data.fullName}],
+          count:1,outputType:'criminal_record',signatory:fields.signatory,filename
+        });
+        persist();renderBatchHistory();
+        toast('Criminal Record letter created','DOCX downloaded. Verify the police office and Word layout before signing.');
+      }catch(err){toast('Cannot generate Criminal Record letter',err.message||String(err),true)}
+      finally{button.disabled=false;button.textContent=old}
+    });
+    updateCriminalPreview();
   }
 
   // Cancel Letter is separate from current student cases and the Hub.
@@ -3031,6 +3175,7 @@
     el('generateIndividualBtn').addEventListener('click', generateIndividual);
     bindCancelLetter();
     bindGraduatedLetter();
+    bindCriminalLetter();
 
     el('drawerBackdrop').addEventListener('click', closeDrawer);
     el('closeDrawerBtn').addEventListener('click', closeDrawer);
