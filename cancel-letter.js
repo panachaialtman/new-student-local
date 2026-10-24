@@ -1,7 +1,7 @@
-/* BUIC Current Letter — staff-approved cancellation letter master.
-   Only approved placeholders are replaced; all original OOXML layout, text
-   runs, paragraph formatting, styles, proofing and tabs remain unchanged.
-   Content is merged locally; student data is not uploaded. */
+/* BUIC Current Letter — approved cancellation Word master.
+   Only the original introduction's run segmentation and document proofing
+   defaults are repaired; all source text, geometry and other sections remain.
+   Student details are merged locally without uploading personal information. */
 (()=>{'use strict';
 const MIME='application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 const BUNDLE='./templates-data/cancel_manual_master.txt';
@@ -86,11 +86,66 @@ function merge(template,valid){
  }
  return xml;
 }
+
+// The legacy DOC conversion flattened this one paragraph. Restore its exact
+// original seven-run layout, including the separate unhighlighted space after
+// the reason. All other paragraphs, tabs, wording and geometry stay untouched.
+function restoreOriginalIntro(xml,valid){
+ const first='มหาวิทยาลัยกรุงเทพ ใคร่ขอความอนุเคราะห์ สำนักงานตรวจคนเข้าเมืองในการยกเลิกการตรวจลงตร';
+ const middle='วีซ่านักศึกษา เนื่องจากนักศึกษา';
+ const ending='ดังรายละเอียดต่อไปนี้';
+ let count=0;
+ const restored=xml.replace(/<w:p(?:\\s[^>]*)?>[\\s\\S]*?<\\/w:p>/g,paragraph=>{
+  if(!paragraph.includes(first))return paragraph;
+  count++;
+  const end=paragraph.indexOf('</w:pPr>');
+  if(end<0)throw Error('Cancellation introductory paragraph properties were not found.');
+  const position=end+'</w:pPr>'.length;
+  const prefix=paragraph.slice(0,position),body=paragraph.slice(position,-'</w:p>'.length);
+  const runs=body.match(/<w:r(?:\\s[^>]*)?>[\\s\\S]*?<\\/w:r>/g);
+  if(!runs||runs.length!==4||runs.join('')!==body)
+   throw Error('Cancellation introductory paragraph differs from the approved template.');
+  const plain=first+'า'+middle;
+  if(!runs[0].includes('<w:tab/>')||
+     !runs[1].includes('<w:t>'+plain+'</w:t>')||
+     !runs[2].includes('<w:highlight w:val="yellow"/>')||
+     !runs[2].includes(escapeXml(valid.reason)+' ')||
+     !runs[3].includes('<w:t>'+ending+'</w:t>'))
+   throw Error('Cancellation introductory paragraph wording or highlights changed.');
+  const runProperties=run=>run.match(/<w:rPr>[\\s\\S]*?<\\/w:rPr>/)?.[0];
+  const normal=runProperties(runs[1]),highlight=runProperties(runs[2]);
+  if(!normal||!highlight)throw Error('Cancellation paragraph run formatting is missing.');
+  const textRun=(text,properties=normal,preserve=false)=>
+   '<w:r>'+properties+'<w:t'+(preserve?' xml:space="preserve"':'')+'>'+
+   escapeXml(text)+'</w:t></w:r>';
+  return prefix+[
+   runs[0],textRun(first),textRun('า'),textRun(middle),
+   textRun(valid.reason,highlight),textRun(' ',normal,true),textRun(ending)
+  ].join('')+'</w:p>';
+ });
+ if(count!==1)throw Error('Cancellation introductory paragraph was not found uniquely.');
+ return restored;
+}
+// Red underlines come from the converted DOC's en-US / Chinese defaults.
+// Fix only the default proofing and Normal-style language. Do not alter
+// individual paragraph or character formatting, or insert breaking characters.
+function thaiProofingStyles(xml){
+ const oldDefault='<w:lang w:val="en-US" w:eastAsia="zh-CN" w:bidi="hi-IN"/>';
+ const newDefault='<w:noProof/><w:lang w:val="th-TH" w:eastAsia="th-TH" w:bidi="th-TH"/>';
+ const oldNormal='<w:lang w:val="en-US" w:bidi="th-TH" w:eastAsia="zh-CN"/>';
+ const newNormal='<w:lang w:val="th-TH" w:bidi="th-TH" w:eastAsia="th-TH"/>';
+ if(xml.split(oldDefault).length!==2||xml.split(oldNormal).length!==2)
+  throw Error('Cancellation Word proofing styles differ from the approved template.');
+ return xml.replace(oldDefault,newDefault).replace(oldNormal,newNormal);
+}
+
 async function create(raw){
  if(!window.ZipLite?.writeZip)throw Error('The Word engine is unavailable. Refresh the page.');
  const valid=validate(raw),bundle=await loadBundle();
  const entries=new Map(Object.entries(bundle).map(([name,source])=>[name,{
-  name,data:encoder.encode(name==='word/document.xml'?merge(source,valid):source)
+  name,data:encoder.encode(name==='word/document.xml'
+   ?restoreOriginalIntro(merge(source,valid),valid)
+   :name==='word/styles.xml'?thaiProofingStyles(source):source)
  }]));
  return new Blob([await window.ZipLite.writeZip(entries)],{type:MIME});
 }

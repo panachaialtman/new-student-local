@@ -64,8 +64,9 @@ const base={documentNo:'5343',issueDate:'2026-10-28',cancelDate:'2025-07-02',
                (docMaster.match(/<w:tab\s*\/>/g)||[]).length,'Retain every original tab without alteration');
   assert(doc.includes('w:top="1440"')&&doc.includes('w:left="1440"'),
     'Original margin positions preserved');
-  // Literal placeholder replacement is intentional: do not alter the original
-  // Thai text runs, line wrapping, run formatting, paragraph geometry or styles.
+  // Only the original cancellation introduction may change run segmentation.
+  // Its visible wording, first tab, paragraph properties, highlight and trailing
+  // unhighlighted space match the staff-supplied legacy Word reference.
   const expectedFields={
    DOC_NUMBER:'5343/2569',ISSUE_DATE:'28 ตุลาคม 2569',
    REASON:reason==='others'?'ย้ายสถานศึกษา':reason,
@@ -76,15 +77,52 @@ const base={documentNo:'5343',issueDate:'2026-10-28',cancelDate:'2025-07-02',
   };
   const escapeXml=value=>String(value).replace(/&/g,'&amp;').replace(/</g,'&lt;')
     .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
-  let expected=docMaster;
+  let placeholderMerged=docMaster;
   for(const [key,value] of Object.entries(expectedFields)){
    const token='{{'+key+'}}';
-   assert.equal(expected.split(token).length,2,'Exactly one approved token '+key);
-   expected=expected.replace(token,escapeXml(value));
+   assert.equal(placeholderMerged.split(token).length,2,'Exactly one approved token '+key);
+   placeholderMerged=placeholderMerged.replace(token,escapeXml(value));
   }
-  assert.equal(doc,expected,'Only placeholder values may change in the manual Word master');
+  const getIntro=source=>{
+   const ps=source.match(/<w:p(?:\\s[^>]*)?>[\\s\\S]*?<\\/w:p>/g)||[];
+   const found=ps.filter(p=>p.includes('มหาวิทยาลัยกรุงเทพ ใคร่ขอความอนุเคราะห์'));
+   assert.equal(found.length,1,'Exactly one introduction');
+   return found[0];
+  };
+  const oldIntro=getIntro(placeholderMerged),newIntro=getIntro(doc);
+  const oldRuns=oldIntro.match(/<w:r(?:\\s[^>]*)?>[\\s\\S]*?<\\/w:r>/g)||[];
+  const newRuns=newIntro.match(/<w:r(?:\\s[^>]*)?>[\\s\\S]*?<\\/w:r>/g)||[];
+  assert.equal(oldRuns.length,4,'Current sanitized master has four converted runs');
+  assert.equal(newRuns.length,7,'Restore exact seven original runs');
+  assert(newRuns[0].includes('<w:tab/>'),'Retain approved first-line tab');
+  assert(newRuns[1].includes('มหาวิทยาลัยกรุงเทพ ใคร่ขอความอนุเคราะห์ สำนักงานตรวจคนเข้าเมืองในการยกเลิกการตรวจลงตร'));
+  assert(newRuns[2].includes('<w:t>า</w:t>'));
+  assert(newRuns[3].includes('<w:t>วีซ่านักศึกษา เนื่องจากนักศึกษา</w:t>'));
+  assert(newRuns[4].includes('<w:highlight w:val="yellow"/>') &&
+    newRuns[4].includes('<w:t>'+escapeXml(expectedFields.REASON)+'</w:t>'));
+  assert(newRuns[5].includes('<w:t xml:space="preserve"> </w:t>') &&
+    !newRuns[5].includes('w:highlight'));
+  assert(newRuns[6].includes('<w:t>ดังรายละเอียดต่อไปนี้</w:t>'));
+  const originalVisible=oldIntro.match(/<w:t(?:\\s[^>]*)?>([\\s\\S]*?)<\\/w:t>/g)||[];
+  const rebuiltVisible=newIntro.match(/<w:t(?:\\s[^>]*)?>([\\s\\S]*?)<\\/w:t>/g)||[];
+  const textOnly=items=>items.map(x=>x.replace(/<[^>]*>/g,'')).join('');
+  assert.equal(textOnly(rebuiltVisible),textOnly(originalVisible),
+    'Intro wording and spaces must remain exactly the same');
+  assert.equal(newIntro.slice(0,newIntro.indexOf('</w:pPr>')),
+    oldIntro.slice(0,oldIntro.indexOf('</w:pPr>')),
+    'Paragraph indent/style/geometry must remain identical');
+  assert.equal(doc.replace(newIntro,'__ONLY_INTRO_CHANGED__'),
+    placeholderMerged.replace(oldIntro,'__ONLY_INTRO_CHANGED__'),
+    'Never modify any text or layout outside the introduction');
+  const styles=new TextDecoder().decode(written.get('word/styles.xml').data);
+  const oldDefault='<w:lang w:val="en-US" w:eastAsia="zh-CN" w:bidi="hi-IN"/>';
+  const newDefault='<w:noProof/><w:lang w:val="th-TH" w:eastAsia="th-TH" w:bidi="th-TH"/>';
+  const oldNormal='<w:lang w:val="en-US" w:bidi="th-TH" w:eastAsia="zh-CN"/>';
+  const newNormal='<w:lang w:val="th-TH" w:bidi="th-TH" w:eastAsia="th-TH"/>';
+  assert.equal(styles,template['word/styles.xml'].replace(oldDefault,newDefault)
+    .replace(oldNormal,newNormal),'Only Thai proofing defaults may change');
   for(const [part,originalXml] of Object.entries(template)){
-   if(part==='word/document.xml')continue;
+   if(part==='word/document.xml'||part==='word/styles.xml')continue;
    assert.equal(new TextDecoder().decode(written.get(part).data),originalXml,
      'Word part '+part+' must remain byte-for-byte unchanged');
   }
@@ -110,5 +148,5 @@ const base={documentNo:'5343',issueDate:'2026-10-28',cancelDate:'2025-07-02',
  assert(app.includes('BUICCancelLetter.filename(fields)'));
  assert(app.includes('bindCancelNationalityAutocomplete();')&&app.includes('updateCancelReasonField();'));
  assert(worker.includes("'./templates-data/cancel_manual_master.txt'"));
- console.log('Cancel Letter tests passed: exact staff master retention, placeholder-only values, seven highlights, all reasons, filename and safety.');
+ console.log('Cancel Letter tests passed: original 7-run intro, Thai proofing, unchanged body/layout, seven highlights, all reasons and safety.');
 })().catch(err=>{console.error(err);process.exitCode=1});
