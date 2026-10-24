@@ -987,6 +987,7 @@
         ensureNationalityDatalist();
         el('partnerCountrySuggestions').innerHTML = countryOptions();
         renderProgramTable();
+        refreshGraduatedReferences();
         // Student cases, imported Word templates, history and local settings are untouched.
         hubStatus('Hub v' + result.version + ' · updated ' + (result.counts?.programs ?? result.programs.length) + ' programs, ' + (result.counts?.nationalities ?? result.nationalities.length) + ' nationalities');
       } else if (result.status === 'unchanged') {
@@ -2589,6 +2590,7 @@
       workspace: ['workspaceView', ...categories[state.activeCategory]],
       placeholder: ['placeholderView', placeholders[placeholderKey] || '', ''],
       cancel: ['cancelView', 'Cancel', 'STUDENT VISA CANCELLATION'],
+      graduated: ['graduatedView','Graduated','GRADUATED · ED PLUS'],
       batches: ['batchesView', 'Generation history', 'DOCUMENT OUTPUT'],
       programs: ['programsView', 'Academic programs', 'REFERENCE DATA'],
       settings: ['settingsView', 'Workspace settings', 'CONFIGURATION'],
@@ -2605,14 +2607,142 @@
     document.querySelector(activeNav)?.classList.add('active');
     el('pageTitle').textContent = title;
     el('pageEyebrow').textContent = eyebrow;
-    const reserved = view === 'placeholder' || view === 'cancel';
+    const reserved = view === 'placeholder' || view === 'cancel' || view === 'graduated';
     if (el('draftsBtn')) { el('draftsBtn').hidden = reserved; el('draftsBtn').classList.toggle('hidden', reserved); }
     if (el('addStudentBtn')) { el('addStudentBtn').hidden = reserved; el('addStudentBtn').classList.toggle('hidden', reserved); }
     if (view === 'cancel') updateCancelPreview();
+    if (view === 'graduated') updateGraduatedPreview();
     if (view === 'programs') renderProgramTable();
     if (view === 'batches') renderBatchHistory();
     if (view === 'settings') { switchSettingsTab(activeSettingsTab); refreshTemplateStatus().catch(console.error); }
     if (window.innerWidth <= 880) el('sidebar').classList.remove('open');
+  }
+
+
+  // Graduated ED Plus: a standalone locally generated document.
+  function graduatedFields(){
+    const f=el('graduatedLetterForm');
+    return {documentNo:f.elements.documentNo.value,issueDate:f.elements.issueDate.value,
+      fullName:f.elements.fullName.value,birthDate:f.elements.birthDate.value,
+      nationalityThai:f.elements.nationalityThai.value,passportNo:f.elements.passportNo.value,
+      majorThai:f.elements.majorThai.value,facultyThai:f.elements.facultyThai.value,
+      degreeLevel:f.elements.degreeLevel.value};
+  }
+  function refreshGraduatedReferences(){
+    const majors=el('gradMajorSuggestions'),faculties=el('gradFacultySuggestions'),
+          nationalities=el('gradNationalitySuggestions');
+    if(!majors||!faculties||!nationalities)return;
+    majors.replaceChildren();faculties.replaceChildren();nationalities.replaceChildren();
+    const majorSeen=new Set(),facultySeen=new Set(),natSeen=new Set();
+    const option=(parent,value,label)=>{
+      const elOption=document.createElement('option');
+      elOption.value=value;
+      if(label)elOption.label=label;
+      parent.append(elOption);
+    };
+    for(const p of state.programs){
+      if(p.programThai&&!majorSeen.has(p.programThai)){
+        option(majors,p.programThai,[p.programEnglish,p.facultyThai].filter(Boolean).join(' · '));
+        majorSeen.add(p.programThai);
+      }
+      if(p.facultyThai&&!facultySeen.has(p.facultyThai)){
+        option(faculties,p.facultyThai,p.facultyEnglish||'');
+        facultySeen.add(p.facultyThai);
+      }
+    }
+    for(const n of state.nationalities){
+      const thai=n.nationalityThai||n.thai;
+      if(thai&&!natSeen.has(thai)){
+        option(nationalities,thai,n.english||'');
+        natSeen.add(thai);
+      }
+    }
+  }
+  function graduatedProgramMatch(value){
+    const q=String(value||'').trim().toLowerCase();
+    return state.programs.find(p=>
+      String(p.programThai||'').trim().toLowerCase()===q||
+      String(p.programEnglish||'').trim().toLowerCase()===q);
+  }
+  function updateGraduatedPreview(){
+    const form=el('graduatedLetterForm');if(!form)return;
+    const f=graduatedFields();
+    const set=(id,value)=>{const node=el(id);if(node)node.textContent=value;};
+    const v=window.BUICGraduatedLetter;
+    let age='—',issue='—',birth='—';
+    try{if(f.issueDate)issue=v.thaiDate(f.issueDate)}catch(_){}
+    try{if(f.birthDate)birth=v.thaiDate(f.birthDate)}catch(_){}
+    try{if(f.birthDate&&f.issueDate)age=String(v.ageAt(f.birthDate,f.issueDate))}catch(_){}
+    el('gradAge').value=age;
+    const year=f.issueDate?String(Number(f.issueDate.slice(0,4))+543):'—';
+    const no=String(f.documentNo||'').trim().replace(/^(?:ที่\s*)?มกท\/ศนช\.\s*/,'')
+      .replace(/\/\d{4}$/,'');
+    set('gradPreviewNumber',no?no+'/'+year:'—');
+    set('gradPreviewIssueDate',issue);
+    set('gradPreviewName',String(f.fullName||'').toUpperCase()||'—');
+    set('gradPreviewAge',age);
+    set('gradPreviewNationality',f.nationalityThai||'—');
+    set('gradPreviewPassport',String(f.passportNo||'').toUpperCase()||'—');
+    set('gradPreviewBirthDate',birth);
+    set('gradPreviewMajor',f.majorThai
+      ?(/^สาขาวิชา/.test(f.majorThai.trim())?'':'สาขาวิชา')+f.majorThai.trim():'สาขาวิชา—');
+    set('gradPreviewFaculty',f.facultyThai||'—');
+    set('gradPreviewDegree',f.degreeLevel==='master'?'โท':'ตรี');
+    set('gradPreviewYears',f.degreeLevel==='master'?'2':'4');
+  }
+  function bindGraduatedLetter(){
+    const f=el('graduatedLetterForm');if(!f)return;
+    refreshGraduatedReferences();
+    f.elements.issueDate.value=todayIso();
+    const syncProgram=()=>{
+      const item=graduatedProgramMatch(f.elements.majorThai.value);
+      if(!item)return;
+      f.elements.majorThai.value=item.programThai;
+      if(item.facultyThai)f.elements.facultyThai.value=item.facultyThai;
+      if(item.degreeLevel==='master')f.elements.degreeLevel.value='master';
+      else if(item.degreeLevel==='bachelor')f.elements.degreeLevel.value='bachelor';
+      updateGraduatedPreview();
+    };
+    f.elements.majorThai.addEventListener('change',syncProgram);
+    f.elements.majorThai.addEventListener('blur',syncProgram);
+    f.addEventListener('input',updateGraduatedPreview);
+    f.addEventListener('change',updateGraduatedPreview);
+    f.addEventListener('reset',()=>{
+      queueMicrotask(()=>{f.elements.issueDate.value=todayIso();updateGraduatedPreview()});
+    });
+    el('gradFillTest').addEventListener('click',()=>{
+      const sample={documentNo:'9999',issueDate:todayIso(),fullName:'MR. EXAMPLE STUDENT',
+        birthDate:'2000-10-25',nationalityThai:'เมียนมา',passportNo:'TEST123456',
+        majorThai:'สาขาวิชาบริหารธุรกิจ',facultyThai:'วิทยาลัยนานาชาติ',
+        degreeLevel:'bachelor'};
+      for(const [name,value] of Object.entries(sample))f.elements[name].value=value;
+      updateGraduatedPreview();
+      toast('Graduated test case filled','Synthetic information only; no student record saved.');
+    });
+    f.addEventListener('submit',async event=>{
+      event.preventDefault();
+      if(!f.reportValidity())return;
+      const button=el('gradGenerate'),old=button.textContent;
+      button.disabled=true;button.textContent='Generating ED Plus letter…';
+      try{
+        syncProgram();
+        const fields=graduatedFields();
+        const valid=window.BUICGraduatedLetter.validate(fields);
+        const blob=await window.BUICGraduatedLetter.create(fields);
+        const filename=window.BUICGraduatedLetter.filename(fields);
+        downloadBlob(blob,filename);
+        state.batches.unshift({
+          id:uid('graduated'),createdAt:new Date().toISOString(),issueDate:fields.issueDate,
+          documentNumbers:['มกท/ศนช. '+valid.rawNumber+'/'+valid.issueYear],
+          students:[{documentNo:valid.rawNumber,fullName:valid.fullName}],
+          count:1,outputType:'graduated_edplus',filename
+        });
+        persist();renderBatchHistory();
+        toast('Graduated letter created','DOCX downloaded. Check the final Word layout before use.');
+      }catch(err){toast('Cannot generate Graduated letter',err.message||String(err),true)}
+      finally{button.disabled=false;button.textContent=old}
+    });
+    updateGraduatedPreview();
   }
 
   // Cancel Letter is separate from current student cases and the Hub.
@@ -2892,6 +3022,7 @@
     el('generateListBtn').addEventListener('click', generateStudentList);
     el('generateIndividualBtn').addEventListener('click', generateIndividual);
     bindCancelLetter();
+    bindGraduatedLetter();
 
     el('drawerBackdrop').addEventListener('click', closeDrawer);
     el('closeDrawerBtn').addEventListener('click', closeDrawer);

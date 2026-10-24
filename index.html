@@ -35,7 +35,7 @@
         <button class="nav-item" data-view="cancel">
           <span class="nav-icon">×</span><span>Cancel</span>
         </button>
-        <button class="nav-item" data-view="placeholder" data-placeholder="graduated">
+        <button class="nav-item" data-view="graduated">
           <span class="nav-icon">✓</span><span>Graduated</span>
         </button>
         <button class="nav-item" data-view="placeholder" data-placeholder="criminal_record">
@@ -176,6 +176,81 @@
               </dl>
               <p class="cancel-preview-note">The remaining request, responsibility statement, signature block and International Center telephone are included in the generated Word letter.</p>
               <div id="cancelSignaturePreview"></div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+
+      <section class="view" id="graduatedView" aria-label="Graduated ED Plus letter">
+        <div class="section-head">
+          <div><h2>Graduated · ED Plus certification</h2>
+            <p>Create the official Thai ED Plus letter from the staff-supplied Word master. All student details remain on this device.</p>
+          </div>
+        </div>
+        <div class="cancel-workspace">
+          <form id="graduatedLetterForm" class="content-card cancel-form" autocomplete="off">
+            <div class="cancel-card-head"><strong>Graduated letter details</strong><span>Highlighted Word fields · Age calculated automatically</span></div>
+            <div class="cancel-form-grid">
+              <label class="cancel-field">1. Document number
+                <input id="gradDocumentNo" name="documentNo" required maxlength="30" placeholder="0000"/>
+                <small>Enter the serial number; มกท/ศนช. and the Buddhist year are generated.</small>
+              </label>
+              <label class="cancel-field">2. Document date
+                <input id="gradIssueDate" name="issueDate" type="date" required/>
+              </label>
+              <label class="cancel-field cancel-span">3. Name (bold, uppercase)
+                <input id="gradFullName" name="fullName" required maxlength="180" placeholder="MISS EXAMPLE STUDENT" spellcheck="false"/>
+              </label>
+              <label class="cancel-field">4. Birthday (bold)
+                <input id="gradBirthDate" name="birthDate" type="date" required/>
+                <small>Age is calculated against the document date, using the full day/month/year.</small>
+              </label>
+              <label class="cancel-field">Age on document date
+                <input id="gradAge" type="text" readonly value="—" aria-label="Calculated age"/>
+                <small>Automatically inserted in bold in the Word letter.</small>
+              </label>
+              <label class="cancel-field">5. Nationality (Thai, bold)
+                <input id="gradNationality" name="nationalityThai" list="gradNationalitySuggestions" required maxlength="100" placeholder="เมียนมา" spellcheck="false"/>
+                <datalist id="gradNationalitySuggestions"></datalist>
+              </label>
+              <label class="cancel-field">6. Passport number (bold)
+                <input id="gradPassport" name="passportNo" required maxlength="70" placeholder="AB1234567" spellcheck="false"/>
+              </label>
+              <label class="cancel-field cancel-span">7. Major (Thai)
+                <input id="gradMajor" name="majorThai" list="gradMajorSuggestions" required maxlength="180" placeholder="สาขาวิชาบริหารธุรกิจ" spellcheck="false"/>
+                <datalist id="gradMajorSuggestions"></datalist>
+                <small>Search or select an academic program from the published reference list, or enter Thai text.</small>
+              </label>
+              <label class="cancel-field cancel-span">8. Faculty / College (Thai)
+                <input id="gradFaculty" name="facultyThai" list="gradFacultySuggestions" required maxlength="180" placeholder="วิทยาลัยนานาชาติ" spellcheck="false"/>
+                <datalist id="gradFacultySuggestions"></datalist>
+              </label>
+              <label class="cancel-field cancel-span">9. Degree level
+                <select id="gradDegree" name="degreeLevel" required>
+                  <option value="bachelor">Bachelor’s degree — 4-year curriculum (ปริญญาตรี)</option>
+                  <option value="master">Master’s degree — 2-year curriculum (ปริญญาโท)</option>
+                </select>
+              </label>
+            </div>
+            <div class="cancel-actions">
+              <button class="btn subtle" id="gradFillTest" type="button">Fill test case</button>
+              <button class="btn subtle" id="gradReset" type="reset">Clear form</button>
+              <button class="btn primary" id="gradGenerate" type="submit">Download Graduated letter (.docx)</button>
+            </div>
+            <p class="cancel-privacy">The original Word wording, layout, yellow highlights and bold student fields are retained. The university signatory remains the one printed in the supplied master.</p>
+          </form>
+          <aside class="content-card cancel-preview-card">
+            <div class="cancel-card-head"><strong>Letter preview</strong><span>ED Plus · Thai · Buddhist Era</span></div>
+            <div class="cancel-paper" aria-live="polite">
+              <p style="text-align:center;font-weight:bold">แบบรับรองนักศึกษาต่างชาติที่อยู่ต่อในราชอาณาจักรเป็นการชั่วคราว</p>
+              <p style="text-align:center">เพื่อศึกษา หรือศึกษาและทำงาน เป็นกรณีพิเศษ ED Plus</p>
+              <p>ที่ มกท/ศนช. <mark id="gradPreviewNumber">—</mark></p>
+              <p class="cancel-right"><mark id="gradPreviewIssueDate">—</mark></p>
+              <p>เรื่อง การรับรองนักศึกษาต่างชาติเพื่อขออนุญาตอยู่ในราชอาณาจักรเป็นการชั่วคราวต่อไป</p>
+              <p>เรียน ผู้บัญชาการสำนักงานตรวจคนเข้าเมือง</p>
+              <p><strong><mark id="gradPreviewName">ชื่อ – นามสกุล</mark></strong> อายุ <strong><mark id="gradPreviewAge">—</mark></strong> ปี สัญชาติ <strong><mark id="gradPreviewNationality">—</mark></strong> ถือหนังสือเดินทางเลขที่ <strong><mark id="gradPreviewPassport">—</mark></strong> เกิดวันที่ <strong><mark id="gradPreviewBirthDate">—</mark></strong> ใน<mark id="gradPreviewMajor">สาขาวิชา—</mark> <mark id="gradPreviewFaculty">—</mark> ระดับปริญญา<mark id="gradPreviewDegree">ตรี</mark> ระยะเวลาหลักสูตร <mark id="gradPreviewYears">4</mark> ปี</p>
+              <p class="cancel-preview-note">This preview shows the editable fields; the downloaded DOCX retains the full original official letter and signature block. Please review it before use.</p>
             </div>
           </aside>
         </div>
@@ -462,10 +537,11 @@
   <script src="builtin-templates.js"></script>
   <script src="docx-engine.js?v=045"></script>
   <script src="cancel-letter.js?v=017"></script>
+  <script src="graduated-letter.js?v=001"></script>
   <script src="excel-export.js"></script>
   <script src="hub-reference.js?v=053"></script>
   <script src="student-memory.js?v=4"></script>
-  <script src="app.js?v=059"></script>
+  <script src="app.js?v=060"></script>
   <script src="ui-enhancements.js?v=036"></script>
   <script>
     // The standalone escape hatch is offered only when this workspace is embedded.
