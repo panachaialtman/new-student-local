@@ -71,7 +71,7 @@ const base={documentNo:'5343',issueDate:'2026-10-24',
   assert.equal(parts.length,10);
   for(const [i,p] of parts.entries()){
    const ppr=p.slice(0,p.indexOf('</w:pPr>'));
-   const spacing=ppr.match(/<w:spacing\\b[^>]*\\/>/)?.[0];
+   const spacing=ppr.match(/<w:spacing\b[^>]*\/>/)?.[0];
    assert(spacing,'Paragraph '+i+' must have spacing');
    assert(spacing.includes('w:before="0"'),'No extra before-gap paragraph '+i);
    assert(spacing.includes('w:after="'+spacingAfter[i]+'"'),
