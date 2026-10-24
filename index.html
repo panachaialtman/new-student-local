@@ -38,7 +38,7 @@
         <button class="nav-item" data-view="graduated">
           <span class="nav-icon">✓</span><span>Graduated</span>
         </button>
-        <button class="nav-item" data-view="placeholder" data-placeholder="criminal_record">
+        <button class="nav-item" data-view="criminal">
           <span class="nav-icon">◇</span><span>Criminal Record</span>
         </button>
       </nav>
@@ -256,6 +256,88 @@
               <p><strong><mark id="gradPreviewName">ชื่อ – นามสกุล</mark></strong> อายุ <strong><mark id="gradPreviewAge">—</mark></strong> ปี สัญชาติ <strong><mark id="gradPreviewNationality">—</mark></strong> ถือหนังสือเดินทางเลขที่ <strong><mark id="gradPreviewPassport">—</mark></strong> เกิดวันที่ <strong><mark id="gradPreviewBirthDate">—</mark></strong> ใน<mark id="gradPreviewMajor">สาขาวิชา—</mark> <mark id="gradPreviewFaculty">—</mark> ระดับปริญญา<mark id="gradPreviewDegree">ตรี</mark> ระยะเวลาหลักสูตร <mark id="gradPreviewYears">4</mark> ปี</p>
               <p class="cancel-preview-note">This preview shows the editable fields; the downloaded DOCX retains the full original official letter and signature block. Please review it before use.</p>
               <div id="gradSignaturePreview"></div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+
+      <section class="view" id="criminalView" aria-label="Criminal record request letter">
+        <div class="section-head">
+          <div><h2>Criminal Record · Police verification</h2>
+            <p>Generate the Thai criminal-background and fingerprint-check request using the approved Word master. Student information stays in this browser.</p>
+          </div>
+        </div>
+        <div class="cancel-workspace">
+          <form id="criminalLetterForm" class="content-card cancel-form" autocomplete="off">
+            <div class="cancel-card-head"><strong>Criminal Record details</strong><span>11 highlighted Word fields · repeated name stays synchronized</span></div>
+            <div class="cancel-form-grid">
+              <label class="cancel-field">1. Document number
+                <input id="criminalDocNumber" name="documentNo" maxlength="30" required placeholder="0000"/>
+                <small>Prefix มกท/ศนช. and Buddhist year are generated automatically.</small>
+              </label>
+              <label class="cancel-field">2. Document date
+                <input id="criminalIssueDate" name="issueDate" type="date" required/>
+              </label>
+              <label class="cancel-field cancel-span">3. Place / Police office (Thai)
+                <input id="criminalPlace" name="policePlace" maxlength="180" required value="ศูนย์พิสูจน์หลักฐาน 1" spellcheck="false"/>
+                <small>Recipient under “เรียน ผู้บังคับการ”. Change the office where required.</small>
+              </label>
+              <label class="cancel-field cancel-span">4. Full name (used twice)
+                <input id="criminalName" name="fullName" maxlength="180" required placeholder="MISS EXAMPLE STUDENT" spellcheck="false"/>
+                <small>Automatically inserted in both highlighted name positions.</small>
+              </label>
+              <label class="cancel-field cancel-span">5. Full country name in Thai (passport issuing country)
+                <input id="criminalCountry" name="countryFullThai" list="criminalCountrySuggestions" maxlength="180" required placeholder="สาธารณรัฐแห่งสหภาพเมียนมา" spellcheck="false"/>
+                <datalist id="criminalCountrySuggestions"></datalist>
+                <small>Select the official full Thai country name from the nationality reference, or enter it manually.</small>
+              </label>
+              <label class="cancel-field">6. Passport number
+                <input id="criminalPassport" name="passportNo" maxlength="70" required placeholder="AB1234567" spellcheck="false"/>
+              </label>
+              <label class="cancel-field">7. Nationality in Thai
+                <input id="criminalNationality" name="nationalityThai" list="criminalNationalitySuggestions" maxlength="100" required placeholder="เมียนมา" spellcheck="false"/>
+                <datalist id="criminalNationalitySuggestions"></datalist>
+              </label>
+              <label class="cancel-field cancel-span">8. Degree level
+                <select id="criminalDegree" name="degreeLevel" required>
+                  <option value="master">Master’s degree — ปริญญาโท</option>
+                  <option value="bachelor">Bachelor’s degree — ปริญญาตรี</option>
+                  <option value="doctoral">Doctoral degree — ปริญญาเอก</option>
+                </select>
+              </label>
+              <label class="cancel-field cancel-span">9. Major (Thai)
+                <input id="criminalMajor" name="majorThai" list="criminalMajorSuggestions" maxlength="200" required placeholder="สาขาวิชาการสื่อสารสากล (หลักสูตรนานาชาติ)" spellcheck="false"/>
+                <datalist id="criminalMajorSuggestions"></datalist>
+                <small>Include any curriculum designation, such as (หลักสูตรนานาชาติ), if applicable.</small>
+              </label>
+              <label class="cancel-field cancel-span">10. Faculty / College (Thai)
+                <input id="criminalFaculty" name="facultyThai" list="criminalFacultySuggestions" maxlength="180" required placeholder="คณะนิเทศศาสตร์" spellcheck="false"/>
+                <datalist id="criminalFacultySuggestions"></datalist>
+              </label>
+              <label class="cancel-field cancel-span">11. Signature / signatory
+                <select id="criminalSignatory" name="signatory" required></select>
+                <small>Uses the same approved signatories as Cancel and Graduated.</small>
+              </label>
+            </div>
+            <div class="cancel-actions">
+              <button class="btn subtle" type="button" id="criminalFillTest">Fill test case</button>
+              <button class="btn subtle" type="reset" id="criminalReset">Clear form</button>
+              <button class="btn primary" type="submit" id="criminalGenerate">Download Criminal Record letter (.docx)</button>
+            </div>
+            <p class="cancel-privacy">All Word generation happens on your device. The document retains the staff-approved Thai request wording and highlights, with the contact details in a one-page footer.</p>
+          </form>
+          <aside class="content-card cancel-preview-card">
+            <div class="cancel-card-head"><strong>Letter preview</strong><span>Thai · Criminal record</span></div>
+            <div class="cancel-paper" id="criminalPreview" aria-live="polite">
+              <p>ที่ มกท/ศนช. <mark id="criminalPreviewNo">—</mark></p>
+              <p class="cancel-right"><mark id="criminalPreviewDate">—</mark></p>
+              <p>เรื่อง ขอตรวจสอบประวัติอาชญากร</p>
+              <p>เรียน ผู้บังคับการ <mark id="criminalPreviewPlace">ศูนย์พิสูจน์หลักฐาน 1</mark></p>
+              <p>ด้วยมหาวิทยาลัยกรุงเทพ มีความประสงค์ขอให้กองทะเบียนประวัติอาชญากร สำนักงานตำรวจแห่งชาติ ขอตรวจสอบประวัติอาชญากร การพิมพ์ลายนิ้วมือแก่ <mark id="criminalPreviewName">—</mark> ถือหนังสือเดินทาง<mark id="criminalPreviewCountry">—</mark> เลขที่หนังสือเดินทาง <mark id="criminalPreviewPassport">—</mark> สัญชาติ<mark id="criminalPreviewNationality">—</mark> เพื่อนำมาประกอบการศึกษาในหลักสูตรระดับ<mark id="criminalPreviewDegree">ปริญญาโท</mark> <mark id="criminalPreviewMajor">—</mark> <mark id="criminalPreviewFaculty">—</mark> ณ มหาวิทยาลัยกรุงเทพ</p>
+              <p>จึงเรียนมาเพื่อโปรดพิจารณาอนุเคราะห์พิมพ์ลายนิ้วมือดังกล่าวและแจ้งผลการตรวจสอบให้ <mark id="criminalPreviewNameAgain">—</mark> ทราบด้วย จักขอบคุณยิ่ง</p>
+              <p class="cancel-preview-note">The downloaded DOCX includes the full signature, position and International Center footer.</p>
+              <div id="criminalSignaturePreview"></div>
             </div>
           </aside>
         </div>
@@ -543,10 +625,11 @@
   <script src="docx-engine.js?v=045"></script>
   <script src="cancel-letter.js?v=017"></script>
   <script src="graduated-letter.js?v=002"></script>
+  <script src="criminal-record-letter.js?v=001"></script>
   <script src="excel-export.js"></script>
   <script src="hub-reference.js?v=053"></script>
   <script src="student-memory.js?v=4"></script>
-  <script src="app.js?v=061"></script>
+  <script src="app.js?v=062"></script>
   <script src="ui-enhancements.js?v=036"></script>
   <script>
     // The standalone escape hatch is offered only when this workspace is embedded.
