@@ -33,4 +33,5 @@ jobs:
           node tests/cancel-letter.test.cjs
           node tests/graduated-letter.test.cjs
           node tests/criminal-record-letter.test.cjs
+          node tests/letter-cases.test.cjs
           node tests/student-memory-contract.test.cjs
