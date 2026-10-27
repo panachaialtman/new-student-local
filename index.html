@@ -102,6 +102,14 @@
           <div><h2>Student visa cancellation letter</h2>
             <p>Prepare the Thai cancellation letter for Immigration. Word generation happens only in this browser.</p></div>
         </div>
+        
+        <div class="letter-case-panel content-card">
+          <div class="letter-case-head">
+            <div><h3>Cancellation cases</h3><p>Saved student letters · last printed / downloaded date</p></div>
+            <button class="btn primary" type="button" id="cancelNewCase">+ New case</button>
+          </div>
+          <div class="letter-case-list" id="cancelCaseList"></div>
+        </div>
         <div class="cancel-workspace">
           <form id="cancelLetterForm" class="content-card cancel-form" autocomplete="off">
             <div class="cancel-card-head"><strong>Cancellation details</strong><span>8 letter fields · optional Student ID for filename</span></div>
@@ -153,7 +161,9 @@
                 <small>Printed name and position, with space for an approved physical signature.</small>
               </label>
             </div>
+            <div class="letter-case-edit-status" id="cancelCurrentCaseStatus">New case · not saved yet</div>
             <div class="cancel-actions">
+              <button class="btn subtle" type="button" id="cancelSaveCase">Save case</button>
               <button class="btn subtle" type="button" id="cancelTestCase">Fill test case</button>
               <button class="btn subtle" type="reset" id="cancelReset">Clear form</button>
               <button class="btn primary" type="submit" id="cancelGenerate">Download cancellation letter (.docx)</button>
@@ -187,6 +197,14 @@
           <div><h2>Graduated · ED Plus certification</h2>
             <p>Create the official Thai ED Plus letter from the staff-supplied Word master. All student details remain on this device.</p>
           </div>
+        </div>
+        
+        <div class="letter-case-panel content-card">
+          <div class="letter-case-head">
+            <div><h3>Graduated cases</h3><p>Saved student letters · last printed / downloaded date</p></div>
+            <button class="btn primary" type="button" id="graduatedNewCase">+ New case</button>
+          </div>
+          <div class="letter-case-list" id="graduatedCaseList"></div>
         </div>
         <div class="cancel-workspace">
           <form id="graduatedLetterForm" class="content-card cancel-form" autocomplete="off">
@@ -237,7 +255,9 @@
                 <small>Select the university signatory for the signed Word letter.</small>
               </label>
             </div>
+            <div class="letter-case-edit-status" id="graduatedCurrentCaseStatus">New case · not saved yet</div>
             <div class="cancel-actions">
+              <button class="btn subtle" type="button" id="graduatedSaveCase">Save case</button>
               <button class="btn subtle" id="gradFillTest" type="button">Fill test case</button>
               <button class="btn subtle" id="gradReset" type="reset">Clear form</button>
               <button class="btn primary" id="gradGenerate" type="submit">Download Graduated letter (.docx)</button>
@@ -267,6 +287,14 @@
           <div><h2>Criminal Record · Police verification</h2>
             <p>Generate the Thai criminal-background and fingerprint-check request using the approved Word master. Student information stays in this browser.</p>
           </div>
+        </div>
+        
+        <div class="letter-case-panel content-card">
+          <div class="letter-case-head">
+            <div><h3>Criminal Record cases</h3><p>Saved student letters · last printed / downloaded date</p></div>
+            <button class="btn primary" type="button" id="criminalNewCase">+ New case</button>
+          </div>
+          <div class="letter-case-list" id="criminalCaseList"></div>
         </div>
         <div class="cancel-workspace">
           <form id="criminalLetterForm" class="content-card cancel-form" autocomplete="off">
@@ -320,7 +348,9 @@
                 <small>Uses the same approved signatories as Cancel and Graduated.</small>
               </label>
             </div>
+            <div class="letter-case-edit-status" id="criminalCurrentCaseStatus">New case · not saved yet</div>
             <div class="cancel-actions">
+              <button class="btn subtle" type="button" id="criminalSaveCase">Save case</button>
               <button class="btn subtle" type="button" id="criminalFillTest">Fill test case</button>
               <button class="btn subtle" type="reset" id="criminalReset">Clear form</button>
               <button class="btn primary" type="submit" id="criminalGenerate">Download Criminal Record letter (.docx)</button>
@@ -629,7 +659,7 @@
   <script src="excel-export.js"></script>
   <script src="hub-reference.js?v=053"></script>
   <script src="student-memory.js?v=4"></script>
-  <script src="app.js?v=062"></script>
+  <script src="app.js?v=063"></script>
   <script src="ui-enhancements.js?v=036"></script>
   <script>
     // The standalone escape hatch is offered only when this workspace is embedded.

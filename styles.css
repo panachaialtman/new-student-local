@@ -1054,3 +1054,25 @@ body { font-size: 16px; }
 .cancel-nat-option:hover,.cancel-nat-option.active{background:var(--blue-soft)}
 .cancel-other-field textarea{font:inherit;min-height:76px;resize:vertical;padding:10px 11px;border:1px solid var(--line-strong);border-radius:10px}
 .cancel-other-field textarea:focus{border-color:#6184d8;outline:2px solid rgba(40,92,196,.28)}
+
+
+/* Saved and reopenable Current Letter case files */
+.letter-case-panel{padding:20px 22px;margin-bottom:18px}
+.letter-case-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px}
+.letter-case-head h3{margin:0;font-size:17px;color:var(--ink)}
+.letter-case-head p{margin:5px 0 0;font-size:12px;color:var(--muted)}
+.letter-case-list{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.letter-case-row{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:13px 15px;
+ background:var(--surface,#fff);border-bottom:1px solid var(--line)}
+.letter-case-row:last-child{border-bottom:0}
+.letter-case-row.is-active{background:var(--blue-soft,#eef4ff);box-shadow:inset 3px 0 0 var(--blue,#285cc4)}
+.letter-case-info{display:flex;flex-direction:column;gap:4px;min-width:0;overflow-wrap:anywhere}
+.letter-case-info strong{font-size:14px;color:var(--ink)}
+.letter-case-info span{font-size:12px;color:var(--muted)}
+.letter-case-info small{font-size:11px;color:var(--muted)}
+.letter-case-info b{color:var(--ink)}
+.letter-case-actions{display:flex;gap:8px;flex-wrap:wrap}
+.letter-cases-empty{margin:0;padding:18px;font-size:13px;color:var(--muted)}
+.letter-case-edit-status{margin-top:18px;font-size:12px;font-weight:600;color:var(--muted)}
+@media(max-width:650px){.letter-case-panel{padding:15px}.letter-case-row,.letter-case-head{
+ align-items:flex-start;flex-direction:column}.letter-case-actions{width:100%}}

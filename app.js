@@ -2877,6 +2877,7 @@
       });
     });
     el('gradFillTest').addEventListener('click',()=>{
+      state.activeLetterCaseIds.graduated=null; // A test case cannot overwrite a saved case.
       const sample={documentNo:'9999',issueDate:todayIso(),fullName:'MR. EXAMPLE STUDENT',
         birthDate:'2000-10-25',nationalityThai:'เมียนมา',passportNo:'TEST123456',
         majorThai:'สาขาวิชาบริหารธุรกิจ',facultyThai:'วิทยาลัยนานาชาติ',
@@ -3018,6 +3019,7 @@
       });
     });
     el('criminalFillTest').addEventListener('click',()=>{
+      state.activeLetterCaseIds.criminal=null; // A test case cannot overwrite a saved case.
       const sample={documentNo:'9999',issueDate:todayIso(),
         policePlace:'ศูนย์พิสูจน์หลักฐาน 1',fullName:'MR. EXAMPLE STUDENT',
         countryFullThai:'สาธารณรัฐแห่งสหภาพเมียนมา',passportNo:'TEST123456',
@@ -3186,6 +3188,7 @@
     form.elements.signatory.innerHTML=signatoryOptions(state.settings.signatory);
     form.elements.issueDate.value=todayIso();
     el('cancelTestCase').addEventListener('click',()=>{
+      state.activeLetterCaseIds.cancel=null; // A test case cannot overwrite a saved case.
       // Synthetic values for layout checks. Do not save or submit them.
       const date=new Date();
       date.setDate(date.getDate()+7);
