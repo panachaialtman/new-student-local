@@ -52,6 +52,8 @@
     drafts: [],
     activeDraftId: null,
     batches: [],
+    letterCases: [],
+    activeLetterCaseIds: {cancel:null,graduated:null,criminal:null},
     selected: new Set(),
     activeCategory: 'normal',
     activeStatus: 'all',
@@ -873,6 +875,7 @@
         state.cases = migrateCaseOrder(stored.cases);
         state.drafts = normalizeDrafts(stored.drafts);
         state.batches = Array.isArray(stored.batches) ? stored.batches : [];
+        state.letterCases = normalizeLetterCases(stored.letterCases);
         state.settings = { ...state.settings, ...(stored.settings || {}) };
       } else {
         // Same-origin migration for development builds. GitHub Pages uses a new
@@ -882,6 +885,7 @@
         const legacySettings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
         state.cases = migrateCaseOrder(legacyCases);
         state.drafts = [];
+        state.letterCases = [];
         state.batches = Array.isArray(legacyBatches) ? legacyBatches : [];
         if (legacySettings) state.settings = { ...state.settings, ...legacySettings };
         if (state.cases.length || state.batches.length || legacySettings) persist();
@@ -897,6 +901,7 @@
       state.cases = [];
       state.drafts = [];
       state.batches = [];
+      state.letterCases = [];
     }
   }
 
@@ -905,6 +910,7 @@
       cases: state.cases,
       drafts: state.drafts,
       batches: state.batches,
+      letterCases: state.letterCases,
       settings: state.settings,
       savedAt: new Date().toISOString(),
     }).then(()=>true).catch((err) => {
@@ -2352,7 +2358,8 @@
     const templates = await VisaDB.exportTemplatesBase64();
     const payload = {
       exportedAt: new Date().toISOString(), version: '0.2-web',
-      cases: state.cases, drafts: state.drafts, batches: state.batches, settings: state.settings, templates,
+      cases: state.cases, drafts: state.drafts, batches: state.batches,
+      letterCases: state.letterCases, settings: state.settings, templates,
     };
     downloadBlob(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }), `visa_workspace_${todayIso()}.visabackup`);
     toast('Backup exported', 'Cases, history, settings and imported Word templates are included.');
@@ -2367,6 +2374,8 @@
       state.drafts = normalizeDrafts(payload.drafts);
       state.activeDraftId = null;
       state.batches = Array.isArray(payload.batches) ? payload.batches : [];
+      state.letterCases = normalizeLetterCases(payload.letterCases);
+      state.activeLetterCaseIds={cancel:null,graduated:null,criminal:null};
       state.settings = { ...state.settings, ...(payload.settings || {}) };
       state.settings.signatory = normalizeSignatoryKey(state.settings.signatory);
       state.settings.newStudentPrefixes = cleanNewStudentPrefixes(state.settings.newStudentPrefixes) || '169, 769, 869, 969';
@@ -2387,6 +2396,7 @@
       renderDraftsButton();
       state.selected.clear();
       renderWorkspace(); renderBatchHistory(); renderProgramTable();
+      for(const kind of Object.keys(LETTER_CASES))renderLetterCases(kind);
       toast('Backup restored', `${state.cases.length} cases restored into this browser.`);
     } catch (err) {
       toast('Restore failed', err.message || String(err), true);
@@ -2621,6 +2631,150 @@
     if (window.innerWidth <= 880) el('sidebar').classList.remove('open');
   }
 
+
+
+  // Separate reusable case files for the standalone Current Letter sections.
+  // A browser only knows when it generated/downloaded a Word file, not whether
+  // the operator later physically printed it.
+  const LETTER_CASE_FIELDS=Object.freeze({
+    cancel:['documentNo','issueDate','reason','otherReason','fullName','nationalityThai',
+      'passportNo','studentId','cancelDate','signatory'],
+    graduated:['documentNo','issueDate','fullName','birthDate','nationalityThai',
+      'passportNo','majorThai','facultyThai','degreeLevel','signatory'],
+    criminal:['documentNo','issueDate','policePlace','fullName','countryFullThai',
+      'passportNo','nationalityThai','degreeLevel','majorThai','facultyThai','signatory']
+  });
+  const LETTER_CASES=Object.freeze({
+    cancel:{form:'cancelLetterForm',list:'cancelCaseList',status:'cancelCurrentCaseStatus',
+      preview:()=>updateCancelPreview()},
+    graduated:{form:'graduatedLetterForm',list:'graduatedCaseList',
+      status:'graduatedCurrentCaseStatus',preview:()=>updateGraduatedPreview()},
+    criminal:{form:'criminalLetterForm',list:'criminalCaseList',
+      status:'criminalCurrentCaseStatus',preview:()=>updateCriminalPreview()}
+  });
+  function normalizeLetterCases(rows){
+    if(!Array.isArray(rows))return [];
+    const seen=new Set();
+    return rows.filter(x=>x&&typeof x==='object'&&
+      typeof x.id==='string'&&x.id.startsWith('letter_')&&
+      LETTER_CASE_FIELDS[x.kind]&&x.values&&typeof x.values==='object'&&
+      !Array.isArray(x.values)&&!seen.has(x.id)&&seen.add(x.id))
+      .map(x=>({
+        id:x.id,kind:x.kind,createdAt:String(x.createdAt||''),
+        updatedAt:String(x.updatedAt||''),lastGeneratedAt:String(x.lastGeneratedAt||''),
+        printCount:Math.max(0,Number(x.printCount)||0),
+        values:Object.fromEntries(LETTER_CASE_FIELDS[x.kind].map(k=>[k,String(x.values[k]??'').slice(0,500)]))
+      }));
+  }
+  function letterPrintStamp(stamp){
+    if(!stamp||!Number.isFinite(Date.parse(stamp)))return 'Never';
+    return new Date(stamp).toLocaleString('en-GB',{timeZone:'Asia/Bangkok',
+      day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false});
+  }
+  function letterCaseValues(kind){
+    const f=el(LETTER_CASES[kind].form);
+    return Object.fromEntries(LETTER_CASE_FIELDS[kind].map(k=>
+      [k,String(f.elements[k]?.value??'').trim()]));
+  }
+  function renderLetterCases(kind){
+    const cfg=LETTER_CASES[kind],root=el(cfg.list);if(!root)return;
+    const active=state.activeLetterCaseIds[kind];
+    const items=state.letterCases.filter(c=>c.kind===kind)
+      .sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt)));
+    root.innerHTML=items.length?items.map(c=>`
+      <div class="letter-case-row ${c.id===active?'is-active':''}">
+        <div class="letter-case-info">
+          <strong>${escapeHtml(c.values.fullName||c.values.studentId||c.values.documentNo||'Unnamed case')}</strong>
+          <span>Doc ${escapeHtml(c.values.documentNo||'—')} ·
+            Passport ${escapeHtml(c.values.passportNo||'—')}</span>
+          <small>Last printed / downloaded: <b>${escapeHtml(letterPrintStamp(c.lastGeneratedAt))}</b>
+            ${c.printCount?' · '+c.printCount+' generated':''}</small>
+        </div>
+        <div class="letter-case-actions">
+          <button class="btn subtle" type="button" data-letter-open="${escapeHtml(c.id)}">Open</button>
+          <button class="btn subtle" type="button" data-letter-delete="${escapeHtml(c.id)}">Delete</button>
+        </div>
+      </div>`).join(''):
+      '<p class="letter-cases-empty">No saved cases yet. Save a form or download a letter to create a reusable case.</p>';
+    const status=el(cfg.status);
+    if(status)status.textContent=active&&items.some(c=>c.id===active)?
+      'Editing saved case · Save case or download to record changes':'New case · not saved yet';
+  }
+  async function saveLetterCase(kind,options={}){
+    const values=letterCaseValues(kind);
+    if(!['fullName','passportNo','studentId','documentNo'].some(k=>values[k])){
+      toast('Case not saved','Enter a name or identifying number before saving.',true);
+      return null;
+    }
+    const stamp=new Date().toISOString();
+    let item=state.letterCases.find(c=>c.kind===kind&&c.id===state.activeLetterCaseIds[kind]);
+    if(!item){
+      item={id:uid('letter'),kind,createdAt:stamp,updatedAt:stamp,
+        lastGeneratedAt:'',printCount:0,values:{}};
+      state.letterCases.push(item);
+    }
+    item.values=values;item.updatedAt=stamp;
+    if(options.generatedAt){
+      item.lastGeneratedAt=options.generatedAt;
+      item.printCount=(Number(item.printCount)||0)+1;
+    }
+    state.activeLetterCaseIds[kind]=item.id;
+    const ok=await persist();
+    renderLetterCases(kind);
+    if(!ok)toast('Save failed','The browser could not save this case; please export a backup.',true);
+    else if(!options.silent)toast('Case saved','The form can now be reopened from this section.');
+    return item;
+  }
+  function openLetterCase(kind,id){
+    const item=state.letterCases.find(c=>c.kind===kind&&c.id===id);
+    if(!item)return;
+    const f=el(LETTER_CASES[kind].form);
+    for(const k of LETTER_CASE_FIELDS[kind]){
+      if(f.elements[k])f.elements[k].value=item.values[k]??'';
+    }
+    state.activeLetterCaseIds[kind]=item.id;
+    if(kind==='cancel'){
+      updateCancelReasonField();
+      const popup=el('cancelNationalitySuggestions');
+      if(popup){popup.hidden=true;popup.replaceChildren();}
+    }
+    if(kind==='criminal')f.elements.countryFullThai.dataset.autoFromNationality='';
+    LETTER_CASES[kind].preview();renderLetterCases(kind);
+    f.scrollIntoView({behavior:'smooth',block:'start'});
+  }
+  async function deleteLetterCase(kind,id){
+    const item=state.letterCases.find(c=>c.kind===kind&&c.id===id);
+    if(!item||!confirm('Delete the saved case for '+(item.values.fullName||'this student')+
+      '? Generated document history will not be deleted.'))return;
+    state.letterCases=state.letterCases.filter(c=>c.id!==id);
+    if(state.activeLetterCaseIds[kind]===id)state.activeLetterCaseIds[kind]=null;
+    await persist();renderLetterCases(kind);
+    toast('Saved case deleted','Document history was preserved.');
+  }
+  function bindLetterCaseControls(kind){
+    const cfg=LETTER_CASES[kind],f=el(cfg.form),root=el(cfg.list),prefix=kind;
+    el(prefix+'SaveCase').addEventListener('click',()=>void saveLetterCase(kind));
+    el(prefix+'NewCase').addEventListener('click',()=>{
+      state.activeLetterCaseIds[kind]=null;f.reset();
+      queueMicrotask(()=>renderLetterCases(kind));
+      f.scrollIntoView({behavior:'smooth',block:'start'});
+    });
+    root.addEventListener('click',event=>{
+      const opened=event.target.closest('[data-letter-open]');
+      if(opened){openLetterCase(kind,opened.dataset.letterOpen);return;}
+      const deleted=event.target.closest('[data-letter-delete]');
+      if(deleted)void deleteLetterCase(kind,deleted.dataset.letterDelete);
+    });
+    f.addEventListener('reset',()=>{
+      state.activeLetterCaseIds[kind]=null;
+      queueMicrotask(()=>renderLetterCases(kind));
+    });
+    f.addEventListener('input',()=>{
+      if(state.activeLetterCaseIds[kind]&&el(cfg.status))
+        el(cfg.status).textContent='Unsaved edits · Save case or download';
+    });
+    renderLetterCases(kind);
+  }
 
   // Graduated ED Plus: a standalone locally generated document.
   function graduatedFields(){
