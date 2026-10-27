@@ -1256,6 +1256,7 @@
         <div class="case-click visa-cell">
           <div class="visa-primary">${requestUntil ? formatDate(requestUntil) : 'Not available yet'}</div>
           <div class="visa-secondary">Stay: ${formatDate(item.currentStayUntil)}${capped ? ' · Passport cap' : ''}</div>
+          <div class="visa-secondary">Last printed / downloaded: ${escapeHtml(letterPrintStamp(item.generatedAt))}</div>
         </div>
         <div class="case-click row-chevron">›</div>
       </div>`;
@@ -1415,7 +1416,7 @@
     const validation = validationFor(item);
     const program = programByKey(item.programKey);
     el('drawerName').textContent = item.fullName || 'Unnamed student';
-    el('drawerId').textContent = `${item.studentId || 'No student ID'} · Document ${item.documentNo || 'not assigned'}`;
+    el('drawerId').textContent = `${item.studentId || 'No student ID'} · Document ${item.documentNo || 'not assigned'} · Last printed/downloaded: ${letterPrintStamp(item.generatedAt)}`;
     el('editStudentBtn').classList.toggle('hidden', state.editing);
     el('saveStudentBtn').classList.toggle('hidden', !state.editing);
     el('printIndividualBtn').classList.toggle('hidden', state.editing);
@@ -2622,9 +2623,9 @@
     const reserved = view === 'placeholder' || view === 'cancel' || view === 'graduated' || view === 'criminal';
     if (el('draftsBtn')) { el('draftsBtn').hidden = reserved; el('draftsBtn').classList.toggle('hidden', reserved); }
     if (el('addStudentBtn')) { el('addStudentBtn').hidden = reserved; el('addStudentBtn').classList.toggle('hidden', reserved); }
-    if (view === 'cancel') updateCancelPreview();
-    if (view === 'graduated') updateGraduatedPreview();
-    if (view === 'criminal') updateCriminalPreview();
+    if (view === 'cancel') {updateCancelPreview();renderLetterCases('cancel');}
+    if (view === 'graduated') {updateGraduatedPreview();renderLetterCases('graduated');}
+    if (view === 'criminal') {updateCriminalPreview();renderLetterCases('criminal');}
     if (view === 'programs') renderProgramTable();
     if (view === 'batches') renderBatchHistory();
     if (view === 'settings') { switchSettingsTab(activeSettingsTab); refreshTemplateStatus().catch(console.error); }
@@ -2896,11 +2897,13 @@
         const blob=await window.BUICGraduatedLetter.create(fields);
         const filename=window.BUICGraduatedLetter.filename(fields);
         downloadBlob(blob,filename);
+        const savedCase=await saveLetterCase('graduated',{generatedAt:new Date().toISOString(),silent:true});
         state.batches.unshift({
           id:uid('graduated'),createdAt:new Date().toISOString(),issueDate:fields.issueDate,
           documentNumbers:['มกท/ศนช. '+valid.rawNumber+'/'+valid.issueYear],
           students:[{documentNo:valid.rawNumber,fullName:valid.fullName}],
-          count:1,outputType:'graduated_edplus',signatory:fields.signatory,filename
+          count:1,outputType:'graduated_edplus',signatory:fields.signatory,filename,
+          letterCaseId:savedCase?.id||null
         });
         persist();renderBatchHistory();
         toast('Graduated letter created','DOCX downloaded. Check the final Word layout before use.');
@@ -3037,11 +3040,13 @@
         const blob=await BUICCriminalRecord.create(fields);
         const filename=BUICCriminalRecord.filename(fields);
         downloadBlob(blob,filename);
+        const savedCase=await saveLetterCase('criminal',{generatedAt:new Date().toISOString(),silent:true});
         state.batches.unshift({
           id:uid('criminal'),createdAt:new Date().toISOString(),issueDate:fields.issueDate,
           documentNumbers:['มกท/ศนช. '+data.number+'/'+data.year],
           students:[{documentNo:data.number,fullName:data.fullName}],
-          count:1,outputType:'criminal_record',signatory:fields.signatory,filename
+          count:1,outputType:'criminal_record',signatory:fields.signatory,filename,
+          letterCaseId:savedCase?.id||null
         });
         persist();renderBatchHistory();
         toast('Criminal Record letter created','DOCX downloaded. Verify the police office and Word layout before signing.');
@@ -3229,12 +3234,14 @@
         const blob=await BUICCancelLetter.create(fields);
         const filename=BUICCancelLetter.filename(fields);
         downloadBlob(blob,filename);
+        const savedCase=await saveLetterCase('cancel',{generatedAt:new Date().toISOString(),silent:true});
         state.batches.unshift({
           id:uid('cancel'),createdAt:new Date().toISOString(),issueDate:fields.issueDate,
           documentNumbers:[valid.documentNo],
           students:[{documentNo:valid.documentNo,studentId:valid.studentId,fullName:valid.fullName}],
           count:1,signatory:form.elements.signatory.value,
-          outputType:'cancel_letter',reason:valid.reason,cancelDate:fields.cancelDate,filename
+          outputType:'cancel_letter',reason:valid.reason,cancelDate:fields.cancelDate,filename,
+          letterCaseId:savedCase?.id||null
         });
         persist();renderBatchHistory();
         toast('Cancellation letter created','DOCX downloaded. Review and sign before submitting to Immigration.');
@@ -3330,6 +3337,7 @@
     bindCancelLetter();
     bindGraduatedLetter();
     bindCriminalLetter();
+    for(const kind of Object.keys(LETTER_CASES))bindLetterCaseControls(kind);
 
     el('drawerBackdrop').addEventListener('click', closeDrawer);
     el('closeDrawerBtn').addEventListener('click', closeDrawer);
