@@ -905,6 +905,18 @@
     }
   }
 
+  function workspaceSaveStatus(message,needsRetry=false){
+    let node=document.getElementById('workspacePersistentSaveStatus');
+    if(!node){node=document.createElement('div');node.id='workspacePersistentSaveStatus';
+      node.setAttribute('role','status');node.style.cssText='position:fixed;z-index:99999;bottom:12px;left:12px;background:#fff7ed;color:#9a3412;border:1px solid #fdba74;border-radius:9px;padding:10px 12px;font-size:12px';
+      document.body.appendChild(node);}
+    node.textContent=message;
+    if(needsRetry){const retry=document.createElement('button');retry.type='button';
+      retry.textContent='Retry local save';retry.style.marginLeft='8px';
+      retry.addEventListener('click',()=>void persist());node.appendChild(retry);}
+    else if(node.dataset.failed!=='true')node.remove();
+    node.dataset.failed=String(needsRetry);
+  }
   function persist() {
     return VisaDB.setState('workspace_v02', {
       cases: state.cases,
@@ -913,8 +925,12 @@
       letterCases: state.letterCases,
       settings: state.settings,
       savedAt: new Date().toISOString(),
-    }).then(()=>true).catch((err) => {
-      console.error('Autosave failed',err);
+    }).then(()=>{
+      document.getElementById('workspacePersistentSaveStatus')?.remove();
+      return true;
+    }).catch(err=>{
+      console.error('Local storage save failed',err);
+      workspaceSaveStatus('Local save failed ('+(err?.name||'storage error')+'). Keep this tab open; retry or export a backup.',true);
       return false;
     });
   }
@@ -2722,7 +2738,7 @@
     state.activeLetterCaseIds[kind]=item.id;
     const ok=await persist();
     renderLetterCases(kind);
-    if(!ok)toast('Save failed','The browser could not save this case; please export a backup.',true);
+    if(!ok){toast('Save failed','The browser could not save this case; please export a backup.',true);return null;}
     else if(!options.silent)toast('Case saved','The form can now be reopened from this section.');
     return item;
   }
@@ -2749,7 +2765,8 @@
       '? Generated document history will not be deleted.'))return;
     state.letterCases=state.letterCases.filter(c=>c.id!==id);
     if(state.activeLetterCaseIds[kind]===id)state.activeLetterCaseIds[kind]=null;
-    await persist();renderLetterCases(kind);
+    if(!await persist()){toast('Delete not saved','Keep this page open and retry local save.',true);return;}
+    renderLetterCases(kind);
     toast('Saved case deleted','Document history was preserved.');
   }
   function bindLetterCaseControls(kind){
