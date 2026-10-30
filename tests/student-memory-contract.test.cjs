@@ -13,7 +13,7 @@ assert.doesNotMatch(saveDrawer,/BUICStudentMemory|rememberCurrentLetterCases/,'O
 const draft=app.slice(app.indexOf('async function saveStudentDraft()'),app.indexOf('function todayIso',app.indexOf('async function saveStudentDraft()')));
 assert.doesNotMatch(draft,/BUICStudentMemory|rememberCurrentLetterCases/,'Draft save must not update shared memory');
 assert.match(app,/buic-student-memory-selected/,'Student DB selection must populate Current Letter');
-assert.match(html,/student-memory\.js\?v=4/);
+assert.match(html,/src="student-memory\.js\?v=[A-Za-z0-9._-]+"/,'The shared auth client must have a cache version');
 assert.match(sw,/\.\/student-memory\.js/);
 assert.match(memory,/id='buicWorkspaceUsername'|id=\"buicWorkspaceUsername\"/,'Workspace login must include account field');
 assert.match(memory,/id='buicWorkspacePassword'|id=\"buicWorkspacePassword\"/,'Workspace login must include password field');
