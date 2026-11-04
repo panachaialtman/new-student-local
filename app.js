@@ -2791,9 +2791,13 @@
         .map(node=>[node,node.disabled]);
       letterDialogControls.set(kind,controls);
       controls.forEach(([node])=>{node.disabled=true;});
+      dialog.tabIndex=-1;
+      dialog.focus({preventScroll:true});
     }else{
       for(const [node,disabled] of letterDialogControls.get(kind)||[])node.disabled=disabled;
       letterDialogControls.delete(kind);
+      if(!dialog.classList.contains('hidden')&&document.activeElement===dialog)
+        dialog.querySelector('input:not([readonly]),select,textarea')?.focus({preventScroll:true});
     }
   }
   function showLetterCaseDialog(kind,editing=false){

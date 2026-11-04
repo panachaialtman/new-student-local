@@ -96,6 +96,9 @@ try{
   await page.waitForFunction(kind=>document.getElementById(kind+'LetterModal').getAttribute('aria-busy')==='true'&&Boolean(window.__finishWordGeneration),kind);
   assert.equal(await form.locator('[name="fullName"]').isDisabled(),true);
   assert.equal(await page.locator(`#${kind}SaveCase`).isDisabled(),true);
+  assert.equal(await page.evaluate(()=>document.activeElement.id),kind+'LetterModal');
+  await page.keyboard.press('Tab');
+  assert.equal(await page.evaluate(()=>document.activeElement.id),kind+'LetterModal','busy dialog keeps focus away from background student controls');
   await page.keyboard.press('Escape');
   assert.equal(await modal.isVisible(),true,'the student cannot change while Word generation is pending');
   await page.evaluate(()=>{window.__finishWordGeneration();delete window.__finishWordGeneration;});
