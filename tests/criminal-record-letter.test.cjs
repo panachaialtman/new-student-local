@@ -9,23 +9,27 @@ const worker=fs.readFileSync('sw.js','utf8');
 const source=fs.readFileSync('templates-data/criminal_record_master.txt','utf8').trim();
 const template=JSON.parse(zlib.gunzipSync(Buffer.from(source,'base64')).toString('utf8'));
 const original=template['word/document.xml'];
-assert.equal(Object.keys(template).length,12);
+const layout=JSON.parse(fs.readFileSync('tests/fixtures/criminal-original-layout.json','utf8'));
+const {createHash}=require('node:crypto');
+assert.equal(Object.keys(template).length,11);
 const tokens=['DOC_NUMBER','DOC_YEAR','ISSUE_DATE','POLICE_PLACE','FULL_NAME_1',
  'FULL_NAME_2','COUNTRY_FULL_TH','PASSPORT_NO','NATIONALITY_TH','DEGREE_TH',
  'MAJOR_TH','FACULTY_TH','SIGNER_NAME_TAIL','SIGNER_ROLE'];
 for(const token of tokens){
  assert.equal(original.split('{{'+token+'}}').length,2,'Unique '+token+' in approved master');
 }
-assert.equal((original.match(/<w:highlight w:val="yellow"\/>/g)||[]).length,11);
-assert(template['word/footer1.xml'].includes('ศูนย์นานาชาติ'));
-assert(template['word/footer1.xml'].includes('0 2407 3888'));
-assert(original.includes('footerReference'));
-// The original compacted website master has ten nonempty Word paragraphs.
-// Its missing section spacing caused the very cramped Word screenshot.
+assert.equal((original.match(/<w:highlight w:val="yellow"\/>/g)||[]).length,layout.highlight_run_count);
+assert(original.includes('ศูนย์นานาชาติ')&&original.includes('0 2407 3888'));
+assert(!original.includes('footerReference'),'Keep the original body contact block rather than an invented footer');
+for(const [name,hash] of Object.entries(layout.unchanged_part_sha256)){
+ const source=template[name];
+ const bytes=source.startsWith('BASE64:')?Buffer.from(source.slice(7),'base64'):Buffer.from(source);
+ assert.equal(createHash('sha256').update(bytes).digest('hex'),hash,'Original Word part '+name);
+}
+// Geometry captured from the original staff DOC conversion, before adding tokens.
 const paragraphs=xml=>(xml.match(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g)||[]);
-assert.equal(paragraphs(original).length,10);
-const spacingBefore=[280,0,0,0,0,0,0,0,0,0];
-const spacingAfter=[340,340,280,425,315,300,720,0,0,0];
+assert.equal(paragraphs(original).length,30,'Retain blank spacer paragraphs from the original');
+assert.equal(layout.paragraph_properties.length,30);
 let written,loads=0;
 const context={window:{ZipLite:{writeZip:async files=>{
  written=files;
@@ -66,23 +70,31 @@ const base={documentNo:'5343',issueDate:'2026-10-24',
                       valid.policePlace,valid.majorThai,valid.facultyThai,thai])
    assert(xml.includes(value),'Field absent: '+value);
   assert(!xml.includes('{{'),'No unresolved placeholders');
-  // Preserve original text/fields and formatting except intentional
-  // paragraph spacing; the final layout remains a single-page letter.
+  // Field substitution must leave the entire original layout untouched.
+  const expected={DOC_NUMBER:valid.number,DOC_YEAR:valid.year,ISSUE_DATE:valid.issueDate,
+   POLICE_PLACE:valid.policePlace,FULL_NAME_1:valid.fullName,FULL_NAME_2:valid.fullName,
+   COUNTRY_FULL_TH:valid.countryFullThai,PASSPORT_NO:valid.passportNo,
+   NATIONALITY_TH:valid.nationalityThai,DEGREE_TH:valid.degreeThai,
+   MAJOR_TH:valid.majorThai,FACULTY_TH:valid.facultyThai,
+   SIGNER_NAME_TAIL:gen.SIGNATORIES[valid.signatory].tail,
+   SIGNER_ROLE:gen.SIGNATORIES[valid.signatory].role};
+  const escape=value=>String(value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+   .replace(/"/g,'&quot;').replace(/'/g,'&apos;');
+  let exact=original;
+  for(const [key,value] of Object.entries(expected))exact=exact.replace('{{'+key+'}}',escape(value));
+  assert.equal(xml,exact,'Generation must merge fields without reconstructing paragraph geometry');
   const parts=paragraphs(xml);
-  assert.equal(parts.length,10);
-  for(const [i,p] of parts.entries()){
-   const ppr=p.slice(0,p.indexOf('</w:pPr>'));
-   const spacing=ppr.match(/<w:spacing\b[^>]*\/>/)?.[0];
-   assert(spacing,'Paragraph '+i+' must have spacing');
-   assert(spacing.includes('w:before="'+spacingBefore[i]+'"'),
-     'Opening top breathing room and exact original-inspired before-gap '+i);
-   assert(spacing.includes('w:after="'+spacingAfter[i]+'"'),
-     'Correct approved section gap '+i);
-   if(i===4||i===5)
-    assert(spacing.includes('w:line="257"')&&spacing.includes('w:lineRule="auto"'),
-      'Natural Thai body line leading');
-  }
-  assert.equal((xml.match(/<w:highlight w:val="yellow"\/>/g)||[]).length,11);
+  assert.equal(parts.length,30);
+  for(const [i,p] of parts.entries())
+   assert.equal(p.match(/<w:pPr>[\s\S]*?<\/w:pPr>/)?.[0],layout.paragraph_properties[i],
+    'Preserve original paragraph properties including spacer '+i);
+  assert.equal(xml.match(/<w:sectPr>[\s\S]*?<\/w:sectPr>/)?.[0],layout.section_properties);
+  assert.equal((xml.match(/<w:tab(?:\s[^>]*)?\/>/g)||[]).length,layout.tab_count);
+  assert.equal((xml.match(/<w:highlight w:val="yellow"\/>/g)||[]).length,layout.highlight_run_count);
+  assert(xml.includes('<wp:positionH relativeFrom="page"><wp:posOffset>'+layout.letterhead.x+'</wp:posOffset>'));
+  assert(xml.includes('<wp:positionV relativeFrom="page"><wp:posOffset>'+layout.letterhead.y+'</wp:posOffset>'));
+  assert(xml.includes('<wp:extent cx="'+layout.letterhead.cx+'" cy="'+layout.letterhead.cy+'"/>'));
+  assert.equal((xml.match(/<w:drawing(?:\s[^>]*)?>/g)||[]).length,1,'The original letterhead must remain visible');
   for(const [name,text] of Object.entries(template)){
    if(name==='word/document.xml')continue;
    const out=written.get(name).data;
@@ -117,5 +129,5 @@ const base={documentNo:'5343',issueDate:'2026-10-24',
  assert(app.includes('countryOfficialThai'));
  assert(app.includes('FULL_NAME_2')===false,'Name repetition is generated from single form field');
  assert(worker.includes("'./templates-data/criminal_record_master.txt'"));
- console.log('Criminal Record tests passed: original-inspired section rhythm, all 11 highlights, Thai fields, both names and signers, footer and isolation.');
+ console.log('Criminal Record tests passed: original Word geometry, all highlighted fields, Thai fields, both names and signers, footer and isolation.');
 })().catch(err=>{console.error(err);process.exitCode=1});

@@ -1,0 +1,61 @@
+{
+  "source_sha256": "d41805f1419d33b144d9209ab908141408e5a894f0c82d94961d45e93c311917",
+  "paragraph_properties": [
+    "<w:pPr><w:pStyle w:val=\"Normal\"/><w:tabs><w:tab w:val=\"clear\" w:pos=\"720\"/><w:tab w:val=\"left\" w:pos=\"9810\" w:leader=\"none\"/></w:tabs><w:spacing w:before=\"0\" w:after=\"0\"/><w:ind w:start=\"142\" w:end=\"472\"/><w:jc w:val=\"start\"/><w:rPr><w:rFonts w:ascii=\"TH SarabunPSK\" w:hAnsi=\"TH SarabunPSK\" w:cs=\"TH SarabunPSK\"/><w:sz w:val=\"32\"/><w:szCs w:val=\"32\"/></w:rPr></w:pPr>",
+    "<w:pPr><w:pStyle w:val=\"Normal\"/><w:tabs><w:tab w:val=\"clear\" w:pos=\"720\"/><w:tab w:val=\"left\" w:pos=\"9810\" w:leader=\"none\"/></w:tabs><w:spacing w:before=\"26\" w:after=\"50\"/><w:ind w:end=\"1389\"/><w:rPr><w:rFonts w:ascii=\"TH SarabunPSK\" w:hAnsi=\"TH SarabunPSK\" w:cs=\"TH SarabunPSK\" w:hint=\"cs\"/><w:sz w:val=\"32\"/><w:szCs w:val=\"32\"/></w:rPr></w:pPr>",
+    "<w:pPr><w:pStyle w:val=\"Normal\"/><w:spacing w:before=\"26\" w:after=\"0\"/><w:ind w:start=\"709\" w:end=\"0\"/><w:rPr><w:rFonts w:ascii=\"TH SarabunPSK\" w:hAnsi=\"TH SarabunPSK\" w:cs=\"TH SarabunPSK\"/><w:sz w:val=\"32\"/><w:szCs w:val=\"32\"/></w:rPr></w:pPr>",
+    "<w:pPr><w:pStyle w:val=\"Normal\"/><w:spacing w:before=\"26\" w:after=\"0\"/><w:ind w:start=\"709\" w:end=\"0\"/><w:rPr><w:rFonts w:ascii=\"TH SarabunPSK\" w:hAnsi=\"TH SarabunPSK\" w:cs=\"TH SarabunPSK\" w:hint=\"cs\"/><w:sz w:val=\"32\"/><w:szCs w:val=\"32\"/></w:rPr></w:pPr>",
+    "<w:pPr><w:pStyle w:val=\"Normal\"/><w:spacing w:lineRule=\"auto\" w:line=\"240\" w:before=\"26\" w:after=\"0\"/><w:ind w:start=\"709\" w:end=\"0\"/><w:rPr><w:rFonts w:ascii=\"TH SarabunPSK\" w:hAnsi=\"TH SarabunPSK\" w:cs=\"TH SarabunPSK\" w:hint=\"cs\"/><w:sz w:val=\"32\"/><w:szCs w:val=\"32\"/></w:rPr></w:pPr>",
+    "<w:pPr><w:pStyle w:val=\"Normal\"/><w:spacing w:lineRule=\"auto\" w:line=\"240\" w:before=\"26\" w:after=\"0\"/><w:rPr/></w:pPr>",
+    "<w:pPr><w:pStyle w:val=\"Normal\"/><w:spacing w:lineRule=\"auto\" w:line=\"240\" w:before=\"26\" w:after=\"0\"/><w:ind w:start=\"709\" w:end=\"0\"/><w:rPr><w:rFonts w:ascii=\"TH SarabunPSK\" w:hAnsi=\"TH SarabunPSK\" w:cs=\"TH SarabunPSK\" w:hint=\"cs\"/><w:sz w:val=\"32\"/><w:szCs w:val=\"32\"/></w:rPr></w:pPr>",
+    "<w:pPr><w:pStyle w:val=\"Normal\"/><w:spacing w:before=\"26\" w:after=\"0\"/><w:rPr><w:rFonts w:ascii=\"TH SarabunPSK\" w:hAnsi=\"TH SarabunPSK\" w:cs=\"TH SarabunPSK\" w:hint=\"cs\"/><w:sz w:val=\"32\"/><w:szCs w:val=\"32\"/></w:rPr></w:pPr>",
+    "<w:pPr><w:pStyle w:val=\"Normal\"/><w:spacing w:lineRule=\"auto\" w:line=\"240\" w:before=\"26\" w:after=\"0\"/><w:ind w:start=\"709\" w:end=\"0\"/><w:rPr><w:rFonts w:ascii=\"TH SarabunPSK\" w:hAnsi=\"TH SarabunPSK\" w:cs=\"TH SarabunPSK\"/><w:sz w:val=\"32\"/><w:szCs w:val=\"32\"/></w:rPr></w:pPr>",
+    "<w:pPr><w:pStyle w:val=\"BodyText\"/><w:spacing w:before=\"26\" w:after=\"0\"/><w:ind w:end=\"-188\"/><w:jc w:val=\"start\"/><w:rPr/></w:pPr>",
+    "<w:pPr><w:pStyle w:val=\"BodyText\"/><w:spacing w:before=\"26\" w:after=\"0\"/><w:ind w:start=\"709\" w:end=\"382\"/><w:jc w:val=\"start\"/><w:rPr><w:rFonts w:ascii=\"TH SarabunPSK\" w:hAnsi=\"TH SarabunPSK\" w:cs=\"TH SarabunPSK\" w:hint=\"cs\"/><w:sz w:val=\"32\"/><w:szCs w:val=\"32\"/></w:rPr></w:pPr>",
+    "<w:pPr><w:pStyle w:val=\"BodyText\"/><w:spacing w:before=\"26\" w:after=\"0\"/><w:ind w:end=\"-187\"/><w:jc w:val=\"start\"/><w:rPr><w:rFonts w:ascii=\"TH SarabunPSK\" w:hAnsi=\"TH SarabunPSK\" w:cs=\"TH SarabunPSK\" w:hint=\"cs\"/><w:sz w:val=\"32\"/><w:szCs w:val=\"32\"/></w:rPr></w:pPr>",
+    "<w:pPr><w:pStyle w:val=\"ListParagraph\"/><w:tabs><w:tab w:val=\"clear\" w:pos=\"720\"/><w:tab w:val=\"left\" w:pos=\"426\" w:leader=\"none\"/></w:tabs><w:spacing w:lineRule=\"auto\" w:line=\"240\" w:before=\"26\" w:after=\"0\"/><w:ind w:start=\"709\" w:end=\"382\"/><w:contextualSpacing/><w:jc w:val=\"both\"/><w:rPr><w:rFonts w:ascii=\"TH SarabunPSK\" w:hAnsi=\"TH SarabunPSK\" w:cs=\"TH SarabunPSK\"/><w:sz w:val=\"32\"/><w:szCs w:val=\"32\"/></w:rPr></w:pPr>",
+    "<w:pPr><w:pStyle w:val=\"ListParagraph\"/><w:tabs><w:tab w:val=\"clear\" w:pos=\"720\"/><w:tab w:val=\"left\" w:pos=\"426\" w:leader=\"none\"/></w:tabs><w:spacing w:lineRule=\"auto\" w:line=\"240\" w:before=\"26\" w:after=\"0\"/><w:ind w:start=\"709\" w:end=\"0\"/><w:contextualSpacing/><w:rPr><w:rFonts w:ascii=\"TH SarabunPSK\" w:hAnsi=\"TH SarabunPSK\" w:cs=\"TH SarabunPSK\"/><w:sz w:val=\"32\"/><w:szCs w:val=\"32\"/></w:rPr></w:pPr>",
+    "<w:pPr><w:pStyle w:val=\"ListParagraph\"/><w:tabs><w:tab w:val=\"clear\" w:pos=\"720\"/><w:tab w:val=\"left\" w:pos=\"426\" w:leader=\"none\"/></w:tabs><w:spacing w:lineRule=\"auto\" w:line=\"240\" w:before=\"26\" w:after=\"0\"/><w:ind w:start=\"709\" w:end=\"0\"/><w:contextualSpacing/><w:rPr><w:rFonts w:ascii=\"TH SarabunPSK\" w:hAnsi=\"TH SarabunPSK\" w:cs=\"TH SarabunPSK\"/><w:sz w:val=\"32\"/><w:szCs w:val=\"32\"/></w:rPr></w:pPr>",
+    "<w:pPr><w:pStyle w:val=\"ListParagraph\"/><w:tabs><w:tab w:val=\"clear\" w:pos=\"720\"/><w:tab w:val=\"left\" w:pos=\"426\" w:leader=\"none\"/></w:tabs><w:spacing w:lineRule=\"auto\" w:line=\"240\" w:before=\"26\" w:after=\"0\"/><w:ind w:start=\"709\" w:end=\"0\"/><w:contextualSpacing/><w:rPr><w:rFonts w:ascii=\"TH SarabunPSK\" w:hAnsi=\"TH SarabunPSK\" w:cs=\"TH SarabunPSK\"/><w:sz w:val=\"32\"/><w:szCs w:val=\"32\"/></w:rPr></w:pPr>",
+    "<w:pPr><w:pStyle w:val=\"ListParagraph\"/><w:tabs><w:tab w:val=\"clear\" w:pos=\"720\"/><w:tab w:val=\"left\" w:pos=\"426\" w:leader=\"none\"/></w:tabs><w:spacing w:lineRule=\"auto\" w:line=\"240\" w:before=\"26\" w:after=\"0\"/><w:ind w:start=\"709\" w:end=\"0\"/><w:contextualSpacing/><w:rPr><w:rFonts w:ascii=\"TH SarabunPSK\" w:hAnsi=\"TH SarabunPSK\" w:cs=\"TH SarabunPSK\"/><w:sz w:val=\"32\"/><w:szCs w:val=\"32\"/></w:rPr></w:pPr>",
+    "<w:pPr><w:pStyle w:val=\"Normal\"/><w:spacing w:lineRule=\"auto\" w:line=\"240\" w:before=\"26\" w:after=\"0\"/><w:ind w:start=\"709\" w:end=\"-1414\"/><w:rPr><w:rFonts w:ascii=\"TH SarabunPSK\" w:hAnsi=\"TH SarabunPSK\" w:cs=\"TH SarabunPSK\"/><w:sz w:val=\"32\"/><w:szCs w:val=\"32\"/></w:rPr></w:pPr>",
+    "<w:pPr><w:pStyle w:val=\"Normal\"/><w:spacing w:lineRule=\"auto\" w:line=\"240\" w:before=\"26\" w:after=\"0\"/><w:ind w:start=\"709\" w:end=\"-1414\"/><w:rPr><w:rFonts w:ascii=\"TH SarabunPSK\" w:hAnsi=\"TH SarabunPSK\" w:cs=\"TH SarabunPSK\"/><w:sz w:val=\"32\"/><w:szCs w:val=\"32\"/></w:rPr></w:pPr>",
+    "<w:pPr><w:pStyle w:val=\"Normal\"/><w:spacing w:lineRule=\"auto\" w:line=\"240\" w:before=\"26\" w:after=\"0\"/><w:ind w:start=\"709\" w:end=\"-1414\"/><w:rPr><w:rFonts w:ascii=\"TH SarabunPSK\" w:hAnsi=\"TH SarabunPSK\" w:cs=\"TH SarabunPSK\"/><w:sz w:val=\"32\"/><w:szCs w:val=\"32\"/></w:rPr></w:pPr>",
+    "<w:pPr><w:pStyle w:val=\"Normal\"/><w:spacing w:lineRule=\"auto\" w:line=\"240\" w:before=\"26\" w:after=\"0\"/><w:ind w:start=\"709\" w:end=\"-1414\"/><w:rPr><w:rFonts w:ascii=\"TH SarabunPSK\" w:hAnsi=\"TH SarabunPSK\" w:cs=\"TH SarabunPSK\"/><w:sz w:val=\"32\"/><w:szCs w:val=\"32\"/></w:rPr></w:pPr>",
+    "<w:pPr><w:pStyle w:val=\"PlainText\"/><w:spacing w:before=\"26\" w:after=\"0\"/><w:ind w:start=\"709\" w:end=\"0\"/><w:rPr><w:rFonts w:ascii=\"TH SarabunPSK\" w:hAnsi=\"TH SarabunPSK\" w:cs=\"TH SarabunPSK\" w:hint=\"cs\"/><w:sz w:val=\"32\"/><w:szCs w:val=\"32\"/></w:rPr></w:pPr>",
+    "<w:pPr><w:pStyle w:val=\"PlainText\"/><w:spacing w:before=\"26\" w:after=\"0\"/><w:ind w:start=\"709\" w:end=\"0\"/><w:rPr><w:rFonts w:ascii=\"TH SarabunPSK\" w:hAnsi=\"TH SarabunPSK\" w:cs=\"TH SarabunPSK\" w:hint=\"cs\"/><w:sz w:val=\"32\"/><w:szCs w:val=\"32\"/></w:rPr></w:pPr>",
+    "<w:pPr><w:pStyle w:val=\"PlainText\"/><w:spacing w:before=\"26\" w:after=\"0\"/><w:ind w:start=\"709\" w:end=\"0\"/><w:rPr><w:rFonts w:ascii=\"TH SarabunPSK\" w:hAnsi=\"TH SarabunPSK\" w:cs=\"TH SarabunPSK\" w:hint=\"cs\"/><w:sz w:val=\"32\"/><w:szCs w:val=\"32\"/></w:rPr></w:pPr>",
+    "<w:pPr><w:pStyle w:val=\"PlainText\"/><w:spacing w:before=\"26\" w:after=\"0\"/><w:ind w:start=\"709\" w:end=\"0\"/><w:rPr><w:rFonts w:ascii=\"TH SarabunPSK\" w:hAnsi=\"TH SarabunPSK\" w:cs=\"TH SarabunPSK\" w:hint=\"cs\"/><w:sz w:val=\"32\"/><w:szCs w:val=\"32\"/></w:rPr></w:pPr>",
+    "<w:pPr><w:pStyle w:val=\"PlainText\"/><w:spacing w:before=\"26\" w:after=\"0\"/><w:ind w:start=\"709\" w:end=\"0\"/><w:rPr><w:rFonts w:ascii=\"TH SarabunPSK\" w:hAnsi=\"TH SarabunPSK\" w:cs=\"TH SarabunPSK\" w:hint=\"cs\"/><w:sz w:val=\"32\"/><w:szCs w:val=\"32\"/></w:rPr></w:pPr>",
+    "<w:pPr><w:pStyle w:val=\"PlainText\"/><w:spacing w:before=\"26\" w:after=\"0\"/><w:ind w:start=\"709\" w:end=\"0\"/><w:rPr><w:rFonts w:ascii=\"TH SarabunPSK\" w:hAnsi=\"TH SarabunPSK\" w:cs=\"TH SarabunPSK\" w:hint=\"cs\"/><w:sz w:val=\"32\"/><w:szCs w:val=\"32\"/></w:rPr></w:pPr>",
+    "<w:pPr><w:pStyle w:val=\"Normal\"/><w:tabs><w:tab w:val=\"clear\" w:pos=\"720\"/><w:tab w:val=\"left\" w:pos=\"1134\" w:leader=\"none\"/><w:tab w:val=\"left\" w:pos=\"1418\" w:leader=\"none\"/><w:tab w:val=\"left\" w:pos=\"4536\" w:leader=\"none\"/></w:tabs><w:spacing w:lineRule=\"auto\" w:line=\"240\" w:before=\"26\" w:after=\"0\"/><w:rPr><w:rFonts w:ascii=\"TH SarabunPSK\" w:hAnsi=\"TH SarabunPSK\" w:cs=\"TH SarabunPSK\"/><w:sz w:val=\"32\"/><w:szCs w:val=\"32\"/></w:rPr></w:pPr>",
+    "<w:pPr><w:pStyle w:val=\"Normal\"/><w:tabs><w:tab w:val=\"clear\" w:pos=\"720\"/><w:tab w:val=\"left\" w:pos=\"9810\" w:leader=\"none\"/></w:tabs><w:spacing w:lineRule=\"auto\" w:line=\"240\" w:before=\"26\" w:after=\"0\"/><w:ind w:end=\"472\"/><w:rPr><w:rFonts w:ascii=\"TH SarabunPSK\" w:hAnsi=\"TH SarabunPSK\" w:cs=\"TH SarabunPSK\"/><w:sz w:val=\"24\"/><w:szCs w:val=\"32\"/></w:rPr></w:pPr>",
+    "<w:pPr><w:pStyle w:val=\"Normal\"/><w:spacing w:before=\"0\" w:after=\"0\"/><w:rPr><w:rFonts w:ascii=\"TH SarabunPSK\" w:hAnsi=\"TH SarabunPSK\" w:cs=\"TH SarabunPSK\"/><w:sz w:val=\"32\"/><w:szCs w:val=\"32\"/><w:lang w:val=\"en-US\" w:eastAsia=\"en-US\"/></w:rPr></w:pPr>"
+  ],
+  "section_properties": "<w:sectPr><w:type w:val=\"nextPage\"/><w:pgSz w:w=\"11906\" w:h=\"16838\"/><w:pgMar w:left=\"1440\" w:right=\"1440\" w:gutter=\"0\" w:header=\"0\" w:top=\"1440\" w:footer=\"0\" w:bottom=\"1440\"/><w:pgNumType w:fmt=\"decimal\"/><w:formProt w:val=\"false\"/><w:textDirection w:val=\"lrTb\"/><w:docGrid w:type=\"default\" w:linePitch=\"360\" w:charSpace=\"0\"/></w:sectPr>",
+  "tab_count": 50,
+  "highlight_run_count": 19,
+  "unchanged_part_sha256": {
+    "_rels/.rels": "3bbb0ec7bcb9b27df1c2300b883c5a63fe80fb27f00f2abee6b911de6f767c26",
+    "docProps/app.xml": "38383e6e60f05c82a3e6528b40e294423cc8f43912d7c0caeb8b8b44389e5d0c",
+    "word/_rels/document.xml.rels": "984c36249a1460e2a3e52853ca2b20f355521963155ce810439aa9216c32797f",
+    "word/styles.xml": "ea42a087de898fea42713eecd6346c5e6186d4388475b85d30f2a76639049a29",
+    "word/media/image1.png": "ac26513b63254f8d28dbb6bd1721b597cc44615d99a152a9c6e03fce7eb8234b",
+    "word/fontTable.xml": "6f1023f2869cca6d7d7b9195147cc27cef879bb5f7312d4aa78f120eb50df59c",
+    "word/settings.xml": "1f377569b6dee315ab1f4c8baad796c7120a63bc4f5fddb7dc1d4dabf55ed67e",
+    "word/theme/theme1.xml": "8c817dba7260b1c6e49fc7937dd857b5f42d834bc8c33769d788ea824cb2c29f",
+    "[Content_Types].xml": "9f93608e790a574566c4f3c88741c7d842a081db1cd014f69426c5ba0168730e"
+  },
+  "letterhead": {
+    "x": "283210",
+    "y": "9523105",
+    "cx": "7275830",
+    "cy": "1167765",
+    "source_rect_pt": [
+      22.299999237060547,
+      749.8507690429688,
+      595.2000122070312,
+      841.80078125
+    ]
+  }
+}

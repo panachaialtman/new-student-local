@@ -1074,5 +1074,12 @@ body { font-size: 16px; }
 .letter-case-actions{display:flex;gap:8px;flex-wrap:wrap}
 .letter-cases-empty{margin:0;padding:18px;font-size:13px;color:var(--muted)}
 .letter-case-edit-status{margin-top:18px;font-size:12px;font-weight:600;color:var(--muted)}
+/* Dedicated letter sections open on their case lists. Forms live in dialogs. */
+body.letter-dialog-open{overflow:hidden}
+.letter-entry-modal{width:min(1180px,calc(100vw - 32px));max-height:calc(100dvh - 36px)}
+.letter-entry-modal .modal-body{background:#f6f8fc;overscroll-behavior:contain;scrollbar-gutter:stable}
+.letter-entry-modal .modal-footer{background:#fff}
+.letter-entry-modal .cancel-card-head{flex-wrap:wrap}
+@media(max-width:650px){.letter-entry-modal{width:calc(100vw - 14px);max-height:calc(100dvh - 14px)}.letter-entry-modal .modal-body{padding:10px}}
 @media(max-width:650px){.letter-case-panel{padding:15px}.letter-case-row,.letter-case-head{
  align-items:flex-start;flex-direction:column}.letter-case-actions{width:100%}}

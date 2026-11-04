@@ -73,7 +73,7 @@ async function loadBundle(){
   const compressed=Uint8Array.from(atob(source),char=>char.charCodeAt(0));
   const stream=new Blob([compressed]).stream().pipeThrough(new DecompressionStream('gzip'));
   const files=JSON.parse(await new Response(stream).text());
-  if(!files['word/document.xml']||!files['word/footer1.xml']||
+  if(!files['word/document.xml']||!files['word/styles.xml']||
     !files['word/document.xml'].includes('{{FULL_NAME_2}}'))
    throw Error('Criminal Record master is incomplete.');
   return files;
@@ -97,42 +97,14 @@ function merge(documentXml,v){
  if(xml.includes('{{'))throw Error('Criminal Record template contains unresolved fields.');
  return xml;
 }
-// Match the approved legacy Word letter's section rhythm, not a condensed
-// one-page layout. The original has an opening spacer and distinct gaps after
-// date, subject, recipient, main request, and greeting/signature. These twip
-// values preserve equivalent visual spacing without rewriting Thai text,
-// inserting fake line breaks, or moving fields from their original paragraphs.
-// The smaller fallback gaps also accommodate longer faculty and country names.
-function restoreLetterSpacing(xml){
- const before=[280,0,0,0,0,0,0,0,0,0];
- const after=[340,340,280,425,315,300,720,0,0,0];
- let index=0;
- const restored=xml.replace(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g,paragraph=>{
-  const i=index++;
-  if(i>=after.length)throw Error('Criminal Record master paragraph count changed.');
-  const pprEnd=paragraph.indexOf('</w:pPr>');
-  if(pprEnd<0)throw Error('Criminal Record paragraph properties missing: '+i);
-  const ppr=paragraph.slice(0,pprEnd);
-  const match=ppr.match(/<w:spacing\b[^>]*\/>/);
-  if(!match||!/w:before="\d+"/.test(match[0])||!/w:after="\d+"/.test(match[0]))
-   throw Error('Criminal Record paragraph spacing differs from approved master: '+i);
-  let spacing=match[0].replace(/w:before="\d+"/,'w:before="'+before[i]+'"')
-   .replace(/w:after="\d+"/,'w:after="'+after[i]+'"');
-  if(i===4||i===5){
-   if(/w:line=/.test(spacing))throw Error('Unexpected line height in body paragraph '+i);
-   spacing=spacing.replace('<w:spacing','<w:spacing w:lineRule="auto" w:line="257"');
-  }
-  return ppr.replace(match[0],spacing)+paragraph.slice(pprEnd);
- });
- if(index!==after.length)throw Error('Criminal Record Word paragraphs missing.');
- return restored;
-}
+// Preserve every paragraph, spacer, tab, signature position and contact line
+// from the original staff Word letter. Only explicit field tokens are merged.
 async function create(raw){
  if(!window.ZipLite?.writeZip)throw Error('Word generation engine unavailable. Refresh the page.');
  const v=validate(raw),files=await loadBundle();
  const entries=new Map(Object.entries(files).map(([name,source])=>{
   let data;
-  if(name==='word/document.xml')data=encoder.encode(restoreLetterSpacing(merge(source,v)));
+  if(name==='word/document.xml')data=encoder.encode(merge(source,v));
   else if(typeof source==='string'&&source.startsWith('BASE64:'))
    data=Uint8Array.from(atob(source.slice(7)),c=>c.charCodeAt(0));
   else data=encoder.encode(source);

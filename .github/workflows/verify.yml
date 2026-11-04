@@ -1,7 +1,7 @@
 name: New Student Local regression checks
 on:
   push:
-    branches: [main]
+    branches: [main, 'fix/**']
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -36,3 +36,19 @@ jobs:
           node tests/letter-cases.test.cjs
           node tests/student-memory-contract.test.cjs
           node --test tests/student-memory-outbox.test.cjs
+      - name: Install browser regression dependencies
+        run: |
+          npm install --no-save playwright@1.55.1
+          npx playwright install --with-deps chromium
+      - name: Exercise saved letter cases and Add student dialogs
+        run: |
+          python3 -m http.server 8124 --bind 127.0.0.1 > /tmp/letter-cases-http.log 2>&1 &
+          sleep 2
+          node tests/letter-case-dialogs-browser.mjs
+      - name: Retain browser verification screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: letter-case-dialog-browser-results
+          path: test-results/
+          if-no-files-found: ignore

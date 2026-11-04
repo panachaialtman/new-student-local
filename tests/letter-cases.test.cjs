@@ -30,7 +30,7 @@ assert.equal(entries[0].values.fullName,'MR. EXAMPLE STUDENT');
 assert(letterPrintStamp(sample.lastGeneratedAt).includes('27 Oct 2026'));
 assert.equal(letterPrintStamp(''),'Never');
 for(const kind of ['cancel','graduated','criminal']){
- for(const suffix of ['CaseList','NewCase','SaveCase','CurrentCaseStatus'])
+ for(const suffix of ['CaseList','SaveCase','CurrentCaseStatus','LetterModal'])
   assert(html.includes('id="'+kind+suffix+'"'),'Missing '+kind+suffix);
  assert(app.includes("saveLetterCase('"+kind+"',{generatedAt:new Date().toISOString(),silent:true})"),
    kind+' must store download time after document generation');

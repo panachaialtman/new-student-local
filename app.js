@@ -2017,8 +2017,15 @@
 
   function closeModal(id) {
     el(id).classList.add('hidden');
-    const anyOpen = ['studentModal', 'batchModal', 'individualModal', 'departmentModal', 'groupAssignModal', 'draftsModal'].some((modalId) => !el(modalId).classList.contains('hidden'));
+    const letterModals=['cancelLetterModal','graduatedLetterModal','criminalLetterModal'];
+    const anyOpen = ['studentModal', 'batchModal', 'individualModal', 'departmentModal', 'groupAssignModal', 'draftsModal',...letterModals].some((modalId) => !el(modalId).classList.contains('hidden'));
     if (!anyOpen) el('modalBackdrop').classList.add('hidden');
+    if(!letterModals.some(modalId=>!el(modalId).classList.contains('hidden')))
+      document.body.classList.remove('letter-dialog-open');
+    if(letterModals.includes(id)){
+      const target=letterDialogReturnFocus?.isConnected?letterDialogReturnFocus:el('addStudentBtn');
+      target?.focus({preventScroll:true});
+    }
   }
 
   function selectedCases() {
@@ -2638,7 +2645,7 @@
     el('pageEyebrow').textContent = eyebrow;
     const reserved = view === 'placeholder' || view === 'cancel' || view === 'graduated' || view === 'criminal';
     if (el('draftsBtn')) { el('draftsBtn').hidden = reserved; el('draftsBtn').classList.toggle('hidden', reserved); }
-    if (el('addStudentBtn')) { el('addStudentBtn').hidden = reserved; el('addStudentBtn').classList.toggle('hidden', reserved); }
+    if (el('addStudentBtn')) { el('addStudentBtn').hidden = view==='placeholder'; el('addStudentBtn').classList.toggle('hidden', view==='placeholder'); }
     if (view === 'cancel') {updateCancelPreview();renderLetterCases('cancel');}
     if (view === 'graduated') {updateGraduatedPreview();renderLetterCases('graduated');}
     if (view === 'criminal') {updateCriminalPreview();renderLetterCases('criminal');}
@@ -2712,9 +2719,12 @@
           <button class="btn subtle" type="button" data-letter-delete="${escapeHtml(c.id)}">Delete</button>
         </div>
       </div>`).join(''):
-      '<p class="letter-cases-empty">No saved cases yet. Save a form or download a letter to create a reusable case.</p>';
+      '<p class="letter-cases-empty">No students yet. Click Add student to create a case.</p>';
     const status=el(cfg.status);
-    if(status)status.textContent=active&&items.some(c=>c.id===active)?
+    const editing=active&&items.some(c=>c.id===active);
+    el(kind+'LetterModalTitle').textContent=editing?'Edit student':'Add student';
+    el(kind+'SaveCase').textContent=editing?'Save changes':'Add student';
+    if(status)status.textContent=editing?
       'Editing saved case · Save case or download to record changes':'New case · not saved yet';
   }
   async function saveLetterCase(kind,options={}){
@@ -2757,7 +2767,7 @@
     }
     if(kind==='criminal')f.elements.countryFullThai.dataset.autoFromNationality='';
     LETTER_CASES[kind].preview();renderLetterCases(kind);
-    f.scrollIntoView({behavior:'smooth',block:'start'});
+    showLetterCaseDialog(kind,true);
   }
   async function deleteLetterCase(kind,id){
     const item=state.letterCases.find(c=>c.kind===kind&&c.id===id);
@@ -2769,13 +2779,48 @@
     renderLetterCases(kind);
     toast('Saved case deleted','Document history was preserved.');
   }
+  let letterDialogReturnFocus=null;
+  function showLetterCaseDialog(kind,editing=false){
+    letterDialogReturnFocus=document.activeElement;
+    el(kind+'LetterModalTitle').textContent=editing?'Edit student':'Add student';
+    el(kind+'SaveCase').textContent=editing?'Save changes':'Add student';
+    openModal(kind+'LetterModal');
+    document.body.classList.add('letter-dialog-open');
+    const body=el(kind+'LetterModal').querySelector('.modal-body');
+    body.scrollTop=0;
+    el(LETTER_CASES[kind].form).querySelector('input:not([readonly]),select,textarea')?.focus({preventScroll:true});
+  }
+  function openNewLetterCase(kind){
+    const f=el(LETTER_CASES[kind].form);
+    state.activeLetterCaseIds[kind]=null;
+    f.reset();
+    queueMicrotask(()=>{
+      LETTER_CASES[kind].preview();renderLetterCases(kind);showLetterCaseDialog(kind);
+    });
+  }
   function bindLetterCaseControls(kind){
     const cfg=LETTER_CASES[kind],f=el(cfg.form),root=el(cfg.list),prefix=kind;
-    el(prefix+'SaveCase').addEventListener('click',()=>void saveLetterCase(kind));
-    el(prefix+'NewCase').addEventListener('click',()=>{
-      state.activeLetterCaseIds[kind]=null;f.reset();
-      queueMicrotask(()=>renderLetterCases(kind));
-      f.scrollIntoView({behavior:'smooth',block:'start'});
+    el(prefix+'SaveCase').addEventListener('click',async event=>{
+      if(!f.reportValidity())return;
+      const button=event.currentTarget;button.disabled=true;
+      try{
+        if(kind==='cancel')BUICCancelLetter.validate(getCancelLetterFields());
+        else if(kind==='graduated')BUICGraduatedLetter.validate(graduatedFields());
+        else BUICCriminalRecord.validate(criminalFields());
+        const saved=await saveLetterCase(kind);
+        if(saved)closeModal(kind+'LetterModal');
+      }catch(error){toast('Cannot save student',error.message||String(error),true);}
+      finally{button.disabled=false;}
+    });
+    el(kind+'LetterModal').addEventListener('keydown',event=>{
+      if(event.defaultPrevented)return;
+      if(event.key==='Escape'){event.preventDefault();closeModal(kind+'LetterModal');return;}
+      if(event.key!=='Tab')return;
+      const focusable=[...event.currentTarget.querySelectorAll('button,input,select,textarea,[tabindex="0"]')]
+        .filter(node=>!node.disabled&&node.getClientRects().length);
+      const first=focusable[0],last=focusable[focusable.length-1];
+      if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus();}
+      else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus();}
     });
     root.addEventListener('click',event=>{
       const opened=event.target.closest('[data-letter-open]');
@@ -2901,6 +2946,7 @@
         degreeLevel:'bachelor',signatory:normalizeSignatoryKey(state.settings.signatory)};
       for(const [name,value] of Object.entries(sample))f.elements[name].value=value;
       updateGraduatedPreview();
+      renderLetterCases('graduated');
       toast('Graduated test case filled','Synthetic information only; no student record saved.');
     });
     f.addEventListener('submit',async event=>{
@@ -2924,6 +2970,7 @@
           letterCaseId:savedCase?.id||null
         });
         persist();renderBatchHistory();
+        if(savedCase)closeModal('graduatedLetterModal');
         toast('Graduated letter created','DOCX downloaded. Check the final Word layout before use.');
       }catch(err){toast('Cannot generate Graduated letter',err.message||String(err),true)}
       finally{button.disabled=false;button.textContent=old}
@@ -3046,6 +3093,7 @@
         signatory:normalizeSignatoryKey(state.settings.signatory)};
       for(const [k,v] of Object.entries(sample))f.elements[k].value=v;
       updateCriminalPreview();
+      renderLetterCases('criminal');
       toast('Criminal Record test case filled','Synthetic values only; no student record was saved.');
     });
     f.addEventListener('submit',async event=>{
@@ -3068,6 +3116,7 @@
           letterCaseId:savedCase?.id||null
         });
         persist();renderBatchHistory();
+        if(savedCase)closeModal('criminalLetterModal');
         toast('Criminal Record letter created','DOCX downloaded. Verify the police office and Word layout before signing.');
       }catch(err){toast('Cannot generate Criminal Record letter',err.message||String(err),true)}
       finally{button.disabled=false;button.textContent=old}
@@ -3221,6 +3270,7 @@
       popup.hidden=true;popup.replaceChildren();
       updateCancelReasonField();
       updateCancelPreview();
+      renderLetterCases('cancel');
       toast('Test case filled','Sample details ready. No student record was saved.');
     });
     bindCancelNationalityAutocomplete();
@@ -3264,6 +3314,7 @@
           letterCaseId:savedCase?.id||null
         });
         persist();renderBatchHistory();
+        if(savedCase)closeModal('cancelLetterModal');
         toast('Cancellation letter created','DOCX downloaded. Review and sign before submitting to Immigration.');
       }catch(err){toast('Cannot generate cancellation letter',err.message||String(err),true)}
       finally{button.disabled=false;button.textContent=old}
@@ -3285,7 +3336,11 @@
     document.querySelectorAll('.nav-item').forEach((item) => item.addEventListener('click',
       () => switchView(item.dataset.view, item.dataset.caseCategory || state.activeCategory, item.dataset.placeholder || '')));
     el('menuToggle')?.addEventListener('click', () => el('sidebar').classList.toggle('open'));
-    el('addStudentBtn').addEventListener('click',openNewStudentForm);
+    el('addStudentBtn').addEventListener('click',()=>{
+      const kind=['cancel','graduated','criminal'].find(key=>el(key+'View').classList.contains('active'));
+      if(kind)openNewLetterCase(kind);
+      else openNewStudentForm();
+    });
     el('draftsBtn').addEventListener('click',()=>{
       renderDraftsModal();openModal('draftsModal');
     });
@@ -3384,6 +3439,9 @@
       closeModal('individualModal');
       closeModal('departmentModal');
       closeModal('groupAssignModal');
+      closeModal('cancelLetterModal');
+      closeModal('graduatedLetterModal');
+      closeModal('criminalLetterModal');
     });
     el('studentForm').addEventListener('submit', (e) => {
       e.preventDefault();
