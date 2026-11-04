@@ -83,8 +83,22 @@ try{
   await page.locator(`#${kind}SaveCase`).click();await modal.waitFor({state:'hidden'});
   assert.equal(await rows(kind).count(),count,'editing must not duplicate the case');
   await rows(kind).filter({hasText:name+' EDITED'}).locator('[data-letter-open]').click();
+  await page.evaluate(kind=>{
+   const key={cancel:'BUICCancelLetter',graduated:'BUICGraduatedLetter',criminal:'BUICCriminalRecord'}[kind];
+   const original=window[key];
+   window[key]={...original,create:async fields=>{
+    await new Promise(resolve=>{window.__finishWordGeneration=resolve;});
+    return original.create(fields);
+   }};
+  },kind);
   const downloadPromise=page.waitForEvent('download');
   await page.locator('#'+generate[kind]).click();
+  await page.waitForFunction(kind=>document.getElementById(kind+'LetterModal').getAttribute('aria-busy')==='true'&&Boolean(window.__finishWordGeneration),kind);
+  assert.equal(await form.locator('[name="fullName"]').isDisabled(),true);
+  assert.equal(await page.locator(`#${kind}SaveCase`).isDisabled(),true);
+  await page.keyboard.press('Escape');
+  assert.equal(await modal.isVisible(),true,'the student cannot change while Word generation is pending');
+  await page.evaluate(()=>{window.__finishWordGeneration();delete window.__finishWordGeneration;});
   const download=await downloadPromise;assert(download.suggestedFilename().endsWith('.docx'));
   await modal.waitFor({state:'hidden'});
   await page.waitForFunction(async kind=>{

@@ -2015,7 +2015,8 @@
     el(id).classList.remove('hidden');
   }
 
-  function closeModal(id) {
+  function closeModal(id,completed=false) {
+    if(!completed&&el(id).getAttribute('aria-busy')==='true')return;
     el(id).classList.add('hidden');
     const letterModals=['cancelLetterModal','graduatedLetterModal','criminalLetterModal'];
     const anyOpen = ['studentModal', 'batchModal', 'individualModal', 'departmentModal', 'groupAssignModal', 'draftsModal',...letterModals].some((modalId) => !el(modalId).classList.contains('hidden'));
@@ -2780,6 +2781,21 @@
     toast('Saved case deleted','Document history was preserved.');
   }
   let letterDialogReturnFocus=null;
+  const letterDialogControls=new Map();
+  function setLetterCaseBusy(kind,busy){
+    const dialog=el(kind+'LetterModal');
+    dialog.setAttribute('aria-busy',String(busy));
+    if(busy){
+      if(letterDialogControls.has(kind))return;
+      const controls=[...dialog.querySelectorAll('input,select,textarea,button')]
+        .map(node=>[node,node.disabled]);
+      letterDialogControls.set(kind,controls);
+      controls.forEach(([node])=>{node.disabled=true;});
+    }else{
+      for(const [node,disabled] of letterDialogControls.get(kind)||[])node.disabled=disabled;
+      letterDialogControls.delete(kind);
+    }
+  }
   function showLetterCaseDialog(kind,editing=false){
     letterDialogReturnFocus=document.activeElement;
     el(kind+'LetterModalTitle').textContent=editing?'Edit student':'Add student';
@@ -2803,14 +2819,15 @@
     el(prefix+'SaveCase').addEventListener('click',async event=>{
       if(!f.reportValidity())return;
       const button=event.currentTarget;button.disabled=true;
+      setLetterCaseBusy(kind,true);
       try{
         if(kind==='cancel')BUICCancelLetter.validate(getCancelLetterFields());
         else if(kind==='graduated')BUICGraduatedLetter.validate(graduatedFields());
         else BUICCriminalRecord.validate(criminalFields());
         const saved=await saveLetterCase(kind);
-        if(saved)closeModal(kind+'LetterModal');
+        if(saved)closeModal(kind+'LetterModal',true);
       }catch(error){toast('Cannot save student',error.message||String(error),true);}
-      finally{button.disabled=false;}
+      finally{setLetterCaseBusy(kind,false);button.disabled=false;}
     });
     el(kind+'LetterModal').addEventListener('keydown',event=>{
       if(event.defaultPrevented)return;
@@ -2818,6 +2835,7 @@
       if(event.key!=='Tab')return;
       const focusable=[...event.currentTarget.querySelectorAll('button,input,select,textarea,[tabindex="0"]')]
         .filter(node=>!node.disabled&&node.getClientRects().length);
+      if(!focusable.length){event.preventDefault();return;}
       const first=focusable[0],last=focusable[focusable.length-1];
       if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus();}
       else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus();}
@@ -2954,6 +2972,7 @@
       if(!f.reportValidity())return;
       const button=el('gradGenerate'),old=button.textContent;
       button.disabled=true;button.textContent='Generating ED Plus letter…';
+      setLetterCaseBusy('graduated',true);
       try{
         syncProgram();
         const fields=graduatedFields();
@@ -2970,10 +2989,10 @@
           letterCaseId:savedCase?.id||null
         });
         persist();renderBatchHistory();
-        if(savedCase)closeModal('graduatedLetterModal');
+        if(savedCase)closeModal('graduatedLetterModal',true);
         toast('Graduated letter created','DOCX downloaded. Check the final Word layout before use.');
       }catch(err){toast('Cannot generate Graduated letter',err.message||String(err),true)}
-      finally{button.disabled=false;button.textContent=old}
+      finally{setLetterCaseBusy('graduated',false);button.disabled=false;button.textContent=old}
     });
     updateGraduatedPreview();
   }
@@ -3101,6 +3120,7 @@
       if(!f.reportValidity())return;
       const button=el('criminalGenerate'),old=button.textContent;
       button.disabled=true;button.textContent='Generating Word letter…';
+      setLetterCaseBusy('criminal',true);
       try{
         const fields=criminalFields();
         const data=BUICCriminalRecord.validate(fields);
@@ -3116,10 +3136,10 @@
           letterCaseId:savedCase?.id||null
         });
         persist();renderBatchHistory();
-        if(savedCase)closeModal('criminalLetterModal');
+        if(savedCase)closeModal('criminalLetterModal',true);
         toast('Criminal Record letter created','DOCX downloaded. Verify the police office and Word layout before signing.');
       }catch(err){toast('Cannot generate Criminal Record letter',err.message||String(err),true)}
-      finally{button.disabled=false;button.textContent=old}
+      finally{setLetterCaseBusy('criminal',false);button.disabled=false;button.textContent=old}
     });
     updateCriminalPreview();
   }
@@ -3298,6 +3318,7 @@
       if(!form.reportValidity())return;
       const button=el('cancelGenerate'),old=button.textContent;
       button.disabled=true;button.textContent='Generating Word letter…';
+      setLetterCaseBusy('cancel',true);
       try{
         const fields=getCancelLetterFields();
         const valid=BUICCancelLetter.validate(fields);
@@ -3314,10 +3335,10 @@
           letterCaseId:savedCase?.id||null
         });
         persist();renderBatchHistory();
-        if(savedCase)closeModal('cancelLetterModal');
+        if(savedCase)closeModal('cancelLetterModal',true);
         toast('Cancellation letter created','DOCX downloaded. Review and sign before submitting to Immigration.');
       }catch(err){toast('Cannot generate cancellation letter',err.message||String(err),true)}
-      finally{button.disabled=false;button.textContent=old}
+      finally{setLetterCaseBusy('cancel',false);button.disabled=false;button.textContent=old}
     });
     updateCancelPreview();
   }
