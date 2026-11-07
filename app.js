@@ -284,14 +284,6 @@
     }).format(d);
   }
 
-  function formatDepartmentDate(value) {
-    const d = parseIsoDate(value);
-    if (!d) return '';
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short', day: '2-digit', year: 'numeric',
-    }).format(d);
-  }
-
   function caseCreatedTime(item) {
     const value = Date.parse(item?.createdAt || '');
     return Number.isFinite(value) ? value : 0;
@@ -2033,81 +2025,109 @@
     return sortCasesOldestFirst(state.cases.filter((item) => state.selected.has(item.id) && item.caseCategory === state.activeCategory));
   }
 
+  // Table-only edits do not change the underlying student or letter records.
+  // Keep them when reopening this dialog during the current browser session.
+  const departmentEdits = new Map();
+  const departmentFields = new Set(['documentDate', 'studentId', 'fullName', 'passportNo', 'passportExpiry', 'embassyPlace']);
+
+  function departmentDocumentDate(item) {
+    const studentId = String(item.studentId || '').trim();
+    const documentNo = String(item.documentNo || '').trim();
+    if (studentId && documentNo) {
+      const matches = state.batches.filter(batch =>
+        ['letters', 'individual_letter'].includes(batch.outputType) &&
+        (!batch.category || batch.category === item.caseCategory) &&
+        ExcelExport.formatDepartmentDate(batch.issueDate) && Array.isArray(batch.students) &&
+        batch.students.some(student => String(student.studentId || '').trim() === studentId &&
+          String(student.documentNo || '').trim() === documentNo));
+      matches.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+      if (matches.length) return matches[0].issueDate;
+    }
+    return todayIso();
+  }
+
   function departmentFullName(item) {
-    const title = String(item.title || '').trim().toUpperCase();
-    const prefix = ({ MR: 'MR.', 'MR.': 'MR.', MS: 'MS.', 'MS.': 'MS.', MRS: 'MRS.', 'MRS.': 'MRS.', MISS: 'MISS' })[title] || title;
-    const name = String(item.fullName || '').trim().replace(/^(?:MR\.?|MRS\.?|MS\.?|MISS)\s+/i, '');
-    return [prefix, name].filter(Boolean).join(' ');
+    return String(item.fullName || '').trim().replace(/^(?:MR\.?|MRS\.?|MS\.?|MISS)\s+/i, '');
   }
 
   function departmentRows(items = selectedCases()) {
     return items.map((item) => ({
-      documentNo: String(item.documentNo || '').trim(),
+      id: item.id,
+      documentDate: departmentDocumentDate(item),
       studentId: String(item.studentId || '').trim(),
       fullName: departmentFullName(item),
       passportNo: String(item.passportNo || '').trim(),
-      passportExpiry: formatDepartmentDate(item.passportExpiry),
-      visaExpiry: formatDepartmentDate(item.currentStayUntil),
-      extendUntil: formatDepartmentDate(calculateRequestUntil(item)),
+      passportExpiry: String(item.passportExpiry || '').trim(),
+      // A student's location is not necessarily the embassy city.
+      embassyPlace: String(item.embassyCity || item.embassyPlace || '').trim(),
+      ...(departmentEdits.get(item.id) || {}),
     }));
-  }
-
-  function departmentTsv(rows) {
-    const header = ['Doc no.', 'Student id', 'Name', 'Passport no.', 'Passport expiry', 'Visa expiry', 'Extend until'];
-    const clean = (value) => String(value ?? '').replace(/[\t\r\n]+/g, ' ').trim();
-    return [header, ...rows.map((row) => [
-      row.documentNo, row.studentId, row.fullName, row.passportNo,
-      row.passportExpiry, row.visaExpiry, row.extendUntil,
-    ])].map((row) => row.map(clean).join('\t')).join('\n');
   }
 
   function renderDepartmentModal() {
     const rows = departmentRows();
+    const input = (row, field, label, type = 'text') =>
+      `<input type="${type}" data-department-id="${escapeHtml(row.id)}" data-department-field="${field}" aria-label="${escapeHtml(label)} for ${escapeHtml(row.fullName || row.studentId || 'student')}" value="${escapeHtml(row[field])}" autocomplete="off" />`;
     el('departmentModalBody').innerHTML = `
       <div class="department-summary">
         <strong>${rows.length} selected case${rows.length === 1 ? '' : 's'}</strong>
         <span>Oldest case first — the same order used by Generate letters and Generate list.</span>
       </div>
-      <div class="department-table-wrap">
-        <table class="department-table">
-          <thead><tr>
-            <th>Doc no.</th><th>Student id</th><th>Name</th><th>Passport no.</th>
-            <th>Passport expiry</th><th>Visa expiry</th><th>Extend until</th>
-          </tr></thead>
+      <p class="department-help" id="departmentHelp">Edit or fill missing details before copying. Rows copy without headings; dates use MMM D, YYYY. Document dates use the latest matching generated letter when available, otherwise today. Please check them. Edits apply only to this table while this page is open.</p>
+      <div class="department-table-wrap" tabindex="0" role="region" aria-label="Editable department table">
+        <table class="department-table" aria-describedby="departmentHelp">
+          <thead><tr>${ExcelExport.departmentHeaders.map(header => `<th scope="col">${escapeHtml(header)}</th>`).join('')}</tr></thead>
           <tbody>
             ${rows.map((row) => `<tr>
-              <td>${escapeHtml(row.documentNo)}</td>
-              <td>${escapeHtml(row.studentId)}</td>
-              <td><strong>${escapeHtml(row.fullName)}</strong></td>
-              <td>${escapeHtml(row.passportNo)}</td>
-              <td>${escapeHtml(row.passportExpiry)}</td>
-              <td>${escapeHtml(row.visaExpiry)}</td>
-              <td>${escapeHtml(row.extendUntil)}</td>
+              <td>${input(row, 'documentDate', 'Document date', 'date')}</td>
+              <td>${input(row, 'studentId', 'Student ID')}</td>
+              <td>${input(row, 'fullName', 'Full name')}</td>
+              <td aria-label="Intentionally blank"></td>
+              <td>${input(row, 'passportNo', 'Passport number')}</td>
+              <td>${input(row, 'passportExpiry', 'Passport Expiry', 'date')}</td>
+              <td>${input(row, 'embassyPlace', 'Embassy place')}</td>
             </tr>`).join('')}
           </tbody>
         </table>
-      </div>`;
+      </div>
+      <p class="department-copy-status" id="departmentCopyStatus" role="status" aria-live="polite"></p>
+      <label class="department-copy-fallback hidden" id="departmentCopyFallback"><span>Automatic copy is unavailable. Select and copy these rows, then paste into Excel.</span><textarea id="departmentCopyText" readonly rows="3" aria-label="Department rows to copy" spellcheck="false"></textarea></label>`;
     el('copyDepartmentBtn').disabled = !rows.length;
     el('downloadDepartmentBtn').disabled = !rows.length;
+  }
+
+  function updateDepartmentEdit(event) {
+    const input = event.target.closest('[data-department-id][data-department-field]');
+    if (!input || !departmentFields.has(input.dataset.departmentField)) return;
+    const id = input.dataset.departmentId;
+    departmentEdits.set(id, { ...(departmentEdits.get(id) || {}), [input.dataset.departmentField]: input.value });
+    el('departmentCopyStatus').textContent = '';
+    el('departmentCopyFallback').classList.add('hidden');
   }
 
   async function copyDepartmentTable() {
     const rows = departmentRows();
     if (!rows.length) return;
-    const text = departmentTsv(rows);
+    const text = ExcelExport.departmentTsv(rows);
+    let copied = false;
     try {
       await navigator.clipboard.writeText(text);
+      copied = true;
     } catch {
-      const area = document.createElement('textarea');
+      const area = el('departmentCopyText');
       area.value = text;
-      area.style.position = 'fixed';
-      area.style.opacity = '0';
-      document.body.appendChild(area);
+      el('departmentCopyFallback').classList.remove('hidden');
+      area.focus();
       area.select();
-      document.execCommand('copy');
-      area.remove();
+      try { copied = document.execCommand('copy'); } catch {}
     }
-    toast('Table copied', 'Paste directly into your department spreadsheet; columns will stay separated.');
+    if (copied) {
+      el('departmentCopyFallback').classList.add('hidden');
+      el('departmentCopyStatus').textContent = 'Rows copied. Paste them into Excel.';
+      toast('Rows copied', 'Paste directly into your department spreadsheet; columns will stay separated.');
+    } else {
+      el('departmentCopyStatus').textContent = 'Automatic copy is unavailable. Copy the selected rows below.';
+    }
   }
 
   async function downloadDepartmentExcel() {
@@ -3428,6 +3448,7 @@
     el('editGroupAssignBtn').addEventListener('click',openGroupAssignmentModal);
     el('saveGroupAssignBtn').addEventListener('click',saveGroupAssignment);
     el('departmentTableBtn').addEventListener('click', () => { renderDepartmentModal(); openModal('departmentModal'); });
+    el('departmentModalBody').addEventListener('input', updateDepartmentEdit);
     el('copyDepartmentBtn').addEventListener('click', copyDepartmentTable);
     el('downloadDepartmentBtn').addEventListener('click', downloadDepartmentExcel);
     el('prepareBatchBtn').addEventListener('click', () => { renderBatchModal(); openModal('batchModal'); });
