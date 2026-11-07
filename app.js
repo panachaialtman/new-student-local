@@ -2073,7 +2073,7 @@
     const rows = departmentRows();
     const input = (row, field, label, type = 'text') => {
       const control = `<input type="${type}" data-department-id="${escapeHtml(row.id)}" data-department-field="${field}" aria-label="${escapeHtml(label)} for ${escapeHtml(row.fullName || row.studentId || 'student')}" value="${escapeHtml(row[field])}" autocomplete="off" />`;
-      return type === 'date' ? `<div class="department-date">${control}<small>${escapeHtml(ExcelExport.formatDepartmentDate(row[field]))}</small></div>` : control;
+      return type === 'date' ? `<div class="department-date">${control}<small aria-hidden="true">${escapeHtml(ExcelExport.formatDepartmentDate(row[field]) || 'Select date')}</small></div>` : control;
     };
     el('departmentModalBody').innerHTML = `
       <div class="department-summary">
@@ -2112,13 +2112,13 @@
     const edits = { ...(departmentEdits.get(id) || {}), [field]: input.value };
     if (field === 'visaExpiry' || field === 'passportExpiry') delete edits.extendUntil;
     departmentEdits.set(id, edits);
-    if (input.type === 'date') input.parentElement.querySelector('small').textContent = ExcelExport.formatDepartmentDate(input.value);
+    if (input.type === 'date') input.parentElement.querySelector('small').textContent = ExcelExport.formatDepartmentDate(input.value) || 'Select date';
     if (field === 'visaExpiry' || field === 'passportExpiry') {
       const item = state.cases.find(candidate => String(candidate.id) === id);
       const extension = input.closest('tr').querySelector('[data-department-field="extendUntil"]');
       if (item && extension) {
         extension.value = departmentRows([item])[0].extendUntil;
-        extension.parentElement.querySelector('small').textContent = ExcelExport.formatDepartmentDate(extension.value);
+        extension.parentElement.querySelector('small').textContent = ExcelExport.formatDepartmentDate(extension.value) || 'Select date';
       }
     }
     el('departmentCopyStatus').textContent = '';

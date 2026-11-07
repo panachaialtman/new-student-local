@@ -47,6 +47,10 @@ try{
  assert.equal(await field('dept-third','extendUntil').inputValue(),'2027-03-10','manual request is capped by passport expiry');
  assert.equal(await field('dept-first','signDate').locator('..').locator('small').innerText(),'Nov 5, 2026');
  assert.equal(await field('dept-first','passportExpiry').locator('..').locator('small').innerText(),'Sep 8, 2029');
+ assert.equal(await field('dept-first','signDate').locator('..').locator('small').isVisible(),true,'formatted date is shown when the date is not being edited');
+ await field('dept-first','signDate').focus();
+ assert.equal(await field('dept-first','signDate').locator('..').locator('small').isVisible(),false,'native date input is available while editing');
+ await page.locator('.department-summary strong').click();
  const today=await page.evaluate(()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;});
  assert.equal(await field('dept-second','signDate').inputValue(),today,'unknown sign dates default to today');
  assert.equal(await page.locator('.department-table tbody tr').count(),3);
