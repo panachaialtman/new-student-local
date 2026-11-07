@@ -24,6 +24,16 @@
       .replace(/(^|[^\p{L}\p{M}])(\p{L})/gu, (_, before, letter) => before + letter.toLocaleUpperCase('en-US'));
   }
 
+  function departmentFullName(title, fullName) {
+    const titles = { MR: 'Mr.', MS: 'Ms.', MRS: 'Mrs.', MISS: 'Miss' };
+    const name = String(fullName ?? '').trim();
+    const existing = /^(MR|MRS|MS|MISS)\.?(?:\s+|$)/i.exec(name);
+    const selected = String(title ?? '').trim().replace(/\.$/, '').toUpperCase();
+    const prefix = titles[selected] || (existing ? titles[existing[1].toUpperCase()] : '') || '';
+    const withoutPrefix = existing ? name.slice(existing[0].length).trim() : name;
+    return [prefix, capitalizeDepartmentName(withoutPrefix)].filter(Boolean).join(' ');
+  }
+
   function departmentCells(row) {
     return [formatDepartmentDate(row.signDate), row.studentId, capitalizeDepartmentName(row.fullName), '',
       row.passportNo, formatDepartmentDate(row.passportExpiry), '',
@@ -146,7 +156,7 @@
     return new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   }
 
-  const api = { departmentHeaders, formatDepartmentDate, capitalizeDepartmentName, departmentCells, departmentTsv, createDepartmentWorkbook };
+  const api = { departmentHeaders, formatDepartmentDate, capitalizeDepartmentName, departmentFullName, departmentCells, departmentTsv, createDepartmentWorkbook };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (typeof window !== 'undefined') window.ExcelExport = api;
 })();

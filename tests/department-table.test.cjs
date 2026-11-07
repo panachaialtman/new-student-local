@@ -6,6 +6,16 @@ const first = {signDate:'2026-11-05',studentId:'1690123456',fullName:"EXAMPLE o'
 const second = {signDate:'2026-01-01',studentId:'009876',fullName:'SECOND STUDENT',passportNo:'P002',passportExpiry:'',visaExpiry:'2027-02-02',extendUntil:'2028-01-17'};
 const headers=['Sign date','Student ID','Full name','(blank)','Passport number','Passport Expiry date','(blank)','Visa Expire date','Extend until'];
 
+test('student title appears before the capitalized name without duplicates', () => {
+  assert.equal(Excel.departmentFullName('MR', 'MR. sAMPLE o\'CONNOR-jONES'), "Mr. Sample O'Connor-Jones");
+  assert.equal(Excel.departmentFullName('MISS', 'JANE DOE'), 'Miss Jane Doe');
+  assert.equal(Excel.departmentFullName('MS', 'jane doe'), 'Ms. Jane Doe');
+  assert.equal(Excel.departmentFullName('MRS', 'MRS. JANE DOE'), 'Mrs. Jane Doe');
+  assert.equal(Excel.departmentFullName('', 'MR. JOHN DOE'), 'Mr. John Doe');
+  assert.equal(Excel.departmentFullName('', 'JOHN DOE'), 'John Doe');
+  assert.equal(Excel.departmentFullName('MISS', 'MR. JANE DOE'), 'Miss Jane Doe');
+});
+
 test('nine columns, capitalized names, and dates match the requested format', () => {
   assert.deepEqual(Excel.departmentHeaders,headers);
   assert.deepEqual(Excel.departmentCells(first),['Nov 5, 2026','1690123456',"Example O'Connor-Jones",'','AA01234','Sep 8, 2029','','Jan 1, 2027','Jul 1, 2027']);
