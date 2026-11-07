@@ -22,6 +22,17 @@ try{
  const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
  await page.goto('http://127.0.0.1:8124/',{waitUntil:'domcontentloaded'});
  await page.waitForFunction(()=>window.BUICWorkspaceAuth?.isAuthenticated()&&window.VisaDB);
+ // Wait until the app's initial empty workspace save has finished before
+ // seeding fixture cases; otherwise that save can race with the test data.
+ await page.locator('#emptyState').waitFor({state:'visible'});
+ const bootDeadline=Date.now()+10000;
+ let initialSaveFinished=false;
+ while(Date.now()<bootDeadline){
+  initialSaveFinished=await page.evaluate(async()=>Boolean((await VisaDB.getState('workspace_v02'))?.savedAt));
+  if(initialSaveFinished)break;
+  await page.waitForTimeout(50);
+ }
+ assert(initialSaveFinished,'initial workspace save should finish before seeding cases');
  await page.evaluate(async()=>{
   await VisaDB.setState('workspace_v02',{cases:[
    {id:'dept-first',caseCategory:'normal',createdAt:'2026-10-01T00:00:00Z',documentNo:'1001',studentId:'1690123456',title:'MR',fullName:"MR. sAMPLE o'CONNOR-jONES",passportNo:'AA1234',passportExpiry:'2029-09-08',currentStayUntil:'2027-01-01',programType:'international',requestRuleOverride:'six_months'},
