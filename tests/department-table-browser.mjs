@@ -26,7 +26,7 @@ try{
   await VisaDB.setState('workspace_v02',{cases:[
    {id:'dept-first',caseCategory:'normal',createdAt:'2026-10-01T00:00:00Z',documentNo:'1001',studentId:'1690123456',title:'MR',fullName:"MR. sAMPLE o'CONNOR-jONES",passportNo:'AA1234',passportExpiry:'2029-09-08',currentStayUntil:'2027-01-01',programType:'international',requestRuleOverride:'six_months'},
    {id:'dept-second',caseCategory:'normal',createdAt:'2026-10-02T00:00:00Z',documentNo:'1002',studentId:'1690234567',title:'MS',fullName:'SECOND STUDENT',passportNo:'BB5678',passportExpiry:'2030-01-03',currentStayUntil:'2027-02-01',programType:'international',requestRuleOverride:'one_year'},
-   {id:'dept-third',caseCategory:'normal',createdAt:'2026-10-03T00:00:00Z',documentNo:'1003',studentId:'1690345678',title:'MS',fullName:'THIRD STUDENT',passportNo:'CC9012',passportExpiry:'2027-03-10',currentStayUntil:'2027-02-01',programType:'international',requestRuleOverride:'manual',manualRequestUntil:'2027-03-15'}
+   {id:'dept-third',caseCategory:'normal',createdAt:'2026-10-03T00:00:00Z',documentNo:'1003',studentId:'1690345678',title:'MISS',fullName:'THIRD STUDENT',passportNo:'CC9012',passportExpiry:'2027-03-10',currentStayUntil:'2027-02-01',programType:'international',requestRuleOverride:'manual',manualRequestUntil:'2027-03-15'}
   ],drafts:[],letterCases:[],settings:{},batches:[
    {outputType:'letters',category:'normal',issueDate:'2026-11-05',createdAt:'2026-11-05T08:00:00Z',students:[{studentId:'1690123456',documentNo:'1001',fullName:'Sample Student'}]},
    {outputType:'student_list',category:'normal',issueDate:'2026-11-06',createdAt:'2026-11-06T08:00:00Z',students:[{studentId:'1690123456',documentNo:'1001'}]},
@@ -40,7 +40,9 @@ try{
  assert.deepEqual(await page.locator('.department-table th').allTextContents(),headers);
  const field=(id,name)=>page.locator(`[data-department-id="${id}"][data-department-field="${name}"]`);
  assert.equal(await field('dept-first','signDate').inputValue(),'2026-11-05','sign date comes from the latest matching letter');
- assert.equal(await field('dept-first','fullName').inputValue(),"Sample O'Connor-Jones");
+ assert.equal(await field('dept-first','fullName').inputValue(),"Mr. Sample O'Connor-Jones",'a title already in the name is not duplicated');
+ assert.equal(await field('dept-second','fullName').inputValue(),'Ms. Second Student');
+ assert.equal(await field('dept-third','fullName').inputValue(),'Miss Third Student');
  assert.equal(await field('dept-first','visaExpiry').inputValue(),'2027-01-01');
  assert.equal(await field('dept-first','extendUntil').inputValue(),'2027-07-01','+6 months follows the case rule');
  assert.equal(await field('dept-second','extendUntil').inputValue(),'2028-02-01','+1 year follows the case rule');
@@ -68,9 +70,9 @@ try{
  await field('dept-second','fullName').fill('=SECOND sTUDENT');
  await field('dept-third','signDate').fill('');
  assert.equal(await field('dept-second','fullName').inputValue(),'=Second Student','edited names are capitalized on leaving the field');
- const first=['Nov 5, 2026','1690123456',"Sample O'Connor-Jones",'','AA1234','Jul 10, 2027','','Feb 5, 2027','Jul 10, 2027'];
+ const first=['Nov 5, 2026','1690123456',"Mr. Sample O'Connor-Jones",'','AA1234','Jul 10, 2027','','Feb 5, 2027','Jul 10, 2027'];
  const second=['Nov 6, 2026','1690234567','=Second Student','','BB5678','','','Feb 2, 2027','Jan 17, 2028'];
- const third=['','1690345678','Third Student','','CC9012','Mar 10, 2027','','Feb 1, 2027','Mar 10, 2027'];
+ const third=['','1690345678','Miss Third Student','','CC9012','Mar 10, 2027','','Feb 1, 2027','Mar 10, 2027'];
  const safeSecond=[...second];safeSecond[2]="'"+safeSecond[2];
  const expected=[first,safeSecond,third].map(row=>row.join('\t')).join('\n');
  await page.locator('#copyDepartmentBtn').click();
@@ -114,7 +116,7 @@ try{
  assert.deepEqual(await frame.locator('.department-table th').allTextContents(),headers);
  assert.equal(await frame.locator('[data-department-id="dept-first"][data-department-field="signDate"]').inputValue(),'2026-11-05');
  await frame.locator('#copyDepartmentBtn').click();await frame.locator('#departmentCopyStatus').waitFor({state:'visible'});
- const originalFirst=['Nov 5, 2026','1690123456',"Sample O'Connor-Jones",'','AA1234','Sep 8, 2029','','Jan 1, 2027','Jul 1, 2027'].join('\t');
+ const originalFirst=['Nov 5, 2026','1690123456',"Mr. Sample O'Connor-Jones",'','AA1234','Sep 8, 2029','','Jan 1, 2027','Jul 1, 2027'].join('\t');
  assert((await page.evaluate(()=>navigator.clipboard.readText())).startsWith(originalFirst));
  assert.deepEqual(hubWrites,[],'test must not send student writes to the Hub');assert.deepEqual(errors,[]);
  console.log('PASS mobile layout and embedded Current Letter workspace');

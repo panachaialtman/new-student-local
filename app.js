@@ -2047,7 +2047,7 @@
   }
 
   function departmentFullName(item) {
-    return ExcelExport.capitalizeDepartmentName(String(item.fullName || '').trim().replace(/^(?:MR\.?|MRS\.?|MS\.?|MISS)\s+/i, ''));
+    return ExcelExport.departmentFullName(item.title, item.fullName);
   }
 
   function departmentRows(items = selectedCases()) {
