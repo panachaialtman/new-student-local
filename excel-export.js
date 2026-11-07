@@ -2,6 +2,32 @@
   'use strict';
 
   const enc = new TextEncoder();
+  const departmentHeaders = Object.freeze([
+    'Document date', 'Student ID', 'Full name (first + last)', '(blank)',
+    'Passport number', 'Passport Expiry', 'Embassy place',
+  ]);
+
+  function formatDepartmentDate(value) {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || ''));
+    if (!match) return '';
+    const year = Number(match[1]), month = Number(match[2]), day = Number(match[3]);
+    const date = new Date(0);
+    date.setUTCHours(0, 0, 0, 0);
+    date.setUTCFullYear(year, month - 1, day);
+    if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return '';
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${months[month - 1]} ${day}, ${year}`;
+  }
+
+  function departmentCells(row) {
+    return [formatDepartmentDate(row.documentDate), row.studentId, row.fullName, '',
+      row.passportNo, formatDepartmentDate(row.passportExpiry), row.embassyPlace]
+      .map(value => String(value ?? '').replace(/[\t\r\n]+/g, ' ').trim());
+  }
+
+  function departmentTsv(rows) {
+    return rows.map(row => departmentCells(row).map(value => /^[=+@-]/.test(value) ? "'" + value : value).join('\t')).join('\n');
+  }
 
   function esc(value) {
     return String(value ?? '')
@@ -31,14 +57,7 @@
   async function createDepartmentWorkbook(rows) {
     if (!window.ZipLite?.writeZip) throw new Error('Excel ZIP engine is unavailable.');
 
-    const headers = ['Doc no.', 'Student id', 'Name', 'Passport no.', 'Passport expiry', 'Visa expiry', 'Extend until'];
-    const matrix = [
-      headers,
-      ...rows.map((row) => [
-        row.documentNo, row.studentId, row.fullName, row.passportNo,
-        row.passportExpiry, row.visaExpiry, row.extendUntil,
-      ]),
-    ];
+    const matrix = [departmentHeaders, ...rows.map(departmentCells)];
 
     const rowXml = matrix.map((row, r) => {
       const cells = row.map((value, c) => inlineCell(`${colName(c)}${r + 1}`, value, r === 0 ? 1 : 0)).join('');
@@ -53,8 +72,9 @@
     <col min="1" max="1" width="12" customWidth="1"/>
     <col min="2" max="2" width="16" customWidth="1"/>
     <col min="3" max="3" width="30" customWidth="1"/>
-    <col min="4" max="4" width="18" customWidth="1"/>
-    <col min="5" max="7" width="19" customWidth="1"/>
+    <col min="4" max="4" width="12" customWidth="1"/>
+    <col min="5" max="6" width="19" customWidth="1"/>
+    <col min="7" max="7" width="24" customWidth="1"/>
   </cols>
   <sheetData>${rowXml}</sheetData>
   <autoFilter ref="A1:G${lastRow}"/>
@@ -119,5 +139,7 @@
     return new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   }
 
-  window.ExcelExport = { createDepartmentWorkbook };
+  const api = { departmentHeaders, formatDepartmentDate, departmentCells, departmentTsv, createDepartmentWorkbook };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  if (typeof window !== 'undefined') window.ExcelExport = api;
 })();
