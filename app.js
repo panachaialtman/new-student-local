@@ -2028,9 +2028,9 @@
   // Table-only edits do not change the underlying student or letter records.
   // Keep them when reopening this dialog during the current browser session.
   const departmentEdits = new Map();
-  const departmentFields = new Set(['documentDate', 'studentId', 'fullName', 'passportNo', 'passportExpiry', 'embassyPlace']);
+  const departmentFields = new Set(['signDate', 'studentId', 'fullName', 'passportNo', 'passportExpiry', 'visaExpiry', 'extendUntil']);
 
-  function departmentDocumentDate(item) {
+  function departmentSignDate(item) {
     const studentId = String(item.studentId || '').trim();
     const documentNo = String(item.documentNo || '').trim();
     if (studentId && documentNo) {
@@ -2047,45 +2047,54 @@
   }
 
   function departmentFullName(item) {
-    return String(item.fullName || '').trim().replace(/^(?:MR\.?|MRS\.?|MS\.?|MISS)\s+/i, '');
+    return ExcelExport.capitalizeDepartmentName(String(item.fullName || '').trim().replace(/^(?:MR\.?|MRS\.?|MS\.?|MISS)\s+/i, ''));
   }
 
   function departmentRows(items = selectedCases()) {
-    return items.map((item) => ({
-      id: item.id,
-      documentDate: departmentDocumentDate(item),
-      studentId: String(item.studentId || '').trim(),
-      fullName: departmentFullName(item),
-      passportNo: String(item.passportNo || '').trim(),
-      passportExpiry: String(item.passportExpiry || '').trim(),
-      // A student's location is not necessarily the embassy city.
-      embassyPlace: String(item.embassyCity || item.embassyPlace || '').trim(),
-      ...(departmentEdits.get(item.id) || {}),
-    }));
+    return items.map((item) => {
+      const id = String(item.id), edits = departmentEdits.get(id) || {};
+      const visaExpiry = Object.hasOwn(edits, 'visaExpiry') ? edits.visaExpiry : String(item.currentStayUntil || '').trim();
+      const passportExpiry = Object.hasOwn(edits, 'passportExpiry') ? edits.passportExpiry : String(item.passportExpiry || '').trim();
+      return {
+        id,
+        signDate: departmentSignDate(item),
+        studentId: String(item.studentId || '').trim(),
+        fullName: departmentFullName(item),
+        passportNo: String(item.passportNo || '').trim(),
+        passportExpiry,
+        visaExpiry,
+        extendUntil: calculateRequestUntil({ ...item, currentStayUntil: visaExpiry, passportExpiry }),
+        ...edits,
+      };
+    });
   }
 
   function renderDepartmentModal() {
     const rows = departmentRows();
-    const input = (row, field, label, type = 'text') =>
-      `<input type="${type}" data-department-id="${escapeHtml(row.id)}" data-department-field="${field}" aria-label="${escapeHtml(label)} for ${escapeHtml(row.fullName || row.studentId || 'student')}" value="${escapeHtml(row[field])}" autocomplete="off" />`;
+    const input = (row, field, label, type = 'text') => {
+      const control = `<input type="${type}" data-department-id="${escapeHtml(row.id)}" data-department-field="${field}" aria-label="${escapeHtml(label)} for ${escapeHtml(row.fullName || row.studentId || 'student')}" value="${escapeHtml(row[field])}" autocomplete="off" />`;
+      return type === 'date' ? `<div class="department-date">${control}<small>${escapeHtml(ExcelExport.formatDepartmentDate(row[field]))}</small></div>` : control;
+    };
     el('departmentModalBody').innerHTML = `
       <div class="department-summary">
         <strong>${rows.length} selected case${rows.length === 1 ? '' : 's'}</strong>
         <span>Oldest case first — the same order used by Generate letters and Generate list.</span>
       </div>
-      <p class="department-help" id="departmentHelp">Edit or fill missing details before copying. Rows copy without headings; dates use MMM D, YYYY. Document dates use the latest matching generated letter when available, otherwise today. Please check them. Edits apply only to this table while this page is open.</p>
+      <p class="department-help" id="departmentHelp">Edit or fill missing details before copying. Rows copy without headings; dates use MMM D, YYYY. Sign dates use the latest matching generated letter when available, otherwise today. Changing a visa or passport expiry recalculates Extend until using the case's extension setting and passport expiry. Check the dates before copying. Edits apply only to this table while this page is open.</p>
       <div class="department-table-wrap" tabindex="0" role="region" aria-label="Editable department table">
         <table class="department-table" aria-describedby="departmentHelp">
           <thead><tr>${ExcelExport.departmentHeaders.map(header => `<th scope="col">${escapeHtml(header)}</th>`).join('')}</tr></thead>
           <tbody>
             ${rows.map((row) => `<tr>
-              <td>${input(row, 'documentDate', 'Document date', 'date')}</td>
+              <td>${input(row, 'signDate', 'Sign date', 'date')}</td>
               <td>${input(row, 'studentId', 'Student ID')}</td>
               <td>${input(row, 'fullName', 'Full name')}</td>
               <td aria-label="Intentionally blank"></td>
               <td>${input(row, 'passportNo', 'Passport number')}</td>
-              <td>${input(row, 'passportExpiry', 'Passport Expiry', 'date')}</td>
-              <td>${input(row, 'embassyPlace', 'Embassy place')}</td>
+              <td>${input(row, 'passportExpiry', 'Passport Expiry date', 'date')}</td>
+              <td aria-label="Intentionally blank"></td>
+              <td>${input(row, 'visaExpiry', 'Visa Expire date', 'date')}</td>
+              <td>${input(row, 'extendUntil', 'Extend until', 'date')}</td>
             </tr>`).join('')}
           </tbody>
         </table>
@@ -2099,10 +2108,28 @@
   function updateDepartmentEdit(event) {
     const input = event.target.closest('[data-department-id][data-department-field]');
     if (!input || !departmentFields.has(input.dataset.departmentField)) return;
-    const id = input.dataset.departmentId;
-    departmentEdits.set(id, { ...(departmentEdits.get(id) || {}), [input.dataset.departmentField]: input.value });
+    const id = input.dataset.departmentId, field = input.dataset.departmentField;
+    const edits = { ...(departmentEdits.get(id) || {}), [field]: input.value };
+    if (field === 'visaExpiry' || field === 'passportExpiry') delete edits.extendUntil;
+    departmentEdits.set(id, edits);
+    if (input.type === 'date') input.parentElement.querySelector('small').textContent = ExcelExport.formatDepartmentDate(input.value);
+    if (field === 'visaExpiry' || field === 'passportExpiry') {
+      const item = state.cases.find(candidate => String(candidate.id) === id);
+      const extension = input.closest('tr').querySelector('[data-department-field="extendUntil"]');
+      if (item && extension) {
+        extension.value = departmentRows([item])[0].extendUntil;
+        extension.parentElement.querySelector('small').textContent = ExcelExport.formatDepartmentDate(extension.value);
+      }
+    }
     el('departmentCopyStatus').textContent = '';
     el('departmentCopyFallback').classList.add('hidden');
+  }
+
+  function formatDepartmentName(event) {
+    const input = event.target.closest('[data-department-field="fullName"]');
+    if (!input) return;
+    input.value = ExcelExport.capitalizeDepartmentName(input.value);
+    updateDepartmentEdit({ target: input });
   }
 
   async function copyDepartmentTable() {
@@ -3449,6 +3476,7 @@
     el('saveGroupAssignBtn').addEventListener('click',saveGroupAssignment);
     el('departmentTableBtn').addEventListener('click', () => { renderDepartmentModal(); openModal('departmentModal'); });
     el('departmentModalBody').addEventListener('input', updateDepartmentEdit);
+    el('departmentModalBody').addEventListener('focusout', formatDepartmentName);
     el('copyDepartmentBtn').addEventListener('click', copyDepartmentTable);
     el('downloadDepartmentBtn').addEventListener('click', downloadDepartmentExcel);
     el('prepareBatchBtn').addEventListener('click', () => { renderBatchModal(); openModal('batchModal'); });

@@ -3,8 +3,8 @@
 
   const enc = new TextEncoder();
   const departmentHeaders = Object.freeze([
-    'Document date', 'Student ID', 'Full name (first + last)', '(blank)',
-    'Passport number', 'Passport Expiry', 'Embassy place',
+    'Sign date', 'Student ID', 'Full name', '(blank)', 'Passport number',
+    'Passport Expiry date', '(blank)', 'Visa Expire date', 'Extend until',
   ]);
 
   function formatDepartmentDate(value) {
@@ -19,9 +19,15 @@
     return `${months[month - 1]} ${day}, ${year}`;
   }
 
+  function capitalizeDepartmentName(value) {
+    return String(value ?? '').toLocaleLowerCase('en-US')
+      .replace(/(^|[^\p{L}\p{M}])(\p{L})/gu, (_, before, letter) => before + letter.toLocaleUpperCase('en-US'));
+  }
+
   function departmentCells(row) {
-    return [formatDepartmentDate(row.documentDate), row.studentId, row.fullName, '',
-      row.passportNo, formatDepartmentDate(row.passportExpiry), row.embassyPlace]
+    return [formatDepartmentDate(row.signDate), row.studentId, capitalizeDepartmentName(row.fullName), '',
+      row.passportNo, formatDepartmentDate(row.passportExpiry), '',
+      formatDepartmentDate(row.visaExpiry), formatDepartmentDate(row.extendUntil)]
       .map(value => String(value ?? '').replace(/[\t\r\n]+/g, ' ').trim());
   }
 
@@ -74,10 +80,11 @@
     <col min="3" max="3" width="30" customWidth="1"/>
     <col min="4" max="4" width="12" customWidth="1"/>
     <col min="5" max="6" width="19" customWidth="1"/>
-    <col min="7" max="7" width="24" customWidth="1"/>
+    <col min="7" max="7" width="12" customWidth="1"/>
+    <col min="8" max="9" width="19" customWidth="1"/>
   </cols>
   <sheetData>${rowXml}</sheetData>
-  <autoFilter ref="A1:G${lastRow}"/>
+  <autoFilter ref="A1:I${lastRow}"/>
 </worksheet>`;
 
     const workbook = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -139,7 +146,7 @@
     return new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   }
 
-  const api = { departmentHeaders, formatDepartmentDate, departmentCells, departmentTsv, createDepartmentWorkbook };
+  const api = { departmentHeaders, formatDepartmentDate, capitalizeDepartmentName, departmentCells, departmentTsv, createDepartmentWorkbook };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (typeof window !== 'undefined') window.ExcelExport = api;
 })();
