@@ -54,7 +54,7 @@ try{
     const picture='<w:p><w:r><w:drawing><wp:inline xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"><wp:extent cx="381000" cy="381000"/><wp:docPr id="1" name="Fixture emblem"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="1" name="emblem.png"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="img1"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="381000" cy="381000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>';
     const split='<w:p><w:pPr><w:spacing w:after="200"/></w:pPr><w:r><w:t xml:space="preserve">Student </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t>EXAMPLE STUDENT</w:t></w:r><w:r><w:t xml:space="preserve"> has </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t>Chi</w:t></w:r><w:r><w:rPr><w:i/></w:rPr><w:t>nese</w:t></w:r><w:r><w:t xml:space="preserve"> nationality. Thai nationality: Chinese.</w:t></w:r></w:p>';
     const body=para('Custom student letter','<w:pPr><w:jc w:val="center"/></w:pPr>')+split+
-      para('Signed SIGN_DATE. Birth BIRTH_DATE. Age AGE.')+
+      '<w:p><w:r><w:t xml:space="preserve">Signed </w:t></w:r><w:fldSimple w:instr=" DATE "><w:r><w:t>SIGN_DATE</w:t></w:r></w:fldSimple><w:r><w:t xml:space="preserve">. Birth BIRTH_DATE. Age AGE.</w:t></w:r></w:p>'+
       para('Faculty FACULTY. Major MAJOR. Credits CREDITS.')+
       para('Visa until VISA_DATE. Extend until EXTEND_DATE. Passport expiry PASSPORT_DATE.')+
       para('Expected graduation GRAD_YEAR. Student ID STUDENT_ID.')+
@@ -65,7 +65,7 @@ try{
     const put=(name,value)=>files.set(name,{name,data:typeof value==='string'?new TextEncoder().encode(value):value});
     put('word/document.xml',document);
     put('word/header1.xml','<?xml version="1.0"?><w:hdr xmlns:w="'+W+'">'+para('Custom letter EXAMPLE STUDENT')+'</w:hdr>');
-    put('word/footer1.xml','<?xml version="1.0"?><w:ftr xmlns:w="'+W+'">'+para('Approved SIGNER_NAME')+'</w:ftr>');
+    put('word/footer1.xml','<?xml version="1.0"?><w:ftr xmlns:w="'+W+'">'+'<w:p><w:r><w:t xml:space="preserve">Approved </w:t></w:r><w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText> MERGEFIELD Signer </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r><w:r><w:t>SIGNER_NAME</w:t></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r></w:p>'+'</w:ftr>');
     put('word/_rels/document.xml.rels','<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="header1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header1.xml"/><Relationship Id="footer1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/><Relationship Id="img1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/emblem.png"/></Relationships>');
     const png=Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+bCrkAAAAASUVORK5CYII='),c=>c.charCodeAt(0));put('word/media/emblem.png',png);
     const content=new TextDecoder().decode(files.get('[Content_Types].xml').data).replace('</Types>','<Default Extension="png" ContentType="image/png"/><Override PartName="/word/header1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/><Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/></Types>');
@@ -146,6 +146,13 @@ try{
   await act('newCase');await page.locator('#clLocalStudent').selectOption('custom-local-student');
   const value=id=>page.locator('[data-cl-value="'+id+'"]');
   const savedAdvanced=await stored(),template=savedAdvanced.templates.at(-1),version=template.versions[0],sign=version.fields.find(f=>f.label==='Sign date'),nameField=version.fields.find(f=>f.label==='Full name');
+  await page.evaluate(student=>window.dispatchEvent(new CustomEvent('buic-student-memory-selected',{detail:{
+    student:{full_name:'MISS EXAMPLE STUDENT',student_id:'1690123456',nationality_th:'จีน',extra_data:{birthDate:'2000-11-15'}},
+    passport:{passport_number:'QA123456',expiry_date:'2027-05-20'},
+    academic:{major_en:student.program.programEnglish.toLowerCase(),faculty_en:student.program.facultyEnglish,required_credits:129,achieved_credits:18},
+    visa:{visa_expiry_date:'2027-01-31'}
+  }})),student);
+  assert.equal(await page.locator('#studentModal').isVisible(),false,'Student DB selection must stay in the custom form');
   await value(sign.id).fill('2026-11-14');
   assert.equal(await value(nameField.id).inputValue(),'Miss EXAMPLE STUDENT');
   assert.equal(await page.locator('[data-cl-computed="age"]').innerText(),'25');
@@ -175,6 +182,8 @@ try{
   assert.equal(output.texts.some(t=>t.includes('Conditional note')),false);
   assert(output.parts['word/document.xml'].includes('<w:br'));
   assert(output.parts['word/document.xml'].includes('<w:tblBorders>'));
+  assert.equal(output.parts['word/document.xml'].includes('<w:fldSimple'),false,'mapped Word fields must not recalculate over the filled value');
+  assert.equal(output.parts['word/footer1.xml'].includes('MERGEFIELD'),false,'mapped complex fields become static output');
   assert.equal(output.parts['word/_rels/document.xml.rels'],sample.parts['word/_rels/document.xml.rels']);
   assert.deepEqual(output.image,sample.image);
   const afterGeneration=await stored();assert.equal(afterGeneration.cases.length,1);assert.equal(afterGeneration.cases[0].prints.length,1);
@@ -203,6 +212,10 @@ try{
   await act('copyTable');
   const expected=['Nov 14, 2026','1690123456','Miss Example Student','','TABLE-ONLY','May 20, 2027','','Jan 31, 2027','May 20, 2027'];
   assert.equal(await page.evaluate(()=>navigator.clipboard.readText()),expected.join('\t'));
+  await page.evaluate(()=>{window.__realClipboard=navigator.clipboard;Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async()=>{throw Error('Clipboard blocked');}}});});
+  await act('copyTable');assert.equal(await page.locator('#clTableFallback').inputValue(),expected.join('\t'));
+  assert.equal(await page.locator('#clTableFallback').evaluate(el=>el===document.activeElement&&el.selectionEnd-el.selectionStart===el.value.length),true);
+  await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:window.__realClipboard}));
   const workbook=await capture(()=>act('downloadTable'));
   const matrix=await page.evaluate(async base64=>{const files=await ZipLite.readZip(CustomLetterEngine.base64ToBytes(base64)),doc=CustomLetterEngine.parseXml(new TextDecoder().decode(files.get('xl/worksheets/sheet1.xml').data));return [...doc.getElementsByTagNameNS('*','row')].map(row=>[...row.getElementsByTagNameNS('*','c')].map(cell=>cell.textContent));},workbook.bytes.toString('base64'));
   assert.deepEqual(matrix,[headers,expected]);assert.equal((await stored()).cases[0].values.passport,'QA123456');

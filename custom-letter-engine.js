@@ -146,6 +146,21 @@
     return out;
   }
   function setNodeText(node,value){const doc=node.ownerDocument,parts=str(value).split(/([\n\t])/);node.textContent=parts[0];node.setAttributeNS(XML,'xml:space','preserve');let previous=node;for(let i=1;i<parts.length;i++){let next;if(parts[i]==='\n'||parts[i]==='\t')next=doc.createElementNS(W,parts[i]==='\n'?'w:br':'w:tab');else{next=doc.createElementNS(W,'w:t');next.setAttributeNS(XML,'xml:space','preserve');next.textContent=parts[i];}previous.parentNode.insertBefore(next,previous.nextSibling);previous=next;}}
+  function freezeMappedWordFields(paragraph,nodes,ranges){
+    const mapped=new Set();let at=0;for(const node of nodes){const end=at+node.textContent.length;if(ranges.some(r=>r.start<end&&r.end>at))mapped.add(node);at=end;}
+    const simple=new Set(),remove=new Set(),stack=[];
+    for(const node of mapped){let field=nearest(node,'fldSimple');while(field){simple.add(field);field=nearest(field,'fldSimple');}}
+    for(const node of [...paragraph.getElementsByTagNameNS(W,'*')]){
+      if(nearest(node,'p')!==paragraph)continue;
+      if(node.localName==='fldChar'){
+        const type=node.getAttributeNS(W,'fldCharType');for(const field of stack)field.tokens.push(node);
+        if(type==='begin')stack.push({tokens:[node],mapped:false});
+        else if(type==='end'){const field=stack.pop();if(field?.mapped)for(const token of field.tokens)remove.add(token);}
+      }else if(node.localName==='instrText'){for(const field of stack)field.tokens.push(node);}
+      else if(mapped.has(node))for(const field of stack)field.mapped=true;
+    }
+    for(const field of simple)field.replaceWith(...field.childNodes);for(const token of remove)token.remove();
+  }
   function validateAnchors(loaded,config){for(const b of config.bindings){const p=loaded.parts.get(b.part)?.paragraphs[b.paragraph];if(!p||p.text.slice(b.start,b.end)!==b.sample)throw Error('The source text for a selected field is missing. Remap it in the template.');}for(const c of config.conditions)if(!loaded.parts.get(c.part)?.paragraphs[c.paragraph])throw Error('A conditional paragraph could not be found.');}
   async function generate(version,values={},overrides={},context={},snapshot=null){
     const config=validateConfig(version),loaded=await loadDocx(base64ToBytes(version.sourceBase64));validateAnchors(loaded,config);
@@ -153,7 +168,7 @@
     if(!snapshot&&Object.keys(resolved.errors).length)throw Error(Object.values(resolved.errors)[0]);
     const bindingOutputs={};for(const b of config.bindings){const f=config.fields.find(f=>f.id===b.fieldId);bindingOutputs[b.id]=snapshot?.bindingOutputs&&own(snapshot.bindingOutputs,b.id)?snapshot.bindingOutputs[b.id]:formatField(f,resolved.raw[f.id],context,b.format);const condition=config.conditions.find(c=>c.part===b.part&&c.paragraph===b.paragraph),visible=!condition||(snapshot?.visibility&&own(snapshot.visibility,b.part+'#'+b.paragraph)?snapshot.visibility[b.part+'#'+b.paragraph]:conditionShown(condition,resolved));if(visible&&(f.required||resolved.raw[f.id])&&!str(bindingOutputs[b.id]).trim())throw Error('The output for '+f.label+' is missing. Check its language or format.');}
     const groups=new Map();for(const b of config.bindings){const key=b.part+'#'+b.paragraph;(groups.get(key)||groups.set(key,[]).get(key)).push({...b,value:bindingOutputs[b.id]});}
-    for(const [part,entry] of loaded.parts){let changed=false;for(const p of entry.paragraphs){const condition=config.conditions.find(c=>c.part===part&&c.paragraph===p.index);const show=condition?(snapshot?.visibility&&own(snapshot.visibility,part+'#'+p.index)?snapshot.visibility[part+'#'+p.index]:conditionShown(condition,resolved)):true;if(!show){if(nearest(p.node,'tc')){for(const child of [...p.node.children])if(child.localName!=='pPr')child.remove();}else p.node.remove();changed=true;continue;}const ranges=groups.get(part+'#'+p.index);if(ranges){const nodes=textNodes(p.node),next=applyTextRanges(nodes.map(n=>n.textContent),ranges);nodes.forEach((n,i)=>setNodeText(n,next[i]));changed=true;}}
+    for(const [part,entry] of loaded.parts){let changed=false;for(const p of entry.paragraphs){const condition=config.conditions.find(c=>c.part===part&&c.paragraph===p.index);const show=condition?(snapshot?.visibility&&own(snapshot.visibility,part+'#'+p.index)?snapshot.visibility[part+'#'+p.index]:conditionShown(condition,resolved)):true;if(!show){if(nearest(p.node,'tc')){for(const child of [...p.node.children])if(child.localName!=='pPr')child.remove();}else p.node.remove();changed=true;continue;}const ranges=groups.get(part+'#'+p.index);if(ranges){const nodes=textNodes(p.node),next=applyTextRanges(nodes.map(n=>n.textContent),ranges);freezeMappedWordFields(p.node,nodes,ranges);nodes.forEach((n,i)=>setNodeText(n,next[i]));changed=true;}}
       if(changed)loaded.files.set(part,{name:part,data:new TextEncoder().encode(new XMLSerializer().serializeToString(entry.doc))});
     }
     const visibility={};for(const c of config.conditions)visibility[c.part+'#'+c.paragraph]=conditionShown(c,resolved);

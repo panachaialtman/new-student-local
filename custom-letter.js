@@ -309,8 +309,9 @@
   function useRemembered(record){
     if(state.mode!=='case'){announce('Choose Add student for a custom template first.',true);return;}
     const s=record?.student||{},p=record?.passport||{},a=record?.academic||{},v=record?.latest_visa||record?.visa||{},extra=s.extra_data||{},ax=a.extra_data||{},ctx=context();
-    const program=(ctx.programs||[]).find(r=>(r.programEnglish===a.major_en||r.programThai===a.major_th)&&(r.facultyEnglish===a.faculty_en||r.facultyThai===a.faculty_th));
-    populateStudent({title:s.title||'',fullName:s.full_name||'',studentId:s.student_id||'',nationalityThai:s.nationality_th||'',nationalityEnglish:s.nationality_en||'',countryEnglish:s.country_en||'',birthDate:s.birth_date||extra.birthDate||'',passportNo:p.passport_number||'',passportExpiry:p.expiry_date||'',currentStayUntil:v.visa_expiry_date||'',programKey:program?.key||ax.programKey||'',facultyEnglish:a.faculty_en||'',totalCredits:a.total_credits??'',registeredCredits:a.registered_credits??'',studyYearOverride:ax.studyYearOverride||'',graduationYearOverride:ax.graduationYearOverride||'',documentNo:v.document_number||''});
+    const same=(x,y)=>x&&y&&String(x).trim().toLocaleLowerCase()===String(y).trim().toLocaleLowerCase();
+    const program=E.program(ctx,ax.programKey)||(ctx.programs||[]).find(r=>(same(r.programEnglish,a.major_en)||same(r.programThai,a.major_th))&&(!a.faculty_en&&!a.faculty_th||same(r.facultyEnglish,a.faculty_en)||same(r.facultyThai,a.faculty_th)));
+    populateStudent({title:s.title||'',fullName:s.full_name||'',studentId:s.student_id||'',nationalityThai:s.nationality_th||'',nationalityEnglish:s.nationality_en||'',countryEnglish:s.country_en||'',birthDate:s.birth_date||extra.birthDate||'',passportNo:p.passport_number||'',passportExpiry:p.expiry_date||'',currentStayUntil:v.visa_expiry_date||'',programKey:program?.key||'',facultyEnglish:a.faculty_en||'',totalCredits:a.required_credits??a.total_credits??'',registeredCredits:a.achieved_credits??a.registered_credits??'',studyYearOverride:ax.studyYearOverride||'',graduationYearOverride:ax.graduationYearOverride||'',documentNo:v.document_number||'',currentStudent:Boolean(extra.currentStudent),exchangeUniversity:extra.exchangeUniversity||ax.exchangeUniversity||'',programDurationYears:extra.programDurationYears||''});
   }
   function caseIdentity(row){
     const version=versionFor(row),resolved=E.resolve(version,row.values,row.overrides,context());
@@ -416,7 +417,7 @@
   }
   async function copyTable(){
     const text=tableTsv();try{await navigator.clipboard.writeText(text);$('clTableStatus').textContent='Rows copied. Paste them into Excel.';}
-    catch{const field=$('clTableFallback');field.classList.remove('hidden');field.value=text;field.focus();field.select();$('clTableStatus').textContent='Copy the selected rows below.';}
+    catch{const field=$('clTableFallback');field.classList.remove('hidden');field.value=text;state.focusAfter={node:field,select:true};$('clTableStatus').textContent='Copy the selected rows below.';}
   }
   async function tableWorkbook(){
     const xml=value=>String(value??'').replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g,'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
@@ -468,14 +469,14 @@
     columnUp:target=>moveColumn(Number(target.dataset.index),-1),columnDown:target=>moveColumn(Number(target.dataset.index),1),
     removeColumn:target=>{state.draft.tableColumns.splice(Number(target.dataset.index),1);state.dirty=true;renderColumns();},
     resetOverride:target=>{const current=formState();delete current.overrides[target.dataset.id];state.dirty=true;refreshForm();},
-    nextMissing:()=>{const current=formState(),resolved=E.resolve(current.version,current.values,current.overrides,context()),key=Object.keys(resolved.errors)[0]||current.version.fields.find(f=>!resolved.raw[f.id])?.id;const control=key?ROOT.querySelector('[data-cl-form-field="'+CSS.escape(key)+'"] input,[data-cl-form-field="'+CSS.escape(key)+'"] select,[data-cl-form-field="'+CSS.escape(key)+'"] textarea'):null;if(control){control.focus();control.scrollIntoView({block:'nearest'});}else announce('All fields are filled.');}
+    nextMissing:()=>{const current=formState(),resolved=E.resolve(current.version,current.values,current.overrides,context()),key=Object.keys(resolved.errors)[0]||current.version.fields.find(f=>!resolved.raw[f.id])?.id;const control=key?ROOT.querySelector('[data-cl-form-field="'+CSS.escape(key)+'"] input,[data-cl-form-field="'+CSS.escape(key)+'"] select,[data-cl-form-field="'+CSS.escape(key)+'"] textarea'):null;if(control){state.focusAfter={node:control};control.scrollIntoView({block:'nearest'});}else announce('All fields are filled.');}
   };
   function moveField(id,direction){const list=state.draft.fields,i=list.findIndex(f=>f.id===id),j=i+direction;if(i<0||j<0||j>=list.length)return;[list[i],list[j]]=[list[j],list[i]];state.dirty=true;renderMappingSidebar();}
   function moveColumn(i,direction){const list=state.draft.tableColumns,j=i+direction;if(j<0||j>=list.length)return;[list[i],list[j]]=[list[j],list[i]];state.dirty=true;renderColumns();}
   function refreshForm(){const current=formState();renderForm($(state.mode==='test'?'clBuilderSidebar':'clCaseForm'),current.version,current.values,current.overrides,state.mode==='test');renderDocument($('clDocument'),current.version,E.resolve(current.version,current.values,current.overrides,context()));}
   async function run(task){
-    if(state.busy)return;state.busy=true;ROOT.setAttribute('aria-busy','true');const controls=[...ROOT.querySelectorAll('input:not([type="file"]),select,textarea,button')].map(node=>[node,node.disabled]);for(const [node]of controls)node.disabled=true;
-    try{await task();}catch(error){announce(error.message||String(error),true);}finally{state.busy=false;ROOT.removeAttribute('aria-busy');for(const [node,disabled]of controls)if(node.isConnected)node.disabled=disabled;}
+    if(state.busy)return;state.busy=true;const previousFocus=document.activeElement;ROOT.setAttribute('aria-busy','true');const controls=[...ROOT.querySelectorAll('input:not([type="file"]),select,textarea,button')].map(node=>[node,node.disabled]);for(const [node]of controls)node.disabled=true;
+    try{await task();}catch(error){announce(error.message||String(error),true);}finally{state.busy=false;ROOT.removeAttribute('aria-busy');for(const [node,disabled]of controls)if(node.isConnected)node.disabled=disabled;const focus=state.focusAfter;state.focusAfter=null;if(focus?.node?.isConnected){focus.node.focus();if(focus.select)focus.node.select();}else if(document.activeElement===document.body&&previousFocus?.isConnected&&!previousFocus.disabled)previousFocus.focus();}
   }
   ROOT.addEventListener('click',event=>{
     const target=event.target.closest('[data-cl-action]');if(target&&ROOT.contains(target)){const action=actions[target.dataset.clAction];if(action){event.preventDefault();void run(()=>action(target));}return;}
