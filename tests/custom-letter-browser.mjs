@@ -251,6 +251,7 @@ try{
   await page.locator('#clVersionChoice').selectOption(version.id);await act('editTemplate');
   assert.match(await page.locator('#clDocument').innerText(),/Custom student letter/);
   await page.setViewportSize({width:390,height:844});
+  await page.waitForFunction(()=>document.getElementById('sidebar').getBoundingClientRect().right<=0);
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true);
   await page.screenshot({path:'test-results/custom-letter-builder-mobile.png',fullPage:true});
   await page.setViewportSize({width:1600,height:1050});await page.screenshot({path:'test-results/custom-letter-builder-desktop.png',fullPage:true});

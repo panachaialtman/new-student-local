@@ -127,3 +127,4 @@
 .cl-version-choice{margin-top:12px;max-width:320px}
 .cl-export-settings ol{padding-left:20px;color:var(--muted);font-size:12px;line-height:1.7}
 .cl-export-settings li+li{margin-top:5px}
+@media(max-width:650px){.cl-builder-meta{flex-direction:column;align-items:stretch}.cl-builder-meta>.cl-label{flex-basis:auto}.cl-builder-meta>.cl-muted{flex:none;max-width:none;margin:0}.cl-builder-meta>.btn{align-self:flex-start}}
