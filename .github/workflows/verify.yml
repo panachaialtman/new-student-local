@@ -27,10 +27,14 @@ jobs:
           node --check ui-enhancements.js
           node --check sw.js
           node --check student-memory.js
+          node --check custom-letter-engine.js
+          node --check custom-letter-references.js
+          node --check custom-letter.js
       - name: Run generated-document and case-group regression checks
         run: |
           node tests/review-box-groups.test.cjs
           node --test tests/department-table.test.cjs
+          node --test tests/custom-letter-engine.test.cjs
           node tests/hub-nationality.test.cjs
           node tests/cancel-letter.test.cjs
           node tests/graduated-letter.test.cjs
@@ -49,6 +53,8 @@ jobs:
           node tests/letter-case-dialogs-browser.mjs
       - name: Exercise editable department table and Excel output
         run: node tests/department-table-browser.mjs
+      - name: Exercise Custom Letter Builder and generated Word files
+        run: node tests/custom-letter-browser.mjs
       - name: Retain browser verification screenshots
         if: always()
         uses: actions/upload-artifact@v4

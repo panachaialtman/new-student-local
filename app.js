@@ -2432,6 +2432,7 @@
       exportedAt: new Date().toISOString(), version: '0.2-web',
       cases: state.cases, drafts: state.drafts, batches: state.batches,
       letterCases: state.letterCases, settings: state.settings, templates,
+      customLetters: window.BUICCustomLetters ? await window.BUICCustomLetters.exportWorkspace() : null,
     };
     downloadBlob(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }), `visa_workspace_${todayIso()}.visabackup`);
     toast('Backup exported', 'Cases, history, settings and imported Word templates are included.');
@@ -2442,6 +2443,8 @@
     try {
       const payload = JSON.parse(await file.text());
       if (!payload || typeof payload !== 'object') throw new Error('Backup file is not valid JSON');
+      const customLetters = payload.customLetters && window.BUICCustomLetters
+        ? await window.BUICCustomLetters.validateWorkspace(payload.customLetters) : null;
       state.cases = migrateCaseOrder(payload.cases);
       state.drafts = normalizeDrafts(payload.drafts);
       state.activeDraftId = null;
@@ -2456,6 +2459,7 @@
       state.settings.exchangeUniversities = normalizeExchangeUniversities(state.settings.exchangeUniversities);
       if (payload.templates) await VisaDB.importTemplatesBase64(payload.templates);
       persist();
+      if (customLetters) await window.BUICCustomLetters.importWorkspace(customLetters);
       await refreshTemplateStatus();
       el('signatoryInput').innerHTML = signatoryOptions(state.settings.signatory);
       el('signatoryInput').value = state.settings.signatory;
@@ -2664,7 +2668,7 @@
       renderCaseList();
       renderSelectionBar();
     }
-    if (view === 'placeholder') {
+    if (view === 'placeholder' || view === 'custom') {
       state.selected.clear();
       if (el('detailDrawer')?.classList.contains('open')) closeDrawer();
       renderSelectionBar();
@@ -2675,6 +2679,7 @@
       cancel: ['cancelView', 'Cancel', 'STUDENT VISA CANCELLATION'],
       graduated: ['graduatedView','Graduated','GRADUATED · ED PLUS'],
       criminal: ['criminalView','Criminal Record','CRIMINAL RECORD LETTER'],
+      custom: ['customView','Custom letters','LETTER TEMPLATE BUILDER'],
       batches: ['batchesView', 'Generation history', 'DOCUMENT OUTPUT'],
       programs: ['programsView', 'Academic programs', 'REFERENCE DATA'],
       settings: ['settingsView', 'Workspace settings', 'CONFIGURATION'],
@@ -2691,12 +2696,13 @@
     document.querySelector(activeNav)?.classList.add('active');
     el('pageTitle').textContent = title;
     el('pageEyebrow').textContent = eyebrow;
-    const reserved = view === 'placeholder' || view === 'cancel' || view === 'graduated' || view === 'criminal';
+    const reserved = view === 'placeholder' || view === 'cancel' || view === 'graduated' || view === 'criminal' || view === 'custom';
     if (el('draftsBtn')) { el('draftsBtn').hidden = reserved; el('draftsBtn').classList.toggle('hidden', reserved); }
     if (el('addStudentBtn')) { el('addStudentBtn').hidden = view==='placeholder'; el('addStudentBtn').classList.toggle('hidden', view==='placeholder'); }
     if (view === 'cancel') {updateCancelPreview();renderLetterCases('cancel');}
     if (view === 'graduated') {updateGraduatedPreview();renderLetterCases('graduated');}
     if (view === 'criminal') {updateCriminalPreview();renderLetterCases('criminal');}
+    if (view === 'custom') window.BUICCustomLetters?.open();
     if (view === 'programs') renderProgramTable();
     if (view === 'batches') renderBatchHistory();
     if (view === 'settings') { switchSettingsTab(activeSettingsTab); refreshTemplateStatus().catch(console.error); }
@@ -3409,6 +3415,7 @@
       () => switchView(item.dataset.view, item.dataset.caseCategory || state.activeCategory, item.dataset.placeholder || '')));
     el('menuToggle')?.addEventListener('click', () => el('sidebar').classList.toggle('open'));
     el('addStudentBtn').addEventListener('click',()=>{
+      if(el('customView')?.classList.contains('active')){window.BUICCustomLetters?.newCase();return;}
       const kind=['cancel','graduated','criminal'].find(key=>el(key+'View').classList.contains('active'));
       if(kind)openNewLetterCase(kind);
       else openNewStudentForm();
@@ -3521,7 +3528,10 @@
       e.preventDefault();
       void addStudentFromForm(e.currentTarget);
     });
-    window.addEventListener('buic-student-memory-selected',e=>applyRememberedStudentToEntry(e.detail));
+    window.addEventListener('buic-student-memory-selected',e=>{
+      if(el('customView')?.classList.contains('active')){window.BUICCustomLetters?.useRemembered(e.detail);return;}
+      applyRememberedStudentToEntry(e.detail);
+    });
     el('programSearch').addEventListener('input', renderProgramTable);
     el('refreshHubReferencesBtn')?.addEventListener('click', () => { void syncHubReferences(true); });
     el('signatoryInput').addEventListener('change', (e) => {
@@ -3606,5 +3616,8 @@
     }
   }
 
+  window.BUICCustomLetterBridge=Object.freeze({
+    getContext:()=>({students:structuredClone(state.cases),programs:structuredClone(state.programs),nationalities:structuredClone(state.nationalities)})
+  });
   boot();
 })();
