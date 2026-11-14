@@ -1,4 +1,4 @@
-const CACHE = 'new-student-local-v03-59-custom-letter-builder';
+const CACHE = 'new-student-local-v03-60-custom-letter-ux';
 const SHELL = [
   './custom-letter.css', './custom-letter-references.js', './custom-letter-engine.js', './custom-letter.js',
   './', './index.html', './styles.css', './hub-reference.js', './student-memory.js', './reference-data.js', './builtin-templates.js', './ui-enhancements.js', './db.js', './zip.js', './docx-engine.js', './cancel-letter.js', './templates-data/cancel_manual_master.txt', './graduated-letter.js', './templates-data/graduated_edplus_master.txt', './criminal-record-letter.js', './templates-data/criminal_record_master.txt', './excel-export.js', './app.js',
