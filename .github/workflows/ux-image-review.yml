@@ -1,0 +1,29 @@
+name: Custom Letter QA image review
+on:
+  push:
+    branches: [qa/custom-letter-ux-images-20261114]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  review:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: letter-case-dialog-browser-results
+          run-id: 43556500252
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: qa-preview
+      - name: Make synthetic QA previews available for visual review
+        shell: python
+        run: |
+          from pathlib import Path
+          import base64
+          for name in ["custom-letter-guided-desktop.png","custom-letter-guided-mobile.png","custom-letter-old-doc-guide.png"]:
+              paths=list(Path("qa-preview").rglob(name))
+              assert len(paths)==1, name
+              data=base64.b64encode(paths[0].read_bytes()).decode()
+              for i in range(0,len(data),12000):
+                  print("UX_IMAGE "+name+" "+str(i)+" "+data[i:i+12000])
