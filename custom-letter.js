@@ -10,6 +10,28 @@
   ];
   const FIELDTYPES={text:'Text',textarea:'Long text',number:'Number',date:'Date',select:'Your dropdown',nationality:'Nationality / country',faculty:'Faculty',major:'Major',signatory:'Signatory',calculated:'Calculation',block:'Reusable text block',fixed:'Fixed replacement'};
   const FORMATS={plain:'As entered',title:'Capitalize each word',upper:'UPPERCASE',lower:'lowercase',enShort:'Nov 5, 2026',enLong:'November 5, 2026',enDayMonth:'5 November',thaiDate:'5 พฤศจิกายน 2569',iso:'2026-11-05',yearBE:'Buddhist year',yearCE:'Gregorian year',nationalityEnglish:'Nationality · English',nationalityThai:'Nationality · Thai',countryEnglish:'Country · English',countryThai:'Country · Thai',facultyEnglish:'Faculty · English',facultyThai:'Faculty · Thai',programEnglish:'Major · English',programThai:'Major · Thai',nameEn:'Signatory name · English',nameTh:'Signatory name · Thai',roleEn:'Signatory position · English',roleTh:'Signatory position · Thai'};
+  const QUICK_FIELDS={
+    name:{label:'Full name',type:'text',autofill:'fullName',format:'title'},
+    student:{label:'Student ID',type:'text',autofill:'studentId',format:'plain'},
+    passport:{label:'Passport number',type:'text',autofill:'passportNo',format:'upper'},
+    expiry:{label:'Passport expiry',type:'date',autofill:'passportExpiry',format:'enShort'},
+    date:{label:'Sign date',type:'date',autofill:'signDate',format:'enShort'},
+    nationality:{label:'Nationality',type:'nationality',autofill:'nationality',format:'nationalityEnglish'},
+    faculty:{label:'Faculty',type:'faculty',autofill:'faculty',format:'facultyEnglish'},
+    major:{label:'Major',type:'major',autofill:'major',format:'programEnglish'},
+    signature:{label:'Signatory',type:'signatory',autofill:'signatory',format:'nameEn'}
+  };
+  function fieldFormats(field){
+    let keys=['plain','title','upper','lower'];
+    if(field?.type==='date'||field?.type==='calculated'&&['addMonths','addDays'].includes(field.formula?.op))keys=['enShort','enLong','enDayMonth','thaiDate','iso','yearBE','yearCE'];
+    else if(field?.type==='nationality')keys=['nationalityEnglish','nationalityThai','countryEnglish','countryThai'];
+    else if(field?.type==='faculty')keys=['facultyEnglish','facultyThai'];
+    else if(field?.type==='major')keys=['programEnglish','programThai'];
+    else if(field?.type==='signatory')keys=['nameEn','nameTh','roleEn','roleTh'];
+    else if(field?.type==='calculated')keys=['plain',...(['idYear','studyYear'].includes(field.formula?.op)?['yearBE','yearCE']:[])];
+    if(field?.format&&!keys.includes(field.format))keys.push(field.format);
+    return Object.fromEntries(keys.map(key=>[key,FORMATS[key]]));
+  }
   const SOURCES={fullName:'Student name with title',title:'Title',studentId:'Student ID',passportNo:'Passport number',passportExpiry:'Passport expiry',birthDate:'Birth date',visaExpiry:'Visa expiry',signDate:'Today / sign date',totalCredits:'Total credits',registeredCredits:'Registered credits',studyYear:'Study year override',graduationYear:'Graduation year override',nationality:'Nationality record',faculty:'Faculty record',major:'Major record',signatory:'Signatory',documentNo:'Document number',currentStudent:'Current student',exchangeUniversity:'Partner university',programDuration:'Program duration'};
   const CALCS={age:'Age on a date',addMonths:'Add months to a date',addDays:'Add days to a date',idYear:'Year from student ID',studyYear:'Study year from ID',majorCredits:'Credits from selected major',add:'Add numbers',subtract:'Subtract numbers',multiply:'Multiply numbers',minimum:'Smaller number',maximum:'Larger number'};
   const state={db:{schema:1,templates:[],cases:[],blocks:[],signatories:clone(DEFAULT_SIGNERS)},ready:false,loading:null,mode:'list',activeTemplate:null,draft:null,loaded:null,selectedField:null,selection:null,paragraph:null,caseDraft:null,testValues:{},testOverrides:{},selectedCases:new Set(),busy:false,showArchived:false,dirty:false,returnFocus:null};
@@ -32,13 +54,13 @@
   }
   async function commit(next){await VisaDB.setState(KEY,next);state.db=next;}
   async function open(){try{await load();render();}catch(error){ROOT.innerHTML='<div class="cl-empty"><h2>Custom letters could not open</h2><p>'+esc(error.message)+'</p>'+button('retryLoad','Retry','primary')+'</div>';}}
-  function shell(content){ROOT.innerHTML='<div class="cl-shell"><div id="clSaveStatus" class="cl-save-status" role="status"></div>'+content+'<p id="clStatus" class="cl-status" role="status" aria-live="polite"></p><input id="clImportFile" type="file" accept=".buletter,.json,application/json" hidden><input id="clRestoreFile" type="file" accept=".buletters,.json,application/json" hidden></div>';}
+  function shell(content){ROOT.innerHTML='<div class="cl-shell"><div id="clSaveStatus" class="cl-save-status" role="status"></div><p id="clStatus" class="cl-status" role="status" aria-live="polite"></p>'+content+'<input id="clImportFile" type="file" accept=".buletter,.json,application/json" hidden><input id="clRestoreFile" type="file" accept=".buletters,.json,application/json" hidden></div>';}
   function render(){if(state.mode==='builder'||state.mode==='test')renderBuilder();else if(state.mode==='case')renderCase();else if(state.mode==='library')renderLibrary();else renderList();}
   function renderList(){
     state.mode='list';const templates=state.db.templates.filter(t=>Boolean(t.archived)===state.showArchived);
     if(!templates.some(t=>t.id===state.activeTemplate))state.activeTemplate=templates[0]?.id||null;
     const template=activeTemplate(),version=activeVersion(template),cases=state.db.cases.filter(c=>c.templateId===template?.id).sort((a,b)=>a.createdAt.localeCompare(b.createdAt));
-    shell('<div class="cl-page-head"><div><h2>Custom letters</h2><p>Turn a Word letter into a reusable form.</p></div><div class="cl-actions">'+button('newTemplate','Create template','primary')+button('importTemplate','Import setup','subtle')+button('library','Text blocks &amp; signatories','subtle')+button('backup','Backup letters','subtle')+button('restore','Restore backup','subtle')+'</div></div>'+
+    shell('<div class="cl-page-head"><div><h2>Custom letters</h2><p>Turn a Word letter into a reusable form.</p></div><div class="cl-actions">'+button('newTemplate','Create template','primary')+'<details class="cl-tools"><summary>Manage templates &amp; backups</summary><div>'+button('importTemplate','Import setup','subtle')+button('library','Text blocks &amp; signatories','subtle')+button('backup','Backup letters','subtle')+button('restore','Restore backup','subtle')+'</div></details>'+'</div></div>'+
       '<div class="cl-workspace"><aside class="cl-template-list"><div class="cl-template-head"><strong>Your templates</strong><label><input id="clShowArchived" type="checkbox" '+(state.showArchived?'checked':'')+'> Archived</label></div>'+
       (templates.length?templates.map(t=>'<button class="cl-template-item '+(state.activeTemplate===t.id?'active':'')+'" data-cl-action="chooseTemplate" data-id="'+esc(t.id)+'"><strong>'+esc(t.name)+'</strong><span>Version '+activeVersion(t).number+' · '+state.db.cases.filter(c=>c.templateId===t.id).length+' cases</span></button>').join(''):'<p class="cl-muted">No '+(state.showArchived?'archived ':'')+'templates yet.</p>')+'</aside><section class="cl-case-area">'+
       (template?'<div class="cl-section-head"><div><h3>'+esc(template.name)+'</h3><p>'+version.fields.length+' fields · '+version.bindings.length+' text selections · Version '+version.number+'</p><label class="cl-label cl-version-choice"><span>Edit from version</span><select id="clVersionChoice">'+[...template.versions].reverse().map(v=>option(v.id,'Version '+v.number+' · '+dateStamp(v.createdAt),template.activeVersionId)).join('')+'</select></label></div><div class="cl-actions">'+button('newCase','Add student','primary')+button('editTemplate','Edit template','subtle')+button('duplicateTemplate','Duplicate','subtle')+button('exportTemplate','Export setup','subtle')+button('archiveTemplate',template.archived?'Restore template':'Archive','subtle')+'</div></div><div class="cl-case-toolbar">'+button('batchWord','Download selected Word files','subtle')+button('caseTable','Selected rows for Excel','subtle')+'<span>'+state.selectedCases.size+' selected</span></div>'+
@@ -48,19 +70,32 @@
     if($('clSelectAllCases'))$('clSelectAllCases').indeterminate=cases.some(c=>state.selectedCases.has(c.id))&&!cases.every(c=>state.selectedCases.has(c.id));
   }
   async function beginTemplate(template=null,versionId=null){
-    state.mode='builder';state.selectedField=null;state.selection=null;state.paragraph=null;state.dirty=false;state.sourceEdit=false;state.testValues={};state.testOverrides={};
+    state.mode='builder';state.selectedField=null;state.selection=null;state.paragraph=null;state.dirty=false;state.sourceEdit=false;state.sourceNotice=null;state.fieldsOpen=null;state.testValues={};state.testOverrides={};
     if(template){state.draft={...clone(template.versions.find(v=>v.id===versionId)||activeVersion(template)),templateId:template.id,name:template.name};state.loaded=await E.loadDocx(E.base64ToBytes(state.draft.sourceBase64));}
     else{state.draft={templateId:null,name:'Untitled letter',sourceBase64:'',sourceName:'',fields:[],bindings:[],conditions:[],tableColumns:[],blankText:'',blankSettings:{font:'Times New Roman',size:12}};state.loaded=null;}
     render();
   }
+  function builderSteps(step){
+    return '<ol class="cl-steps" aria-label="Build your letter">'+[['Choose a letter','Upload Word or write text'],['Add your fields','Select the words that change'],['Test and save','Try the form before using it']].map(([title,help],i)=>'<li class="'+(i+1===step?'current':i+1<step?'complete':'')+'"'+(i+1===step?' aria-current="step"':'')+'><span>'+(i+1)+'</span><div><strong>'+title+'</strong><small>'+help+'</small></div></li>').join('')+'</ol>';
+  }
+  function sourcePanel(draft){
+    const notice=state.sourceNotice;
+    return '<section class="cl-source-panel">'+
+      (state.sourceEdit?'<p class="cl-muted">Apply a new Word file or edit the text below. Your form fields are kept. You will select their places in the new wording again.</p>':'<div class="cl-source-intro"><h3>Start with your letter</h3><p>Choose a Word document with the layout you want to keep.</p></div>')+
+      (notice?'<section class="cl-source-notice" role="alert" tabindex="-1" id="clSourceNotice"><strong>'+esc(notice.name)+'</strong><h3>This is an older Word file (.doc)</h3><p>The builder opens .docx files. Save this older Word file as .docx, then upload the new copy.</p><ol><li>Open this file in Microsoft Word.</li><li>Choose <b>File → Save As → Word Document (*.docx)</b>.</li><li>Upload the new .docx file here.</li></ol><p>Changing the filename from .doc to .docx does not convert it.</p><div class="cl-actions">'+button('chooseSource','Choose the converted .docx','primary')+button('pasteSource','Paste the text instead','subtle')+'</div></section>':'')+
+      '<label class="cl-upload-zone" id="clSourceDrop"><span class="cl-upload-icon" aria-hidden="true">↑</span><strong>Choose a Word file</strong><span>or drag it here</span><small>.docx opens directly · older .doc files show conversion steps</small><input id="clSourceFile" type="file" accept=".docx,.doc,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden></label>'+
+      '<details class="cl-write-source" id="clWriteSource" '+(state.sourceEdit?'open':'')+'><summary>Write or paste a letter instead</summary>'+label('Letter text','<textarea id="clBlankText" rows="9" placeholder="Write or paste the letter here. You will select its changing words in the next step.">'+esc(state.sourceEdit?state.sourceText:draft.blankText)+'</textarea>')+'<div class="cl-actions">'+label('Font','<select id="clBlankFont">'+['Times New Roman','Arial','TH Sarabun New'].map(v=>option(v,v,draft.blankSettings?.font)).join('')+'</select>')+label('Size',input('clBlankSize',draft.blankSettings?.size||12,'number','min="8" max="30"'))+button('useBlank','Use this letter','primary')+'</div><p class="cl-muted">Pasted text uses the font above. Upload .docx to keep the original Word layout.</p></details>'+
+      (!state.sourceEdit?'<div class="cl-source-example"><span>Want to see how it works first?</span>'+button('example','Use example','subtle')+'</div>':'')+'</section>';
+  }
   function renderBuilder(){
-    const draft=state.draft,testing=state.mode==='test';
-    shell('<div class="cl-editor-head"><div><span class="cl-eyebrow">TEMPLATE BUILDER'+(testing?' · TEST FORM':'')+'</span><h2>'+esc(draft.name)+'</h2><p>'+esc(draft.sourceName||'Choose a starting document')+'</p></div><div class="cl-actions">'+button(testing?'mapMode':'testMode',testing?'Back to mapping':'Test template','subtle')+button('saveTemplate','Save template','primary')+button('closeEditor','Close','subtle')+'</div></div>'+
-      '<div class="cl-builder-meta">'+label('Template name',input('clTemplateName',draft.name))+(draft.sourceBase64?'<span class="cl-muted">The Word file keeps the original formatting. Check page breaks in the downloaded file.</span>'+(!testing?button(state.sourceEdit?'cancelSource':'editSource',state.sourceEdit?'Return to mapping':'Edit wording / replace Word','subtle'):''):'')+'</div>'+
-      (!state.loaded||state.sourceEdit?'<section class="cl-source-panel">'+(state.sourceEdit?'<p class="cl-muted">Apply a new Word file or edit the text below. Your form fields are kept; text mappings and paragraph conditions need to be selected again. Earlier saved versions and student cases are kept.</p>':'')+'<div class="cl-source-options"><label class="btn primary cl-file-button">Upload Word template<input id="clSourceFile" type="file" accept=".docx" hidden></label><span>or write a new letter below</span>'+(!state.sourceEdit?button('example','Use example','subtle'):'')+'</div>'+label('Letter text','<textarea id="clBlankText" rows="10" placeholder="Write or paste your letter here. Each new line becomes a paragraph.">'+esc(state.sourceEdit?state.sourceText:draft.blankText)+'</textarea>')+'<div class="cl-actions">'+label('Font','<select id="clBlankFont">'+['Times New Roman','Arial','TH Sarabun New'].map(v=>option(v,v,draft.blankSettings?.font)).join('')+'</select>')+label('Size',input('clBlankSize',draft.blankSettings?.size||12,'number','min="8" max="30"'))+button('useBlank','Use this letter','primary')+'</div></section>':
-      '<div class="cl-builder-grid"><section class="cl-document-panel"><div class="cl-document-toolbar"><strong>'+(testing?'Letter preview':'Select words or a phrase in the letter')+'</strong>'+(testing?button('fillTest','Fill sample data','subtle'):'<span>'+draft.bindings.length+' mapped selections</span>')+'</div><div id="clDocument" class="cl-document" tabindex="0"></div></section><aside id="clBuilderSidebar" class="cl-builder-sidebar"></aside></div>')+
-      (state.loaded&&!state.sourceEdit?'<details class="cl-export-settings"><summary>Excel column order</summary><p>Choose the fields to copy or export for selected cases. Add blank columns where your spreadsheet needs them.</p><div id="clColumns"></div><div class="cl-actions">'+button('addColumn','Add field column','subtle')+button('addBlankColumn','Add blank column','subtle')+'</div></details>':''));
-    if(state.loaded&&!state.sourceEdit){renderDocument($('clDocument'),draft,testing?E.resolve(draft,state.testValues,state.testOverrides,context()):null);if(testing)renderForm($('clBuilderSidebar'),draft,state.testValues,state.testOverrides,true);else renderMappingSidebar();renderColumns();}
+    const draft=state.draft,testing=state.mode==='test',choosing=!state.loaded||state.sourceEdit,step=choosing?1:testing?3:2;
+    shell('<div class="cl-editor-head"><div><span class="cl-eyebrow">TEMPLATE BUILDER</span><h2>'+esc(draft.name)+'</h2><p>'+['Choose your starting letter.','Select the words that should change for each student.','Fill the test form, check the letter, then save your template.'][step-1]+'</p></div><div class="cl-actions">'+
+      (!choosing?button(testing?'mapMode':'testMode',testing?'Back to mapping':'Test template',testing?'subtle':'primary')+button('saveTemplate','Save template',testing?'primary':'subtle'):'')+button('closeEditor','Close','subtle')+'</div></div>'+
+      builderSteps(step)+'<div class="cl-builder-meta">'+label('Template name',input('clTemplateName',draft.name))+(draft.sourceBase64?'<span class="cl-muted cl-source-name">'+esc(draft.sourceName)+'</span>'+(!testing?button(state.sourceEdit?'cancelSource':'editSource',state.sourceEdit?'Return to mapping':'Edit wording / replace Word','subtle'):''):'')+'</div>'+
+      (choosing?sourcePanel(draft):
+      '<div class="cl-builder-grid"><section class="cl-document-panel"><div class="cl-document-toolbar"><strong>'+(testing?'Letter preview':'1. Select a word or phrase')+'</strong>'+(testing?button('fillTest','Fill sample data','subtle'):'<span>'+draft.fields.length+' fields · '+draft.bindings.length+' linked places</span>')+'</div><div id="clDocument" class="cl-document" tabindex="0"></div><p class="cl-preview-note">Preview for selecting text. The downloaded Word file keeps the source layout; check its page breaks before printing.</p></section><aside id="clBuilderSidebar" class="cl-builder-sidebar"></aside></div>')+
+      (!choosing?'<details class="cl-export-settings"><summary>Optional: Excel column order</summary><p>Choose the fields to copy or export for selected cases. Add blank columns where your spreadsheet needs them.</p><div id="clColumns"></div><div class="cl-actions">'+button('addColumn','Add field column','subtle')+button('addBlankColumn','Add blank column','subtle')+'</div></details>':''));
+    if(!choosing){renderDocument($('clDocument'),draft,testing?E.resolve(draft,state.testValues,state.testOverrides,context()):null);if(testing)renderForm($('clBuilderSidebar'),draft,state.testValues,state.testOverrides,true);else renderMappingSidebar();renderColumns();}
   }
   function renderColumns(){
     const host=$('clColumns');if(!host)return;const draft=state.draft;
@@ -68,12 +103,14 @@
   }
   function renderMappingSidebar(){
     const draft=state.draft,host=$('clBuilderSidebar'),selection=state.selection,selected=draft.fields.find(f=>f.id===state.selectedField);
-    host.innerHTML='<section class="cl-map-selection"><h3>Selected text</h3><p id="clSelectionText">'+(selection?esc(selection.sample):'Select a word or phrase in the document.')+'</p><div class="cl-actions">'+button('makeField','Make a field','primary',selection?'':'disabled')+button('addField','Add form field','subtle')+'</div>'+
-      (selection&&draft.fields.length?label('Use an existing field','<select id="clLinkField">'+options(Object.fromEntries(draft.fields.map(f=>[f.id,f.label])),state.selectedField,'Choose field')+'</select>')+label('Output here','<select id="clLinkFormat">'+options(FORMATS,'','Use field setting')+'</select>')+button('linkField','Link selected text','subtle')+button('linkAll','Link all matching text','subtle'):'')+'</section>'+
-      '<section class="cl-field-list"><div class="cl-section-head"><h3>Form fields</h3><span>'+draft.fields.length+'</span></div>'+draft.fields.map(f=>'<div class="cl-field-list-row"><button data-cl-action="selectField" data-id="'+f.id+'" class="'+(f.id===state.selectedField?'active':'')+'"><strong>'+esc(f.label)+'</strong><small>'+esc(FIELDTYPES[f.type])+' · '+draft.bindings.filter(b=>b.fieldId===f.id).length+' places</small></button>'+button('fieldUp','↑','subtle','data-id="'+f.id+'" aria-label="Move field up"')+button('fieldDown','↓','subtle','data-id="'+f.id+'" aria-label="Move field down"')+'</div>').join('')+'</section>'+
+    host.innerHTML='<section class="cl-map-selection"><h3>2. Choose what this text becomes</h3><p id="clSelectionText">'+(selection?esc(selection.sample):'Select a word or phrase on the letter to get started.')+'</p>'+
+      '<div class="cl-quick-fields">'+Object.entries(QUICK_FIELDS).map(([key,f])=>button('quickField',esc(f.label),'subtle','data-preset="'+key+'" '+(selection?'':'disabled'))).join('')+'</div>'+
+      '<div class="cl-actions cl-manual-field">'+button('makeField','Make a field','primary',selection?'':'disabled')+button('addField','Add form field','subtle')+'</div><p class="cl-muted">Use a shortcut above, or Make a field for your own text, dropdown, date, or calculation.</p>'+
+      (selection&&draft.fields.length?'<details class="cl-link-existing"><summary>Use a field you already added</summary>'+label('Use an existing field','<select id="clLinkField">'+options(Object.fromEntries(draft.fields.map(f=>[f.id,f.label])),state.selectedField,'Choose field')+'</select>')+label('Output here','<select id="clLinkFormat">'+options(FORMATS,'','Use field setting')+'</select>')+'<div class="cl-actions">'+button('linkField','Link selected text','subtle')+button('linkAll','Link all matching text','subtle')+'</div></details>':'')+'</section>'+
       (selected?'<section class="cl-field-settings" id="clFieldSettings">'+fieldSettings(selected)+'</section>':'')+
+      '<details class="cl-field-list" id="clAllFields" '+((state.fieldsOpen??!selected)?'open':'')+'><summary>All fields ('+draft.fields.length+')</summary>'+draft.fields.map(f=>'<div class="cl-field-list-row"><button data-cl-action="selectField" data-id="'+f.id+'" class="'+(f.id===state.selectedField?'active':'')+'"><strong>'+esc(f.label)+'</strong><small>'+esc(FIELDTYPES[f.type])+' · '+draft.bindings.filter(b=>b.fieldId===f.id).length+' places</small></button>'+button('fieldUp','↑','subtle','data-id="'+f.id+'" aria-label="Move field up"')+button('fieldDown','↓','subtle','data-id="'+f.id+'" aria-label="Move field down"')+'</div>').join('')+'</details>'+
       (state.paragraph?conditionSettings():'')+
-      '<details class="cl-bindings"><summary>Mapped text ('+draft.bindings.length+')</summary>'+draft.bindings.map(b=>'<div><span>'+esc(b.sample)+' → '+esc(draft.fields.find(f=>f.id===b.fieldId)?.label||'Missing field')+'</span><select data-cl-binding-format="'+b.id+'" aria-label="Output format for '+esc(b.sample)+'">'+options(FORMATS,b.format,'Use field setting')+'</select>'+button('unlink','Remove','subtle','data-id="'+b.id+'"')+'</div>').join('')+'</details>';
+      '<details class="cl-bindings"><summary>Advanced: linked text ('+draft.bindings.length+')</summary>'+draft.bindings.map(b=>'<div><span>'+esc(b.sample)+' → '+esc(draft.fields.find(f=>f.id===b.fieldId)?.label||'Missing field')+'</span><select data-cl-binding-format="'+b.id+'" aria-label="Output format for '+esc(b.sample)+'">'+options(FORMATS,b.format,'Use field setting')+'</select>'+button('unlink','Remove','subtle','data-id="'+b.id+'"')+'</div>').join('')+'</details>';
   }
   function fieldSettings(f){
     const fieldOptions=(selected,empty='Choose field')=>option('',empty,selected)+state.draft.fields.filter(x=>x.id!==f.id).map(x=>option(x.id,x.label,selected)).join('');
@@ -81,9 +118,9 @@
       label('Field name','<input data-cl-field="label" value="'+esc(f.label)+'">')+
       label('Field type','<select data-cl-field="type">'+options(FIELDTYPES,f.type,null)+'</select>')+
       label('Fill from student data','<select data-cl-field="autofill">'+options(SOURCES,f.autofill,'Manual entry')+'</select>')+
-      label('Output format / language','<select data-cl-field="format">'+options(FORMATS,f.format,null)+'</select>')+
+      label('Output format / language','<select data-cl-field="format">'+options(fieldFormats(f),f.format,null)+'</select>')+
       '<label class="cl-check"><input type="checkbox" data-cl-field="required" '+(f.required?'checked':'')+'> Required before Word download</label>'+
-      label(f.type==='fixed'?'Replacement text':'Default value','<textarea rows="2" data-cl-field="defaultValue">'+esc(f.defaultValue)+'</textarea>');
+      '<details class="cl-more-settings" '+(f.type==='fixed'?'open':'')+'><summary>Default value (optional)</summary>'+label(f.type==='fixed'?'Replacement text':'Default value','<textarea rows="2" data-cl-field="defaultValue">'+esc(f.defaultValue)+'</textarea>')+'</details>';
     if(f.type==='select')html+=label('Choices · one per line','<textarea rows="5" data-cl-field="options">'+esc(f.options.map(o=>o.value===o.label?o.value:o.value+' | '+o.label).join('\n'))+'</textarea>');
     if(f.type==='major')html+=label('Filter by faculty field','<select data-cl-field="parentId">'+option('','All faculties',f.parentId)+state.draft.fields.filter(x=>x.type==='faculty'&&x.id!==f.id).map(x=>option(x.id,x.label,f.parentId)).join('')+'</select>');
     if(f.type==='block')html+=label('Reusable text block','<select data-cl-field="blockId">'+option('','Choose block',f.blockId)+state.db.blocks.map(b=>option(b.id,b.name,f.blockId)).join('')+'</select>');
@@ -150,12 +187,20 @@
     if(!sample.trim()||p.text.slice(offset,offset+sample.length)!==sample)return;
     state.selection={part,paragraph:index,start:offset,end:offset+sample.length,sample};state.paragraph=p;renderMappingSidebar();
   }
-  function makeField(withSelection){
+  function makeField(withSelection,presetKey=null){
     const sample=withSelection?state.selection:null,ctx=context(),national=sample?E.nationality(ctx,sample.sample):null;
     const field={id:E.id('field'),label:sample?sample.sample.slice(0,80):'New field',type:national?'nationality':'text',required:false,defaultValue:'',autofill:national?'nationality':'',format:national?'nationalityEnglish':'plain',parentId:'',options:[],formula:null,blockId:''};
-    state.draft.fields.push(field);state.draft.tableColumns.push(field.id);state.selectedField=field.id;
+    const preset=QUICK_FIELDS[presetKey];
+    if(preset){
+      const existing=state.draft.fields.find(f=>f.type===preset.type&&f.autofill===preset.autofill);
+      if(existing&&sample){addBinding(existing.id,sample,'');state.selectedField=existing.id;state.fieldsOpen=false;state.selection=null;renderMappingSidebar();renderDocument($('clDocument'),state.draft);announce(existing.label+' linked to this text.');return;}
+      Object.assign(field,preset,{required:true});
+      if(presetKey==='signature')field.defaultValue=state.db.signatories.find(s=>s.id==='somyot')?.id||'';
+      if(presetKey==='major')field.parentId=state.draft.fields.find(f=>f.type==='faculty')?.id||'';
+    }
+    state.draft.fields.push(field);state.draft.tableColumns.push(field.id);state.selectedField=field.id;state.fieldsOpen=false;
     if(sample){try{addBinding(field.id,sample,'');}catch(error){state.draft.fields.pop();state.draft.tableColumns.pop();announce(error.message,true);return;}}
-    state.dirty=true;renderMappingSidebar();renderColumns();renderDocument($('clDocument'),state.draft);
+    state.dirty=true;state.selection=null;renderMappingSidebar();renderColumns();renderDocument($('clDocument'),state.draft);
     $('clFieldSettings')?.scrollIntoView({block:'nearest',behavior:'smooth'});
   }
   function addBinding(fieldId,selection,format=''){
@@ -254,11 +299,20 @@
     }
     return values;
   }
+  async function acceptSourceFile(file){
+    if(!file)return;if(file.size>20*1024*1024)throw Error('Choose a Word file smaller than 20 MB.');
+    if(!/\.docx?$/i.test(file.name))throw Error('Choose a Word .docx or .doc file.');
+    const bytes=new Uint8Array(await file.arrayBuffer()),zip=bytes[0]===0x50&&bytes[1]===0x4b;
+    if(!zip){const ole=bytes[0]===0xd0&&bytes[1]===0xcf&&bytes[2]===0x11&&bytes[3]===0xe0,rtf=new TextDecoder().decode(bytes.subarray(0,8)).startsWith('{\\rtf');
+      if(/\.doc$/i.test(file.name)||ole||rtf){state.sourceNotice={name:file.name};renderBuilder();state.focusAfter={node:$('clSourceNotice')};return;}
+    }
+    await setSource(bytes,file.name);
+  }
   async function setSource(bytes,name,blankText=null){
     const loaded=await E.loadDocx(bytes);if(state.sourceEdit&&state.draft.bindings.length&&!confirm('Replace the source and clear its text mappings and paragraph conditions? Your form fields and earlier saved versions are kept.'))return;
     const fields=state.sourceEdit?state.draft.fields:[],tableColumns=state.sourceEdit?state.draft.tableColumns:[];
     state.loaded=loaded;Object.assign(state.draft,{sourceBase64:E.bytesToBase64(bytes),sourceName:name,fields,bindings:[],conditions:[],tableColumns,blankText:blankText??''});
-    state.sourceEdit=false;if(state.draft.name==='Untitled letter')state.draft.name=name.replace(/\.docx$/i,'');state.dirty=true;state.selection=null;state.paragraph=null;state.selectedField=null;render();
+    state.sourceNotice=null;state.sourceEdit=false;if(state.draft.name==='Untitled letter')state.draft.name=name.replace(/\.docx?$/i,'');state.dirty=true;state.selection=null;state.paragraph=null;state.selectedField=null;render();
   }
   async function example(){
     await beginTemplate();const text='I want to be a Chinese child, and eat rice on 18 November.\nStudent: EXAMPLE STUDENT.';
@@ -450,8 +504,10 @@
     removeBlock:target=>{if(confirm('Remove this reusable text block? Templates using it will need another block.')){state.libraryDraft.blocks=state.libraryDraft.blocks.filter(b=>b.id!==target.dataset.id);state.dirty=true;renderLibrary();}},
     removeSigner:target=>{if(confirm('Remove this signatory from future custom letters?')){state.libraryDraft.signatories=state.libraryDraft.signatories.filter(s=>s.id!==target.dataset.id);state.dirty=true;renderLibrary();}},
     useBlank:async()=>{const text=$('clBlankText').value;if(!text.trim())throw Error('Write the letter text first.');const settings={font:$('clBlankFont').value,size:Number($('clBlankSize').value)};state.draft.blankSettings=settings;await setSource(await E.blankDocx(text,settings),'New letter.docx',text);},
+    chooseSource:()=>$('clSourceFile')?.click(),pasteSource:()=>{const details=$('clWriteSource');if(details)details.open=true;state.focusAfter={node:$('clBlankText')};},
+    quickField:target=>{if(!state.selection)throw Error('Select the words on the letter first.');makeField(true,target.dataset.preset);},
     makeField:()=>makeField(true),addField:()=>makeField(false),linkField:()=>linkSelection(),linkAll:()=>linkSelection(true),
-    selectField:target=>{state.selectedField=target.dataset.id;renderMappingSidebar();renderDocument($('clDocument'),state.draft);},
+    selectField:target=>{state.selectedField=target.dataset.id;state.fieldsOpen=false;renderMappingSidebar();renderDocument($('clDocument'),state.draft);},
     fieldUp:target=>moveField(target.dataset.id,-1),fieldDown:target=>moveField(target.dataset.id,1),
     deleteField:target=>{const field=state.draft.fields.find(f=>f.id===target.dataset.id);if(!confirm('Remove '+field.label+' and its text mappings?'))return;state.draft.fields=state.draft.fields.filter(f=>f.id!==field.id);state.draft.bindings=state.draft.bindings.filter(b=>b.fieldId!==field.id);state.draft.conditions=state.draft.conditions.filter(c=>c.fieldId!==field.id);state.draft.tableColumns=state.draft.tableColumns.filter(key=>key!==field.id);state.selectedField=null;state.dirty=true;render();},
     unlink:target=>{state.draft.bindings=state.draft.bindings.filter(b=>b.id!==target.dataset.id);state.dirty=true;renderMappingSidebar();renderDocument($('clDocument'),state.draft);},
@@ -481,8 +537,11 @@
   }
   ROOT.addEventListener('click',event=>{
     const target=event.target.closest('[data-cl-action]');if(target&&ROOT.contains(target)){const action=actions[target.dataset.clAction];if(action){event.preventDefault();void run(()=>action(target));}return;}
-    const p=event.target.closest('[data-clp]');if(p&&state.mode==='builder'&&state.loaded){state.paragraph=state.loaded.parts.get(p.dataset.part)?.paragraphs[Number(p.dataset.index)];renderMappingSidebar();}
+    const p=event.target.closest('[data-clp]');if(p&&state.mode==='builder'&&state.loaded){state.paragraph=state.loaded.parts.get(p.dataset.part)?.paragraphs[Number(p.dataset.index)];const mark=event.target.closest('[data-cl-binding]'),binding=mark&&state.draft.bindings.find(b=>b.id===mark.dataset.clBinding);if(binding&&window.getSelection()?.isCollapsed){state.selectedField=binding.fieldId;state.selection=null;state.fieldsOpen=false;renderMappingSidebar();renderDocument($('clDocument'),state.draft);}else renderMappingSidebar();}
   });
+  ROOT.addEventListener('toggle',event=>{if(event.target.id==='clAllFields')state.fieldsOpen=event.target.open;},true);
+  ROOT.addEventListener('dragover',event=>{if(event.target.closest('#clSourceDrop')){event.preventDefault();event.dataTransfer.dropEffect='copy';}});
+  ROOT.addEventListener('drop',event=>{if(!event.target.closest('#clSourceDrop'))return;event.preventDefault();if(event.dataTransfer?.files?.length!==1){announce('Drop one Word file at a time.',true);return;}const file=event.dataTransfer.files[0];void run(()=>acceptSourceFile(file));});
   ROOT.addEventListener('mouseup',event=>{if(state.mode==='builder'&&event.target.closest('#clDocument'))captureSelection();});
   ROOT.addEventListener('keyup',event=>{if(state.mode==='builder'&&event.shiftKey)captureSelection();if(event.key==='Enter'&&event.target.matches('select[data-cl-value]')){const controls=[...ROOT.querySelectorAll('.cl-generated-form input:not([type="checkbox"]),.cl-generated-form select,.cl-generated-form textarea')],i=controls.indexOf(event.target);controls[i+1]?.focus();}});
   ROOT.addEventListener('input',event=>{
@@ -498,7 +557,7 @@
   ROOT.addEventListener('change',event=>{
     if(state.busy)return;const t=event.target;
     if(t.id==='clShowArchived'){state.showArchived=t.checked;state.selectedCases.clear();renderList();}
-    if(t.id==='clSourceFile'){const file=t.files?.[0];if(file)void run(async()=>{if(!/\.docx$/i.test(file.name))throw Error('Choose a Word .docx template.');await setSource(new Uint8Array(await file.arrayBuffer()),file.name);});}
+    if(t.id==='clSourceFile'){const file=t.files?.[0];if(file)void run(()=>acceptSourceFile(file));}
     if(t.id==='clImportFile'){const file=t.files?.[0];if(file)void run(()=>importTemplate(file));}
     if(t.id==='clRestoreFile'){const file=t.files?.[0];if(file)void run(()=>restore(file));}
     if(t.dataset.clField||t.dataset.clFormula){if(t.tagName==='SELECT'||t.type==='checkbox')updateFieldControl(t);}
