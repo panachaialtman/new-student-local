@@ -25,7 +25,7 @@
   function title(value){return str(value).toLocaleLowerCase('en-US').replace(/(^|[^\p{L}\p{M}])(\p{L})/gu,(_,before,letter)=>before+letter.toLocaleUpperCase('en-US'));}
   function formatDate(value,format){const p=dateParts(value);if(!p)return '';switch(format){case 'enLong':return EN[p.m-1]+' '+p.d+', '+p.y;case 'enDayMonth':return p.d+' '+EN[p.m-1];case 'thaiDate':return p.d+' '+TH[p.m-1]+' '+(p.y+543);case 'yearBE':return String(p.y+543);case 'yearCE':return String(p.y);case 'iso':return str(value);default:return EN[p.m-1].slice(0,3)+' '+p.d+', '+p.y;}}
   function nationality(context,value){return (context.nationalities||[]).find(r=>[r.recordId,r.english,r.thai,r.countryEnglish,r.countryThai,r.nationalityEnglish,r.nationalityThai].some(v=>v&&str(v)===str(value)));}
-  function program(context,value){return (context.programs||[]).find(r=>r.key===value||r.recordId===value);}
+  function program(context,value){return value?(context.programs||[]).find(r=>r.key===value||r.recordId===value):undefined;}
   function number(value){if(str(value).trim()==='')return null;const n=Number(value);return Number.isFinite(n)?n:null;}
   function dependencies(field){if(field.type!=='calculated')return field.type==='major'&&field.parentId?[field.parentId]:[];return [field.formula?.a,field.formula?.b,field.formula?.cap].filter(Boolean);}
   function validateConfig(raw){

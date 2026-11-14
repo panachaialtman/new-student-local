@@ -131,6 +131,7 @@ try{
     add('passportDate','date','Passport expiry',{autofill:'passportExpiry',format:'enShort'});bind('passportDate','PASSPORT_DATE');
     add('extend','calculated','Extend until',{formula:{op:'addMonths',a:'visa',amount:6,cap:'passportDate'},format:'enShort'});bind('extend','EXTEND_DATE');
     add('studentId','text','Student ID',{autofill:'studentId'});bind('studentId','STUDENT_ID');
+    add('requiredCredits','number','Student total credits',{autofill:'totalCredits'});add('achievedCredits','number','Student completed credits',{autofill:'registeredCredits'});
     add('gradYear','calculated','Graduate year',{formula:{op:'idYear',a:'studentId',idStart:1,idLength:2,baseYear:2500,duration:4},format:'yearCE'});bind('gradYear','GRAD_YEAR');
     add('signer','signatory','Signature',{defaultValue:'somyot',format:'nameEn'});bind('signer','SIGNER_NAME');bind('signer','SIGNER_ROLE','roleEn');bind('signer','SIGNER_NAME','','word/footer1.xml');
     add('include','select','Include note',{defaultValue:'no',options:[{value:'no',label:'No'},{value:'yes',label:'Yes'}]});
@@ -159,6 +160,7 @@ try{
   assert.equal(await page.locator('[data-cl-computed="extend"]').innerText(),'May 20, 2027');
   assert.equal(await page.locator('[data-cl-computed="gradYear"]').innerText(),'2030');
   assert.equal(await value('major').inputValue(),student.program.key);
+  assert.equal(await value('requiredCredits').inputValue(),'129');assert.equal(await value('achievedCredits').inputValue(),'18');
   assert.match(await page.locator('#clFormStatus').innerText(),/Ready to preview/);
   await page.waitForFunction(()=>!document.querySelector('#clDocument').textContent.includes('Conditional note'));
   await value('include').selectOption('yes');assert.match(await page.locator('[data-cl-error="extra"]').innerText(),/Fill in/);
