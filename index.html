@@ -10,6 +10,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <title>BU Visa Case Workspace</title>
   <link rel="stylesheet" href="styles.css?v=20261107-department-nine" />
+  <link rel="stylesheet" href="custom-letter.css?v=20261114-builder" />
 </head>
 <body>
   <div class="app-shell">
@@ -40,6 +41,9 @@
         </button>
         <button class="nav-item" data-view="criminal">
           <span class="nav-icon">◇</span><span>Criminal Record</span>
+        </button>
+        <button class="nav-item" data-view="custom">
+          <span class="nav-icon">▤</span><span>Custom letters</span>
         </button>
       </nav>
 
@@ -96,6 +100,8 @@
           </div>
         </div>
       </section>
+
+      <section class="view" id="customView" aria-label="Custom letter builder"><div id="customLetterRoot"></div></section>
 
       <section class="view" id="cancelView" aria-label="Visa cancellation letter">
         <div class="letter-case-panel content-card">
@@ -678,7 +684,10 @@
   <script src="excel-export.js?v=20261107-department-titles"></script>
   <script src="hub-reference.js?v=053"></script>
   <script src="student-memory.js?v=20261104-outbox"></script>
-  <script src="app.js?v=20261107-department-titles"></script>
+  <script src="custom-letter-references.js?v=20261114-builder"></script>
+  <script src="custom-letter-engine.js?v=20261114-builder"></script>
+  <script src="custom-letter.js?v=20261114-builder"></script>
+  <script src="app.js?v=20261114-custom-letter"></script>
   <script src="ui-enhancements.js?v=036"></script>
   <script>
     // The standalone escape hatch is offered only when this workspace is embedded.
