@@ -93,7 +93,7 @@
       (!choosing?button(testing?'mapMode':'testMode',testing?'Back to mapping':'Test template',testing?'subtle':'primary')+button('saveTemplate','Save template',testing?'primary':'subtle'):'')+button('closeEditor','Close','subtle')+'</div></div>'+
       builderSteps(step)+'<div class="cl-builder-meta">'+label('Template name',input('clTemplateName',draft.name))+(draft.sourceBase64?'<span class="cl-muted cl-source-name">'+esc(draft.sourceName)+'</span>'+(!testing?button(state.sourceEdit?'cancelSource':'editSource',state.sourceEdit?'Return to mapping':'Edit wording / replace Word','subtle'):''):'')+'</div>'+
       (choosing?sourcePanel(draft):
-      '<div class="cl-builder-grid"><section class="cl-document-panel"><div class="cl-document-toolbar"><strong>'+(testing?'Letter preview':'1. Select a word or phrase')+'</strong>'+(testing?button('fillTest','Fill sample data','subtle'):'<span>'+draft.fields.length+' fields · '+draft.bindings.length+' linked places</span>')+'</div><div id="clDocument" class="cl-document" tabindex="0"></div><p class="cl-preview-note">Preview for selecting text. The downloaded Word file keeps the source layout; check its page breaks before printing.</p></section><aside id="clBuilderSidebar" class="cl-builder-sidebar"></aside></div>')+
+      '<div class="cl-builder-grid"><section class="cl-document-panel"><div class="cl-document-toolbar"><strong>'+(testing?'Letter preview':'1. Select a word or phrase')+'</strong>'+(testing?button('fillTest','Fill sample data','subtle'):'<span id="clMappingCount">'+draft.fields.length+' fields · '+draft.bindings.length+' linked places</span>')+'</div><div id="clDocument" class="cl-document" tabindex="0"></div><p class="cl-preview-note">Preview for selecting text. The downloaded Word file keeps the source layout; check its page breaks before printing.</p></section><aside id="clBuilderSidebar" class="cl-builder-sidebar"></aside></div>')+
       (!choosing?'<details class="cl-export-settings"><summary>Optional: Excel column order</summary><p>Choose the fields to copy or export for selected cases. Add blank columns where your spreadsheet needs them.</p><div id="clColumns"></div><div class="cl-actions">'+button('addColumn','Add field column','subtle')+button('addBlankColumn','Add blank column','subtle')+'</div></details>':''));
     if(!choosing){renderDocument($('clDocument'),draft,testing?E.resolve(draft,state.testValues,state.testOverrides,context()):null);if(testing)renderForm($('clBuilderSidebar'),draft,state.testValues,state.testOverrides,true);else renderMappingSidebar();renderColumns();}
   }
@@ -140,6 +140,7 @@
   }
   function renderDocument(host,version,resolved=null){
     if(!host||!state.loaded)return;host.replaceChildren();
+    if($('clMappingCount'))$('clMappingCount').textContent=version.fields.length+' fields · '+version.bindings.length+' linked places';
     for(const url of state.imageUrls||[])URL.revokeObjectURL(url);state.imageUrls=[];
     const config=version,ctx=context(),mapped=new Map();for(const b of config.bindings){const key=b.part+'#'+b.paragraph;(mapped.get(key)||mapped.set(key,[]).get(key)).push(b);}
     for(const list of mapped.values())list.sort((a,b)=>a.start-b.start);
@@ -202,6 +203,7 @@
     if(sample){try{addBinding(field.id,sample,'');}catch(error){state.draft.fields.pop();state.draft.tableColumns.pop();announce(error.message,true);return;}}
     state.dirty=true;state.selection=null;renderMappingSidebar();renderColumns();renderDocument($('clDocument'),state.draft);
     $('clFieldSettings')?.scrollIntoView({block:'nearest',behavior:'smooth'});
+    announce(preset?field.label+' field added. Select another word or phrase to continue.':'Field added. Set its name and type in Field settings.');
   }
   function addBinding(fieldId,selection,format=''){
     if(!selection)throw Error('Select text in the letter first.');

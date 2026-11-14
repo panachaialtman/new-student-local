@@ -298,9 +298,12 @@ try{
   assert((await fieldControl('format').locator('option').count())<=7,'only relevant date formats are shown');
   assert.equal(await fieldControl('format').locator('option[value="nationalityThai"]').count(),0);
   await select('PASS_NO');await page.locator('[data-cl-action="quickField"][data-preset="passport"]').click();await idle();
+  assert.match(await page.locator('#clMappingCount').innerText(),/3 fields · 4 linked places/);
+  await page.evaluate(()=>window.scrollTo({top:0,behavior:'instant'}));
   await page.screenshot({path:'test-results/custom-letter-guided-desktop.png',fullPage:true});
   await page.setViewportSize({width:390,height:844});await page.waitForFunction(()=>document.getElementById('sidebar').getBoundingClientRect().right<=0);
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true);
+  await page.evaluate(()=>window.scrollTo({top:0,behavior:'instant'}));
   await page.screenshot({path:'test-results/custom-letter-guided-mobile.png',fullPage:true});
   page.once('dialog',dialog=>dialog.accept());await act('closeEditor');
   console.log('PASS guided steps, one-click field shortcuts, repeated-field reuse, click-to-edit, focused settings and mobile layout');
