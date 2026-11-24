@@ -330,7 +330,9 @@
       let result = replacePlain(xml, DEFAULT_ROLE, profile.role); xml = result.xml;
       if (!result.replaced) throw new Error('Could not locate the default signatory role in template');
     }
-    if (st.programType !== 'graduate' && st.attachment43 === 'transcript') {
+    const current = st.currentStudent === true ||
+      (st.currentStudent !== false && st.attachment43 === 'transcript');
+    if (current) {
       let result = replacePlain(xml, ATTACHMENT_DEFAULT, ATTACHMENT_TRANSCRIPT); xml = result.xml;
       if (!result.replaced) throw new Error('Could not locate attachment 4.3 text');
     }
