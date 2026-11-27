@@ -170,7 +170,7 @@ try{
  await entry.locator('[name="fullName"]').fill('Taylor Example');
  await page.locator('#saveStudentDraftBtn').click();
  await page.locator('#studentModal').waitFor({state:'hidden'});
- await page.locator('#draftsBtn').click();
+ await page.locator('#draftsModal').waitFor({state:'visible'});
  await page.locator('[data-draft-open]').first().click();
  assert.equal(await entry.getByLabel('Previous school').inputValue(),'QA Transfer Academy');
  for(const [key,value] of Object.entries({documentNo:'0042',studentId:'1680000001',nationalityThai:'เมียนมา',
