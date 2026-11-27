@@ -31,6 +31,14 @@
     studentList: 'Student List',
     exchange: 'Exchange Student Visa Letter',
     non_o: 'Non-O to ED Transfer Letter',
+    transfer: 'Transfer letter (ย้ายสถาบัน)',
+  };
+
+  const CASE_TYPES = {
+    normal: { label: 'Normal cases', entry: 'Normal student', icon: '▦', heading: 'NEW & CURRENT STUDENTS' },
+    exchange: { label: 'Exchange students', entry: 'Exchange student', icon: '⇄', heading: 'EXCHANGE LETTERS' },
+    transfer: { label: 'Transfer', entry: 'Transfer student', icon: '⇥', heading: 'ย้ายสถาบัน' },
+    non_o: { label: 'Non-O → ED transfer', entry: 'Non-O transfer', icon: '↗', heading: 'NON-O TRANSFER LETTERS' },
   };
 
   const PROGRAM_TYPE_OPTIONS = [
@@ -72,7 +80,7 @@
       exchangeUniversities: [],
       lastExchangeAcademicYear: null,
     },
-    templates: { letter16: null, letter76: null, studentList: null, exchange: null, non_o: null },
+    templates: { letter16: null, letter76: null, studentList: null, exchange: null, non_o: null, transfer: null },
   };
 
   const el = (id) => document.getElementById(id);
@@ -113,7 +121,7 @@
     list.innerHTML=drafts.length?drafts.map(draft=>{
       const name=String(draft.values.fullName||'').trim()||'Untitled student draft';
       const id=String(draft.values.studentId||draft.values.documentNo||'').trim();
-      const cat=({normal:'Normal cases',exchange:'Exchange students',non_o:'Non-O transfer'})[draft.values.caseCategory]||'Normal cases';
+      const cat=CASE_TYPES[draft.values.caseCategory]?.label||'Normal cases';
       const stamp=draft.updatedAt?new Date(draft.updatedAt).toLocaleString():'';
       return `<div class="student-draft-card" data-draft-id="${escapeHtml(draft.id)}">
         <div class="student-draft-info">
@@ -172,7 +180,7 @@
   let entryCategorySnapshots={};
   function resetEntryCategorySnapshots(saved={}) {
     entryCategorySnapshots={};
-    for(const category of ['normal','exchange','non_o']){
+    for(const category of Object.keys(CASE_TYPES)){
       const values=saved[category];
       if(values && typeof values==='object' && !Array.isArray(values))
         entryCategorySnapshots[category]={...values};
@@ -557,20 +565,21 @@
       ? names.map((name, index) => '<div class="saved-university-row"><span>' + escapeHtml(name)
         + '</span><button type="button" class="btn subtle" data-remove-university="' + index
         + '" aria-label="Remove ' + escapeHtml(name) + '">Remove</button></div>').join('')
-      : '<div class="list-column-empty">No partner universities remembered yet.</div>';
+      : '<div class="list-column-empty">No schools or universities remembered yet.</div>';
     el('clearSavedUniversitiesBtn').disabled = names.length === 0;
   }
 
-  function rememberExchangeDetails(item) {
-    if (item.caseCategory !== 'exchange') return;
-    const name = String(item.exchangeUniversity || '').trim().slice(0, 180);
+  function rememberSchoolDetails(item) {
+    if (!['exchange', 'transfer'].includes(item.caseCategory)) return;
+    const school = item.caseCategory === 'transfer' ? item.transferSchool : item.exchangeUniversity;
+    const name = String(school || '').trim().slice(0, 180);
     if (name) {
       const names = normalizeExchangeUniversities(state.settings.exchangeUniversities);
       if (!names.some(saved => saved.toLocaleLowerCase() === name.toLocaleLowerCase())) names.push(name);
       state.settings.exchangeUniversities = names.slice(-200);
     }
     const year = Number(item.exchangeAcademicYear);
-    if (Number.isInteger(year) && year >= 2500 && year <= 2700) state.settings.lastExchangeAcademicYear = year;
+    if (item.caseCategory === 'exchange' && Number.isInteger(year) && year >= 2500 && year <= 2700) state.settings.lastExchangeAcademicYear = year;
     showPartnerUniversitySuggestions();
     renderSavedUniversities();
   }
@@ -595,14 +604,14 @@
       '<option value="' + escapeHtml(fullName) + '" label="' + escapeHtml(hint) + '"></option>').join('');
   }
 
-  function inferredAcademicYearFields(studentId, programType) {
+  function inferredAcademicYearFields(studentId, programType, caseCategory) {
     const id = String(studentId || '').trim();
     const intakePrefix = newStudentPrefixes().find(prefix => /^[0-9]{3}$/.test(prefix));
     const cohort = intakePrefix ? Number(intakePrefix.slice(1, 3)) : null;
     const valid = /^[0-9]{3}/.test(id);
     return {
       studyYear: valid && cohort !== null ? ((cohort - Number(id.slice(1, 3)) + 100) % 100) + 1 : '',
-      graduationYear: valid && programType !== 'graduate' ? 2504 + Number(id.slice(1, 3)) : '',
+      graduationYear: valid && (programType !== 'graduate' || caseCategory === 'transfer') ? 2504 + Number(id.slice(1, 3)) : '',
     };
   }
 
@@ -634,7 +643,8 @@
   function updateAutomaticStudyFields(root) {
     const studentId = root.querySelector('[name="studentId"],[data-edit-field="studentId"]')?.value || '';
     const programType = root.querySelector('[name="programType"],[data-edit-field="programType"]')?.value || '';
-    const auto = inferredAcademicYearFields(studentId, programType);
+    const category = root.querySelector('[name="caseCategory"],[data-edit-field="caseCategory"]')?.value;
+    const auto = inferredAcademicYearFields(studentId, programType, category);
     for (const [field, value] of [['studyYearOverride', auto.studyYear], ['graduationYearOverride', auto.graduationYear]]) {
       const input = root.querySelector('[name="' + field + '"],[data-edit-field="' + field + '"]');
       if (input && input.readOnly) input.value = value;
@@ -709,8 +719,11 @@
     item.attachment43 = item.currentStudent ? 'transcript' : 'application';
     // The normal workspace includes both new and continuing students.
     // Preserve the independent checkbox so attachment 4.3 and study wording still differ.
-    item.caseCategory = ['exchange', 'non_o'].includes(item.caseCategory)
-      ? item.caseCategory : 'normal';
+    if (!Object.hasOwn(CASE_TYPES, item.caseCategory)) item.caseCategory = 'normal';
+    if (item.caseCategory === 'transfer') {
+      item.transferSchool = String(item.transferSchool || '').trim();
+      item.transferProvince = String(item.transferProvince || '').trim().replace(/^(?:จังหวัด|จ\.)\s*/, '').trim();
+    }
     // Configurable current intake: 169/769/869/969 -> 69; next year 170/770/870/970 -> 70.
     const intakePrefix = newStudentPrefixes().find((prefix) => /^[0-9]{3}$/.test(prefix));
     item.academicCohortYear = intakePrefix ? Number(intakePrefix.slice(1, 3)) : null;
@@ -763,6 +776,13 @@
         ['exchangeAcademicYear','exchange academic year'],
         ['exchangeDurationSemesters','exchange duration'],
       ]) if (!String(item[field] ?? '').trim()) missing.push(label);
+    }
+    if (item.caseCategory === 'transfer') {
+      if (!item.transferSchool) missing.push('previous school');
+      if (!item.transferProvince) missing.push('province of previous school');
+      if (!/^[0-9]{3}/.test(String(item.studentId || '')) && !item.graduationYearOverride) {
+        missing.push('student ID with intake year or graduation year override');
+      }
     }
     if (item.caseCategory === 'non_o') {
       if (!String(item.nonOVisaPurpose || '').trim()) missing.push('current Non-O visa purpose');
@@ -1469,7 +1489,7 @@
           <div class="field-grid">
             ${editableSelect('Request option', 'requestRuleOverride', rule, [['six_months','+6 months'],['one_year','+1 year'],['manual','Manual Date']], 'data-request-rule="drawer"')}
             <div class="drawer-field manual-request-field ${rule === 'manual' ? '' : 'hidden'}"><label>Manual request until</label><input data-edit-field="manualRequestUntil" type="date" value="${escapeHtml(item.manualRequestUntil || '')}" /></div>
-            ${editableSelect('Case type · move to another section', 'caseCategory', item.caseCategory, [['normal','Normal cases'],['exchange','Exchange students'],['non_o','Non-O → ED transfer']], 'id="editCaseCategory"')}
+            ${editableSelect('Case type · move to another section', 'caseCategory', item.caseCategory, Object.entries(CASE_TYPES).map(([key, type]) => [key, type.label]), 'id="editCaseCategory"')}
             ${editableSelect('Case group', 'labelId', item.labelId || '', [['','Unlabeled'],...caseLabels().map((group,index)=>[group.id,(index+1)+' · '+group.name])])}
             <div class="case-move-hint">Change the case type and save to move this student. The new letter template will be used.</div>
           </div>
@@ -1483,6 +1503,12 @@
               ${editableField('Academic year (B.E.)', 'exchangeAcademicYear', item.exchangeAcademicYear || rememberedAcademicYear(), 'number', 'min="2500" max="2700"')}
               ${editableField('Duration (semesters)', 'exchangeDurationSemesters', item.exchangeDurationSemesters || 1, 'number', 'min="1" max="12"')}
             </div>
+          </div>
+        </div>
+        <div class="drawer-section case-special-section ${item.caseCategory === 'transfer' ? '' : 'hidden'}" data-case-specific="transfer">
+          <div class="drawer-section-head"><h3>Previous institution</h3></div><div class="field-grid">
+            ${editableField('Previous school', 'transferSchool', item.transferSchool, 'text', 'list="partnerUniversitySuggestions" autocomplete="off" maxlength="180"')}
+            ${editableField('Province (จังหวัด)', 'transferProvince', item.transferProvince, 'text', 'list="transferProvinceSuggestions" maxlength="100"')}
           </div>
         </div>
         <div class="drawer-section case-special-section ${item.caseCategory === 'non_o' ? '' : 'hidden'}" data-case-specific="non_o">
@@ -1506,7 +1532,10 @@
           section.querySelectorAll('[data-edit-field]').forEach(input => { input.disabled = !active; });
         });
       };
-      caseSelector.addEventListener('change', updateCaseFields);
+      caseSelector.addEventListener('change', () => {
+        updateCaseFields();
+        updateAutomaticStudyFields(el('drawerContent'));
+      });
       updateCaseFields();
       bindLockedFields(el('drawerContent'));
       updateAutomaticStudyFields(el('drawerContent'));
@@ -1540,7 +1569,7 @@
             ${fieldItem('Total credits', item.totalCredits || program?.credits?.['2026'])}
             ${fieldItem('Registered credits', item.registeredCredits)}
             ${fieldItem('Study year', item.currentStudent ? (item.studyYearOverride || ((item.academicCohortYear !== null && /^[0-9]{3}/.test(String(item.studentId || ''))) ? (((item.academicCohortYear - Number(String(item.studentId).slice(1, 3)) + 100) % 100) + 1) : 'Verify')) : 1)}
-            ${fieldItem('Graduation year B.E.', item.graduationYearOverride || (item.programType === 'graduate' ? 'Graduate template value' : (/^[0-9]{3}/.test(String(item.studentId || '')) ? 2504 + Number(String(item.studentId).slice(1, 3)) : 'Verify')))}
+            ${fieldItem('Graduation year B.E.', item.graduationYearOverride || (item.programType === 'graduate' && item.caseCategory !== 'transfer' ? 'Graduate template value' : (/^[0-9]{3}/.test(String(item.studentId || '')) ? 2504 + Number(String(item.studentId).slice(1, 3)) : 'Verify')))}
             ${fieldItem('Study hours', item.studyHours ? `${Number(item.studyHours).toLocaleString()} hours` : '—', true)}
           </div>
         </div>
@@ -1552,6 +1581,11 @@
           ${fieldItem('Academic year (B.E.)', item.exchangeAcademicYear)}
           ${fieldItem('Duration (semesters)', item.exchangeDurationSemesters)}
         </div></div>` : ''}
+        ${item.caseCategory === 'transfer' ? `
+        <div class="drawer-section"><div class="drawer-section-head"><h3>Previous institution</h3></div><div class="field-grid">
+          ${fieldItem('Previous school', item.transferSchool)}
+          ${fieldItem('Province (จังหวัด)', item.transferProvince)}
+        </div></div>` : ''}
         ${item.caseCategory === 'non_o' ? `
         <div class="drawer-section"><div class="drawer-section-head"><h3>Non-O transfer details</h3></div><div class="field-grid">
           ${fieldItem('Current Non-O visa purpose', item.nonOVisaPurpose)}
@@ -1562,7 +1596,7 @@
             ${fieldItem('Current stay', formatDate(item.currentStayUntil))}
             ${fieldItem('Case group', labelForCase(item) ? 'Group '+caseGroupNumber(item)+' · '+labelForCase(item).name : 'Unlabeled')}
             ${fieldItem('Request option', ruleLabel(item))}
-            <div class="field-item"><label>Case type</label><div class="field-value">${escapeHtml(({normal:'Normal cases',exchange:'Exchange students',non_o:'Non-O → ED transfer'})[item.caseCategory] || 'Normal cases')}</div><button type="button" class="btn subtle case-move-button" id="moveCaseTypeBtn">Move to another case type →</button></div>
+            <div class="field-item"><label>Case type</label><div class="field-value">${escapeHtml(CASE_TYPES[item.caseCategory]?.label || 'Normal cases')}</div><button type="button" class="btn subtle case-move-button" id="moveCaseTypeBtn">Move to another case type →</button></div>
             ${fieldItem(isPassportCapped(item) ? 'Extend until (passport cap)' : 'Request until', item.requestUntil ? formatDate(item.requestUntil) : '—', true)}
           </div>
         </div>`;
@@ -1643,7 +1677,7 @@
     const originalCategory = item.caseCategory;
     const category = el('drawerContent').querySelector('#editCaseCategory')?.value || item.caseCategory;
     if (category !== item.caseCategory &&
-        !confirm('Move this student to ' + ({normal:'Normal cases',exchange:'Exchange students',non_o:'Non-O → ED transfer'})[category] + '? The case will use the corresponding Word letter template.')) return;
+        !confirm('Move this student to ' + CASE_TYPES[category].label + '? The case will use the corresponding Word letter template.')) return;
     el('drawerContent').querySelectorAll('[data-edit-field]').forEach((input) => {
       if (input.disabled) return;
       const field = input.dataset.editField;
@@ -1672,7 +1706,7 @@
       state.selected.delete(item.id);
     }
     Object.assign(item, normalizeCase(item));
-    rememberExchangeDetails(item);
+    rememberSchoolDetails(item);
     persist();
     state.editing = false;
     // An edited Current student checkbox can move an ordinary case between
@@ -1690,16 +1724,14 @@
   }
 
   function renderStudentForm(category = state.activeCategory) {
-    if (!['normal', 'exchange', 'non_o'].includes(category)) category = 'normal';
-    const categoryLabels = {normal:'Normal student',exchange:'Exchange student',non_o:'Non-O transfer'};
-    el('studentModalTitle').textContent = 'Add ' + (categoryLabels[category] || 'student');
+    if (!Object.hasOwn(CASE_TYPES, category)) category = 'normal';
+    el('studentModalTitle').textContent = 'Add ' + CASE_TYPES[category].entry;
     const typePanel = el('studentCaseTypePanel');
     typePanel.innerHTML = `
       <p class="type-panel-eyebrow">STEP 1 · CASE TYPE</p>
       <h3>Select student type</h3>
       <div class="type-option-list" role="group" aria-label="Student case type">
-        ${[['normal','▦','Normal cases'],['exchange','⇄','Exchange students'],['non_o','↗','Non-O → ED transfer']]
-          .map(([value,icon,label]) => `
+        ${Object.entries(CASE_TYPES).map(([value, { icon, label }]) => `
             <button class="type-option" type="button" data-entry-category="${value}" aria-pressed="${category === value}">
               <span class="type-option-icon" aria-hidden="true">${icon}</span>
               <span>${label}</span>
@@ -1718,6 +1750,13 @@
           <div class="form-field"><label>Exchange semester</label><select name="exchangeTerm" required><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option></select></div>
           <div class="form-field"><label>Academic year (B.E.)</label><input type="number" name="exchangeAcademicYear" min="2500" max="2700" value="${rememberedAcademicYear()}" required /></div>
           <div class="form-field"><label>Duration (semesters)</label><input type="number" name="exchangeDurationSemesters" min="1" max="12" value="1" required /></div>
+        </div>
+      ` : ''}
+      ${category === 'transfer' ? `
+        <div class="entry-section-title entry-priority">Previous institution</div>
+        <div class="exchange-partners">
+          <div class="form-field"><label for="newTransferSchool">Previous school</label><input id="newTransferSchool" name="transferSchool" list="partnerUniversitySuggestions" autocomplete="off" maxlength="180" required /></div>
+          <div class="form-field"><label for="newTransferProvince">Province (จังหวัด)</label><input id="newTransferProvince" name="transferProvince" list="transferProvinceSuggestions" placeholder="เลือกหรือพิมพ์ชื่อจังหวัด" maxlength="100" required /></div>
         </div>
       ` : ''}
       ${category === 'non_o' ? `
@@ -1810,7 +1849,8 @@
       caseCategory:item.caseCategory,currentStudent:Boolean(item.currentStudent),recipientLocation:item.recipientLocation||'',
       attachment43:item.attachment43||'',requestRuleOverride:item.requestRuleOverride||'',
       manualRequestUntil:item.manualRequestUntil||'',nonOVisaPurpose:item.nonOVisaPurpose||'',
-      programDurationYears:item.programDurationYears||'',...exchangeData
+      programDurationYears:item.programDurationYears||'',...exchangeData,
+      ...(item.caseCategory === 'transfer' ? {transferSchool:item.transferSchool,transferProvince:item.transferProvince} : {})
     };
     const academicExtra={
       programKey:item.programKey||'',programType:item.programType||'',studyYearOverride:item.studyYearOverride||'',
@@ -1848,7 +1888,7 @@
       if(!documentNo||!issueDate)return null;
       payload.document={
         document_number:documentNo,document_type:item.caseCategory||'normal',
-        template_key:templateKeyForCase(item),template_version:'current-letter-v054',
+        template_key:templateKeyForCase(item),template_version:item.caseCategory==='transfer'?'transfer-v1':'current-letter-v054',
         letter_date:issueDate,proposed_extension_date:calculateRequestUntil(item)||null,signatory_id:signatory||null
       };
       payload.snapshot={...item,issueDate,signatory,requestUntil:calculateRequestUntil(item),templateKey:templateKeyForCase(item),sourceApp:'current_letter'};
@@ -1889,19 +1929,27 @@
   function applyRememberedStudentToEntry(record) {
     const s=record?.student||{},p=record?.passport||{},v=record?.visa||{},a=record?.academic||{};
     const sx=s.extra_data&&typeof s.extra_data==='object'?s.extra_data:{},ax=a.extra_data&&typeof a.extra_data==='object'?a.extra_data:{};
-    const category=['normal','exchange','non_o'].includes(sx.caseCategory)?sx.caseCategory:'normal';
+    const entryOpen = !el('studentModal').classList.contains('hidden');
+    const openingTransfer = entryOpen ? el('studentForm').elements.caseCategory?.value === 'transfer'
+      : el('workspaceView').classList.contains('active') && state.activeCategory === 'transfer';
+    const rememberedCategory = Object.hasOwn(CASE_TYPES, sx.caseCategory) ? sx.caseCategory : 'normal';
+    const category = openingTransfer ? 'transfer' : rememberedCategory;
+    const program = programByKey(rememberedProgramKey(record));
     state.activeDraftId=null;resetEntryCategorySnapshots();renderStudentForm(category);
     const values={
       caseCategory:category,title:s.title||'MISS',fullName:s.full_name||'',studentId:s.student_id||'',
       currentStudent:Boolean(sx.currentStudent),nationalityThai:s.nationality_th||'',
       passportNo:p.passport_number||'',passportExpiry:p.expiry_date||'',currentStayUntil:v.visa_expiry_date||'',
-      programKey:rememberedProgramKey(record),programType:ax.programType||a.degree_level_id||'international',
+      programKey:program?.key||'',facultyKey:facultyKeyFor(program),
+      programType:program?.programType||ax.programType||a.degree_level_id||'international',
       totalCredits:a.required_credits??'',registeredCredits:a.achieved_credits??'',
       requestRuleOverride:sx.requestRuleOverride||'six_months',manualRequestUntil:sx.manualRequestUntil||'',
       studyYearOverride:ax.studyYearOverride||'',graduationYearOverride:ax.graduationYearOverride||'',
+      enabledOverrides:{studyYearOverride:Boolean(ax.studyYearOverride),graduationYearOverride:Boolean(ax.graduationYearOverride)},
       exchangeUniversity:sx.exchangeUniversity||ax.exchangeUniversity||'',exchangeCountryThai:sx.exchangeCountryThai||ax.exchangeCountryThai||'',
       exchangeTerm:sx.exchangeTerm||ax.exchangeTerm||'',exchangeAcademicYear:sx.exchangeAcademicYear||ax.exchangeAcademicYear||'',
       exchangeDurationSemesters:sx.exchangeDurationSemesters||ax.exchangeDurationSemesters||'',
+      transferSchool:sx.transferSchool||'',transferProvince:sx.transferProvince||'',
       nonOVisaPurpose:sx.nonOVisaPurpose||'',programDurationYears:sx.programDurationYears||''
     };
     restoreDraftValues(el('studentForm'),values);
@@ -1942,7 +1990,7 @@
       state.activeDraftId=null;
       renderDraftsButton();
     }
-    rememberExchangeDetails(item);
+    rememberSchoolDetails(item);
     if (item.caseCategory !== state.activeCategory) switchView('workspace', item.caseCategory);
     persist();
     closeModal('studentModal');
@@ -2191,8 +2239,7 @@
   }
 
   function templateKeyForCase(item) {
-    if (item.caseCategory === 'exchange') return 'exchange';
-    if (item.caseCategory === 'non_o') return 'non_o';
+    if (['exchange', 'transfer', 'non_o'].includes(item.caseCategory)) return item.caseCategory;
     return item.programType === 'graduate' ? 'letter76' : 'letter16';
   }
 
@@ -2275,7 +2322,8 @@
     button.textContent = 'Exporting…';
     try {
       const blob = await BrowserDocx.generateBatch(body.students, body.issueDate, body.signatory, body.reviewerBox);
-      const filename = `Visa_Extension_Letters_${body.students.length}_Students_${body.issueDate.replaceAll('-', '')}.docx`;
+      const prefix = state.activeCategory === 'transfer' ? 'Transfer_Letters' : 'Visa_Extension_Letters';
+      const filename = `${prefix}_${body.students.length}_Students_${body.issueDate.replaceAll('-', '')}.docx`;
       downloadBlob(blob, filename);
       const generatedAt = new Date().toISOString();
       items.forEach((item) => { item.generatedAt = generatedAt; });
@@ -2354,7 +2402,7 @@
     const signer = el('individualSignatory');
     signer?.addEventListener('change', () => { el('individualSignaturePreview').innerHTML = signatoryPreview(signer.value); });
     const templateReady = Boolean(state.templates[templateKeyForCase(item)]);
-    if (!templateReady) el('individualModalBody').insertAdjacentHTML('beforeend', '<div class="template-warning"><strong>Word template not configured.</strong><br>Import the required Letter 16/76 DOCX once in Workspace settings.</div>');
+    if (!templateReady) el('individualModalBody').insertAdjacentHTML('beforeend', '<div class="template-warning"><strong>Word template not configured.</strong><br>Check the letter template for this case in Workspace settings.</div>');
     el('generateIndividualBtn').disabled = !validation.valid || !templateReady;
   }
 
@@ -2373,7 +2421,8 @@
     button.textContent = 'Creating…';
     try {
       const blob = await BrowserDocx.generateIndividual(body.student, body.issueDate, body.signatory, body.reviewerBox);
-      const filename = `Visa_Extension_Letter_${item.studentId || 'student'}.docx`;
+      const prefix = item.caseCategory === 'transfer' ? 'Transfer_Letter' : 'Visa_Extension_Letter';
+      const filename = `${prefix}_${item.studentId || 'student'}.docx`;
       downloadBlob(blob, filename);
       const generatedAt = new Date().toISOString();
       item.generatedAt = generatedAt;
@@ -2489,6 +2538,7 @@
       ['letter76', 'letter76TemplateStatus'],
       ['studentList', 'studentListTemplateStatus'],
       ['exchange', 'exchangeTemplateStatus'],
+      ['transfer', 'transferTemplateStatus'],
       ['non_o', 'nonOTemplateStatus'],
     ];
     mapping.forEach(([key, id]) => {
@@ -2651,18 +2701,13 @@
   }
 
   function switchView(view, caseCategory = state.activeCategory, placeholderKey = '') {
-    const categories = {
-      normal: ['Normal cases', 'NEW & CURRENT STUDENTS'],
-      exchange: ['Exchange students', 'EXCHANGE LETTERS'],
-      non_o: ['Non-O → ED transfer', 'NON-O TRANSFER LETTERS'],
-    };
     const placeholders = {
       cancel: 'Cancel',
       graduated: 'Graduated',
       criminal_record: 'Criminal Record',
     };
     if (view === 'workspace') {
-      state.activeCategory = categories[caseCategory] ? caseCategory : 'normal';
+      state.activeCategory = Object.hasOwn(CASE_TYPES, caseCategory) ? caseCategory : 'normal';
       state.selected.clear();
       if (el('detailDrawer')?.classList.contains('open')) closeDrawer();
       renderCaseList();
@@ -2674,7 +2719,7 @@
       renderSelectionBar();
     }
     const map = {
-      workspace: ['workspaceView', ...categories[state.activeCategory]],
+      workspace: ['workspaceView', CASE_TYPES[state.activeCategory].label, CASE_TYPES[state.activeCategory].heading],
       placeholder: ['placeholderView', placeholders[placeholderKey] || '', ''],
       cancel: ['cancelView', 'Cancel', 'STUDENT VISA CANCELLATION'],
       graduated: ['graduatedView','Graduated','GRADUATED · ED PLUS'],
@@ -3462,6 +3507,9 @@
     el('exchangeTemplateInput').addEventListener('change', (event) => {
       importTemplate('exchange', event.target.files?.[0]).finally(() => { event.target.value = ''; });
     });
+    el('transferTemplateInput').addEventListener('change', (event) => {
+      importTemplate('transfer', event.target.files?.[0]).finally(() => { event.target.value = ''; });
+    });
     el('nonOTemplateInput').addEventListener('change', (event) => {
       importTemplate('non_o', event.target.files?.[0]).finally(() => { event.target.value = ''; });
     });
@@ -3554,7 +3602,7 @@
       showPartnerUniversitySuggestions();
     });
     el('clearSavedUniversitiesBtn').addEventListener('click', () => {
-      if (!confirm('Clear all remembered partner university suggestions? Existing cases will remain unchanged.')) return;
+      if (!confirm('Clear all remembered school and university suggestions?')) return;
       state.settings.exchangeUniversities = [];
       persist();
       renderSavedUniversities();

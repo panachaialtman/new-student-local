@@ -30,6 +30,9 @@
         <button class="nav-item" data-view="workspace" data-case-category="exchange">
           <span class="nav-icon">⇄</span><span>Exchange students</span>
         </button>
+        <button class="nav-item" data-view="workspace" data-case-category="transfer">
+          <span class="nav-icon" aria-hidden="true">⇥</span><span>Transfer</span>
+        </button>
         <button class="nav-item" data-view="workspace" data-case-category="non_o">
           <span class="nav-icon">↗</span><span>Non-O → ED transfer</span>
         </button>
@@ -177,10 +180,10 @@
 </div>
 <div class="content-card setting-card">
             <div class="setting-icon">⌕</div>
-            <h3>Remembered partner universities</h3>
-            <p>Exchange university names are saved only in this browser when a case is created or edited. Remove individual suggestions or clear them all here. Deleting a suggestion does not change any existing student record.</p>
+            <h3>Remembered schools and universities</h3>
+            <p>Exchange and Transfer share these school suggestions. Remove a name to hide it from future suggestions.</p>
             <div id="savedUniversitiesList" class="saved-universities-list"></div>
-            <button type="button" class="btn subtle" id="clearSavedUniversitiesBtn">Clear all remembered universities</button>
+            <button type="button" class="btn subtle" id="clearSavedUniversitiesBtn">Clear all remembered names</button>
           </div>
 <div class="content-card setting-card">
             <div class="setting-icon">✦</div>
@@ -237,11 +240,12 @@
 <div class="content-card setting-card template-setting-card">
             <div class="setting-icon">W</div>
             <h3>Word templates</h3>
-            <p>Five Word templates are built in, including the supplied Exchange and Non-O documents. You may import an optional replacement for any template on this browser.</p>
+            <p>Each letter has a built-in Word template. To use a local replacement, import a copy with the same fields and highlighting.</p>
             <div class="template-import-row"><label>Letter 16 — optional override<input id="letter16TemplateInput" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" /></label><span id="letter16TemplateStatus" class="template-status">Not configured</span></div>
             <div class="template-import-row"><label>Letter 76 — optional override<input id="letter76TemplateInput" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" /></label><span id="letter76TemplateStatus" class="template-status">Not configured</span></div>
             <div class="template-import-row"><label>Student list — optional override<input id="studentListTemplateInput" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" /></label><span id="studentListTemplateStatus" class="template-status">Not configured</span></div>
             <div class="template-import-row"><label>Exchange letter — optional override<input id="exchangeTemplateInput" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" /></label><span id="exchangeTemplateStatus" class="template-status">Not configured</span></div>
+            <div class="template-import-row"><label>Transfer (ย้ายสถาบัน) — optional override<input id="transferTemplateInput" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" /></label><span id="transferTemplateStatus" class="template-status">Not configured</span></div>
             <div class="template-import-row"><label>Non-O transfer — optional override<input id="nonOTemplateInput" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" /></label><span id="nonOTemplateStatus" class="template-status">Not configured</span></div>
             <div class="rule-summary">Built-in templates are available automatically. Any optional override remains only on this browser profile and is included in Backup data.</div>
           </div>
@@ -670,14 +674,94 @@
 
   <datalist id="partnerCountrySuggestions"></datalist>
   <datalist id="partnerUniversitySuggestions"></datalist>
+  <!-- Thai province names, Ministry of Commerce: https://std.moc.go.th/std/group/28 -->
+  <datalist id="transferProvinceSuggestions">
+    <option value="กระบี่"></option>
+    <option value="กรุงเทพมหานคร"></option>
+    <option value="กาญจนบุรี"></option>
+    <option value="กาฬสินธุ์"></option>
+    <option value="กำแพงเพชร"></option>
+    <option value="ขอนแก่น"></option>
+    <option value="จันทบุรี"></option>
+    <option value="ฉะเชิงเทรา"></option>
+    <option value="ชลบุรี"></option>
+    <option value="ชัยนาท"></option>
+    <option value="ชัยภูมิ"></option>
+    <option value="ชุมพร"></option>
+    <option value="เชียงราย"></option>
+    <option value="เชียงใหม่"></option>
+    <option value="ตรัง"></option>
+    <option value="ตราด"></option>
+    <option value="ตาก"></option>
+    <option value="นครนายก"></option>
+    <option value="นครปฐม"></option>
+    <option value="นครพนม"></option>
+    <option value="นครราชสีมา"></option>
+    <option value="นครศรีธรรมราช"></option>
+    <option value="นครสวรรค์"></option>
+    <option value="นนทบุรี"></option>
+    <option value="นราธิวาส"></option>
+    <option value="น่าน"></option>
+    <option value="บึงกาฬ"></option>
+    <option value="บุรีรัมย์"></option>
+    <option value="ปทุมธานี"></option>
+    <option value="ประจวบคีรีขันธ์"></option>
+    <option value="ปราจีนบุรี"></option>
+    <option value="ปัตตานี"></option>
+    <option value="พระนครศรีอยุธยา"></option>
+    <option value="พะเยา"></option>
+    <option value="พังงา"></option>
+    <option value="พัทลุง"></option>
+    <option value="พิจิตร"></option>
+    <option value="พิษณุโลก"></option>
+    <option value="เพชรบุรี"></option>
+    <option value="เพชรบูรณ์"></option>
+    <option value="แพร่"></option>
+    <option value="ภูเก็ต"></option>
+    <option value="มหาสารคาม"></option>
+    <option value="มุกดาหาร"></option>
+    <option value="แม่ฮ่องสอน"></option>
+    <option value="ยโสธร"></option>
+    <option value="ยะลา"></option>
+    <option value="ร้อยเอ็ด"></option>
+    <option value="ระนอง"></option>
+    <option value="ระยอง"></option>
+    <option value="ราชบุรี"></option>
+    <option value="ลพบุรี"></option>
+    <option value="ลำปาง"></option>
+    <option value="ลำพูน"></option>
+    <option value="เลย"></option>
+    <option value="ศรีสะเกษ"></option>
+    <option value="สกลนคร"></option>
+    <option value="สงขลา"></option>
+    <option value="สตูล"></option>
+    <option value="สมุทรปราการ"></option>
+    <option value="สมุทรสงคราม"></option>
+    <option value="สมุทรสาคร"></option>
+    <option value="สระแก้ว"></option>
+    <option value="สระบุรี"></option>
+    <option value="สิงห์บุรี"></option>
+    <option value="สุโขทัย"></option>
+    <option value="สุพรรณบุรี"></option>
+    <option value="สุราษฎร์ธานี"></option>
+    <option value="สุรินทร์"></option>
+    <option value="หนองคาย"></option>
+    <option value="หนองบัวลำภู"></option>
+    <option value="อ่างทอง"></option>
+    <option value="อำนาจเจริญ"></option>
+    <option value="อุดรธานี"></option>
+    <option value="อุตรดิตถ์"></option>
+    <option value="อุทัยธานี"></option>
+    <option value="อุบลราชธานี"></option>
+  </datalist>
   <input id="restoreFileInput" type="file" accept=".visabackup,.json,application/json" hidden />
   <div class="toast-stack" id="toastStack" aria-live="polite"></div>
 
   <script src="reference-data.js"></script>
-  <script src="db.js"></script>
+  <script src="db.js?v=20261127-transfer"></script>
   <script src="zip.js"></script>
-  <script src="builtin-templates.js"></script>
-  <script src="docx-engine.js?v=20261124-current-student-attachment"></script>
+  <script src="builtin-templates.js?v=20261127-transfer"></script>
+  <script src="docx-engine.js?v=20261127-transfer"></script>
   <script src="cancel-letter.js?v=017"></script>
   <script src="graduated-letter.js?v=002"></script>
   <script src="criminal-record-letter.js?v=20261104-original"></script>
@@ -687,7 +771,7 @@
   <script src="custom-letter-references.js?v=20261114-guided-builder"></script>
   <script src="custom-letter-engine.js?v=20261114-guided-builder"></script>
   <script src="custom-letter.js?v=20261114-guided-builder"></script>
-  <script src="app.js?v=20261114-guided-builder"></script>
+  <script src="app.js?v=20261127-transfer"></script>
   <script src="ui-enhancements.js?v=036"></script>
   <script>
     // The standalone escape hatch is offered only when this workspace is embedded.

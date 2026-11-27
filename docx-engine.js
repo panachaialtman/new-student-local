@@ -106,7 +106,9 @@
     return xml.replace(new RegExp(TEXT_RE.source, 'g'), (whole, old) => {
       const value = index < values.length ? values[index++] : decodeXml(old);
       const gt = whole.indexOf('>');
-      return whole.slice(0, gt + 1) + escapeXml(value) + '</w:t>';
+      let tag = whole.slice(0, gt);
+      if (/^\s|\s$/.test(value) && !tag.includes('xml:space=')) tag += ' xml:space="preserve"';
+      return tag + '>' + escapeXml(value) + '</w:t>';
     });
   }
   function replaceRun(run, value, first) {
@@ -165,7 +167,7 @@
     return { xml: out, replaced };
   }
 
-  function replaceIssueDate(xml, desired) {
+  function replaceIssueDate(xml, desired, clearHighlights = false) {
     let done = false;
     const out = xml.replace(new RegExp(PARA_RE.source, 'g'), (p) => {
       if (done) return p;
@@ -174,12 +176,18 @@
       const texts = getTexts(p);
       if (!texts.length) return p;
       done = true;
+      if (clearHighlights) p = p.replace(HIGHLIGHT_RE, '');
       return replaceTextNodes(p, texts.map((_, i) => i === 0 ? desired : ''));
     });
     if (!done) throw new Error('Could not locate issue-date paragraph in template');
     return out;
   }
 
+
+  function isCurrentStudent(st) {
+    return st.currentStudent === true ||
+      (st.currentStudent !== false && st.attachment43 === 'transcript');
+  }
 
   function cohortStudyYear(st) {
     const override = text(st.studyYearOverride);
@@ -205,9 +213,9 @@
       }
       return n;
     }
-    // Letter 76 has separate graduate-specific rules: don't apply undergraduate
-    // five-year cohort graduation calculations to a graduate case.
-    if (st.programType === 'graduate') return null;
+    // Letter 76 keeps its graduate template year. Transfer uses the intake
+    // digits plus four for every degree unless staff enter an override.
+    if (st.programType === 'graduate' && st.caseCategory !== 'transfer') return null;
     const id = text(st.studentId);
     if (!/^[0-9]{3}/.test(id)) {
       throw new Error('Cannot infer graduation year. Check the student ID or enter a Graduation year override.');
@@ -215,8 +223,7 @@
     return 2504 + Number(id.slice(1, 3));
   }
   function applyAcademicWording(xml, st) {
-    const current = st.currentStudent === true ||
-      (st.currentStudent !== false && st.attachment43 === 'transcript');
+    const current = isCurrentStudent(st);
     const year = current ? cohortStudyYear(st) : 1;
     const enrollment = current ? 'ศึกษาอยู่ชั้นปีที่ ' + year : 'เริ่มศึกษาชั้นปีที่ 1';
     let replaced = replacePlain(xml, 'ศึกษาอยู่ชั้นปีที่ 1', enrollment);
@@ -330,8 +337,7 @@
       let result = replacePlain(xml, DEFAULT_ROLE, profile.role); xml = result.xml;
       if (!result.replaced) throw new Error('Could not locate the default signatory role in template');
     }
-    const current = st.currentStudent === true ||
-      (st.currentStudent !== false && st.attachment43 === 'transcript');
+    const current = isCurrentStudent(st);
     if (current) {
       let result = replacePlain(xml, ATTACHMENT_DEFAULT, ATTACHMENT_TRANSCRIPT); xml = result.xml;
       if (!result.replaced) throw new Error('Could not locate attachment 4.3 text');
@@ -551,6 +557,20 @@
         text(st.exchangeCountryThai), String(term), String(academicYear),
         String(duration), effectiveDate];
     }
+    if (category === 'transfer') {
+      const school = text(st.transferSchool);
+      const province = text(st.transferProvince).replace(/^(?:จังหวัด|จ\.)\s*/, '').trim();
+      if (!school || !province) throw new Error('Enter the previous school and its province.');
+      const number = text(st.documentNo).replace(/^(?:ที่\s*)?มกท\/ศนช\.\s*/, '').replace(/\/\d{4}$/, '').trim();
+      if (!number) throw new Error('Enter the document number.');
+      const graduate = st.programType === 'graduate';
+      const studyYear = isCurrentStudent(st) ? cohortStudyYear(st) : 1;
+      return [number, ...shared.slice(1), graduate ? 'โท' : 'ตรี',
+        text(st.facultyThai), text(st.programThai), graduate ? '2' : '4',
+        text(st.totalCredits), String(studyYear), String(credits), commaInt(credits * 14),
+        /^[ก-๙]/.test(school) ? school : ' ' + school,
+        province === 'กรุงเทพมหานคร' ? province : 'จังหวัด' + province, effectiveDate];
+    }
     if (category === 'non_o') {
       const duration = Number(st.programDurationYears || (st.programType === 'graduate' ? 2 : 4));
       const graduation = graduationAcademicYear(st);
@@ -593,7 +613,19 @@
     }
 
     // Modify non-highlighted wording before populating highlighted data groups.
-    if (category === 'non_o') {
+    if (category === 'transfer') {
+      // The source highlights only the day and month. Replace the entire issue
+      // date and remove its highlight before counting the student fields.
+      xml = replaceIssueDate(xml, thaiDate(issueDate), true);
+      xml = replaceFirstMatching(xml, ['/2569'], '/' + (parseIso(issueDate).y + 543), 'document number year');
+      xml = replaceFirstMatching(xml, ['สำเร็จการศึกษาในปีการศึกษา 2572'],
+        'สำเร็จการศึกษาในปีการศึกษา ' + graduationAcademicYear(st), 'graduation year');
+      xml = replaceFirstMatching(xml, [' จังหวัด'], ' ', 'province prefix');
+      if (isCurrentStudent(st)) {
+        xml = replaceFirstMatching(xml, ['เริ่มศึกษาชั้นปีที่ '], 'ศึกษาอยู่ชั้นปีที่ ', 'enrollment wording');
+        xml = replaceFirstMatching(xml, ['สำเนาหลักฐานการศึกษาที่ใช้สมัครเรียน'], ATTACHMENT_TRANSCRIPT, 'attachment 4.3');
+      }
+    } else if (category === 'non_o') {
       const visaPurpose = text(st.nonOVisaPurpose) || 'ติดตามธุรกิจ';
       xml = replaceFirstMatching(xml, ['ติดตามธุรกิจ'], visaPurpose, 'Non-O visa purpose');
       if (st.currentStudent === true || st.attachment43 === 'transcript') {
@@ -620,7 +652,6 @@
     const expectedCount = category === 'exchange' ? 17 : 18;
     const values = specialReplacements(st, issueDate, category);
     if (values.length !== expectedCount) throw new Error('Special template field count mismatch');
-    xml = fillHighlights(xml, values);
     // The Exchange template's top document date is plain text. Non-O's date
     // is one of its highlighted fields, so must not be overwritten again.
     if (category === 'exchange') xml = replaceIssueDate(xml, thaiDate(issueDate));
@@ -633,20 +664,23 @@
     if (profile.role !== DEFAULT_ROLE) {
       xml = replaceFirstMatching(xml, [DEFAULT_ROLE], profile.role, 'signatory role');
     }
+    xml = fillHighlights(xml, values);
+    if (category === 'transfer' && /<w:highlight\b/.test(xml)) {
+      throw new Error('The Transfer template contains extra highlighted fields.');
+    }
     files.set('word/document.xml', {name:'word/document.xml',data:enc.encode(xml)});
     return files;
   }
 
   function letterTemplateKey(st) {
-    if (st.caseCategory === 'exchange') return 'exchange';
-    if (st.caseCategory === 'non_o') return 'non_o';
+    if (['exchange', 'non_o', 'transfer'].includes(st.caseCategory)) return st.caseCategory;
     return st.programType === 'graduate' ? 'letter76' : 'letter16';
   }
 
   async function renderCaseLetter(st, issueDate, signatory, options) {
     const key = letterTemplateKey(st);
     const tpl = await requireTemplate(key);
-    const files = key === 'exchange' || key === 'non_o'
+    const files = ['exchange', 'non_o', 'transfer'].includes(key)
       ? await renderSpecialLetter(tpl, st, issueDate, signatory, key)
       : await renderLetter(tpl, st, issueDate, signatory);
     return addReviewerBoxToFiles(files, options);

@@ -5,6 +5,7 @@
   const DB_VERSION = 1;
   const STATE_STORE = 'state';
   const TEMPLATE_STORE = 'templates';
+  const TEMPLATE_KEYS = ['letter16', 'letter76', 'studentList', 'exchange', 'non_o', 'transfer'];
 
   function openDb() {
     return new Promise((resolve, reject) => {
@@ -102,9 +103,8 @@
   }
 
   async function listTemplates() {
-    const keys = ['letter16', 'letter76', 'studentList'];
     const result = {};
-    for (const key of keys) {
+    for (const key of TEMPLATE_KEYS) {
       const record = await getTemplate(key);
       result[key] = record ? { name: record.name, size: record.size, updatedAt: record.updatedAt } : null;
     }
@@ -112,9 +112,8 @@
   }
 
   async function exportTemplatesBase64() {
-    const keys = ['letter16', 'letter76', 'studentList'];
     const out = {};
-    for (const key of keys) {
+    for (const key of TEMPLATE_KEYS) {
       const record = await getTemplate(key);
       if (!record?.buffer) continue;
       const bytes = new Uint8Array(record.buffer);

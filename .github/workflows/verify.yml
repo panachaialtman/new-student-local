@@ -34,6 +34,7 @@ jobs:
         run: |
           node tests/review-box-groups.test.cjs
           node --test tests/current-student-attachment.test.cjs
+          node --test tests/transfer-letter.test.cjs
           node --test tests/department-table.test.cjs
           node --test tests/custom-letter-engine.test.cjs
           node tests/hub-nationality.test.cjs

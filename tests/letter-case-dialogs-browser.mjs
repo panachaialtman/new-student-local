@@ -155,6 +155,82 @@ try{
   assert.equal(await page.locator('#studentModal').isVisible(),true);
   await page.locator('#studentModal [data-close="studentModal"]').first().click();
  }
+ await page.locator('.nav-item[data-case-category="transfer"]').click();
+ assert.equal(await page.locator('#pageTitle').innerText(),'Transfer');
+ assert.equal(await page.locator('#caseList [data-case-id]').count(),0);
+ await page.locator('#addStudentBtn').click();
+ const entry=page.locator('#studentForm');
+ await entry.getByLabel('Previous school').fill('QA Transfer Academy');
+ await entry.getByLabel('Province (จังหวัด)').fill('ภูเก็ต');
+ assert.equal(await page.locator('#transferProvinceSuggestions option[value="ภูเก็ต"]').count(),1);
+ await page.locator('[data-entry-category="exchange"]').click();
+ await page.locator('[data-entry-category="transfer"]').click();
+ assert.equal(await entry.getByLabel('Previous school').inputValue(),'QA Transfer Academy');
+ assert.equal(await entry.getByLabel('Province (จังหวัด)').inputValue(),'ภูเก็ต');
+ await entry.locator('[name="fullName"]').fill('Taylor Example');
+ await page.locator('#saveStudentDraftBtn').click();
+ await page.locator('#studentModal').waitFor({state:'hidden'});
+ await page.locator('#draftsBtn').click();
+ await page.locator('[data-draft-open]').first().click();
+ assert.equal(await entry.getByLabel('Previous school').inputValue(),'QA Transfer Academy');
+ for(const [key,value] of Object.entries({documentNo:'0042',studentId:'1680000001',nationalityThai:'เมียนมา',
+     passportNo:'QA-TEST',passportExpiry:'2031-03-10',currentStayUntil:'2027-07-31',registeredCredits:'21'})){
+  await entry.locator('[name="'+key+'"]').fill(value);
+ }
+ await entry.locator('[name="currentStudent"]').uncheck();
+ await entry.locator('[name="programKey"]').selectOption({index:1});
+ await entry.locator('[name="totalCredits"]').fill('132');
+ assert.equal(await entry.locator('[name="graduationYearOverride"]').inputValue(),'2572');
+ // Capture the normal Student DB save boundary locally, including the new document type.
+ await page.evaluate(()=>{
+  window.__transferSaves=[];
+  window.BUICStudentMemory={...window.BUICStudentMemory,remember:async payload=>window.__transferSaves.push(payload)};
+ });
+ await page.locator('#submitStudentBtn').click();
+ await page.locator('#detailDrawer.open').waitFor();
+ await page.waitForFunction(()=>window.__transferSaves.length===1);
+ let memory=await page.evaluate(()=>window.__transferSaves[0].student.extra_data);
+ assert.equal(memory.caseCategory,'transfer');
+ assert.equal(memory.transferSchool,'QA Transfer Academy');
+ assert.equal(memory.transferProvince,'ภูเก็ต');
+ assert.equal(await page.locator('#partnerUniversitySuggestions option[value="QA Transfer Academy"]').count(),1);
+ await page.locator('#editStudentBtn').click();
+ await page.locator('[data-edit-field="transferProvince"]').fill('เชียงใหม่');
+ await page.locator('#saveStudentBtn').click();
+ await page.locator('#printIndividualBtn').click();
+ await page.locator('#individualIssueDate').fill('2027-11-05');
+ await page.locator('#individualSignatory').selectOption('duangthida');
+ const individual=page.waitForEvent('download');
+ await page.locator('#generateIndividualBtn').click();
+ assert.equal((await individual).suggestedFilename(),'Transfer_Letter_1680000001.docx');
+ await page.waitForFunction(()=>window.__transferSaves.some(p=>p.action==='create_letter'));
+ const individualXml=await page.evaluate(async()=>{
+  const blob=window.__qaDownloads.at(-1);
+  const zip=await ZipLite.readZip(await blob.arrayBuffer());
+  return new TextDecoder().decode(zip.get('word/document.xml').data);
+ });
+ assert(individualXml.includes('QA Transfer Academy'));
+ assert(individualXml.includes('จังหวัดเชียงใหม่'));
+ memory=await page.evaluate(()=>window.__transferSaves.at(-1));
+ assert.equal(memory.document.template_key,'transfer');
+ assert.equal(memory.document.letter_date,'2027-11-05');
+ assert.equal(memory.document.proposed_extension_date,'2028-01-31');
+ assert.equal(memory.student.extra_data.transferProvince,'เชียงใหม่');
+ await page.locator('#closeDrawerBtn').click();
+ await page.locator('#selectAll').click();
+ await page.locator('#prepareBatchBtn').click();
+ const batch=page.waitForEvent('download');
+ await page.locator('#generateBatchBtn').click();
+ assert((await batch).suggestedFilename().startsWith('Transfer_Letters_1_Students_'));
+ await page.reload();
+ await page.waitForFunction(()=>window.BUICWorkspaceAuth?.isAuthenticated());
+ await page.locator('.nav-item[data-case-category="transfer"]').click();
+ await page.locator('#caseList [data-case-id]').waitFor();
+ assert.equal((await stored()).cases.filter(c=>c.caseCategory==='transfer'&&c.transferProvince==='เชียงใหม่').length,1);
+ await page.locator('.nav-item[data-case-category="normal"]').click();
+ assert.equal(await page.locator('#caseList [data-case-id]').count(),0);
+ console.log('PASS Transfer draft, school suggestions, case editing, individual and batch exports, memory payload and reload');
+
  assert.deepEqual(hubWrites,[],'dedicated letter forms must not upload cases to the Hub');
  assert.deepEqual(errors,[]);
  console.log('PASS mobile dialogs, reload recovery and unchanged Normal/Exchange entry');
