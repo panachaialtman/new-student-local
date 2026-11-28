@@ -56,7 +56,7 @@ test('Transfer fills the original letter and removes sample years and highlights
 
 test('current Transfer, graduate ID year, passport cap and manual academic overrides', async () => {
   const scope = workspace();
-  const graduate = {...student, programType:'graduate', currentStudent:true, attachment43:'application',
+  const graduate = {...student, programType:'graduate', currentStudent:true, attachment43:'transcript',
     studentId:'7670000001', documentNo:'ที่ มกท/ศนช. 0079/2569', transferSchool:'โรงเรียนตัวอย่าง',
     transferProvince:'จังหวัดกรุงเทพมหานคร', registeredCredits:12, passportExpiry:'2027-12-01'};
   const xml = await documentXml(scope, await scope.BrowserDocx.generateIndividual(graduate, '2028-01-03', 'somyot'));
@@ -65,8 +65,8 @@ test('current Transfer, graduate ID year, passport cap and manual academic overr
     'ระยะเวลาหลักสูตร 2 ปี','สำเร็จการศึกษาในปีการศึกษา 2571',
     'ศึกษาอยู่ชั้นปีที่ 3 ลงทะเบียนจำนวน 12 หน่วยกิต', 'จำนวน 168 ชั่วโมง',
     'จากโรงเรียนตัวอย่าง กรุงเทพมหานคร', 'ขออยู่ต่อเพื่อการศึกษาถึง 1 ธันวาคม 2570',
-    transcript, 'ผู้ช่วยศาสตราจารย์ ดร. สมยศ วัฒนากมลชัย']) assert(text.includes(value), value);
-  assert(!text.includes('2569') && !text.includes(application));
+    application, 'ผู้ช่วยศาสตราจารย์ ดร. สมยศ วัฒนากมลชัย']) assert(text.includes(value), value);
+  assert(!text.includes('2569') && !text.includes(transcript));
   const override = {...graduate, transferProvince:'จ. ปทุมธานี', graduationYearOverride:2577, studyYearOverride:2,
     requestRuleOverride:'manual', manualRequestUntil:'2027-09-07'};
   const edited = compact(await documentXml(scope, await scope.BrowserDocx.generateIndividual(override, '2027-05-01', 'somyot')));
@@ -77,7 +77,7 @@ test('current Transfer, graduate ID year, passport cap and manual academic overr
 test('Transfer batch keeps each student and institution on the corresponding letter', async () => {
   const scope = workspace();
   const second = {...student, studentId:'1690000002', fullName:'Morgan Example', transferSchool:'Second School',
-    transferProvince:'เชียงใหม่', requestRuleOverride:'one_year'};
+    transferProvince:'เชียงใหม่', requestRuleOverride:'one_year', currentStudent:true, attachment43:'transcript'};
   const xml = await documentXml(scope, await scope.BrowserDocx.generateBatch([student, second], '2027-07-01', 'somyot',
     {reviewBox:true, columnNames:['Reviewer']}));
   const parts = xml.split(/<w:pageBreakBefore\s*\/>/);
@@ -87,6 +87,29 @@ test('Transfer batch keeps each student and institution on the corresponding let
     const text = compact(parts[i]);
     for (const value of values) assert(text.includes(value), value);
     assert(text.includes('Reviewer'));
+    assert.equal(text.split(application).length - 1, 1);
+    assert(!text.includes(transcript));
+  }
+});
+
+test('an imported Transfer template with older attachment wording is corrected', async () => {
+  const scope = workspace();
+  const template = await scope.BuiltinTemplates.getTemplate('transfer');
+  const files = await scope.ZipLite.readZip(template);
+  const part = files.get('word/document.xml');
+  const original = new TextDecoder().decode(part.data);
+  for (const ending of [' (Transcript)', 'ที่ใช้ในการสมัครเรียน']) {
+    const xml = original.replace('>ที่ใช้สมัครเรียน<', '>' + ending + '<');
+    assert.notEqual(xml, original);
+    part.data = new TextEncoder().encode(xml);
+    const buffer = await scope.ZipLite.writeZip(files);
+    scope.VisaDB.getTemplate = async () => ({buffer});
+    for (const currentStudent of [false, true]) {
+      const blob = await scope.BrowserDocx.generateIndividual({...student, currentStudent}, '2027-07-05', 'somyot');
+      const text = compact(await documentXml(scope, blob));
+      assert.equal(text.split(application).length - 1, 1);
+      assert(!text.includes(transcript));
+    }
   }
 });
 

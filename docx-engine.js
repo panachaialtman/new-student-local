@@ -12,6 +12,7 @@
     duangthida: { name: 'ผู้ช่วยศาสตราจารย์ ดร. ดวงธิดา นันทาภิรัตน์', role: 'ผู้ช่วยอธิการบดีสายนานาชาติ ปฏิบัติหน้าที่แทน' },
   };
   const ATTACHMENT_DEFAULT = 'สำเนาหลักฐานการศึกษาที่ใช้ในการสมัครเรียน';
+  const TRANSFER_ATTACHMENT = 'สำเนาหลักฐานการศึกษาที่ใช้สมัครเรียน';
   const ATTACHMENT_TRANSCRIPT = 'สำเนาหลักฐานการศึกษา (Transcript)';
 
   function text(v) { return v == null ? '' : String(v).trim(); }
@@ -623,7 +624,12 @@
       xml = replaceFirstMatching(xml, [' จังหวัด'], ' ', 'province prefix');
       if (isCurrentStudent(st)) {
         xml = replaceFirstMatching(xml, ['เริ่มศึกษาชั้นปีที่ '], 'ศึกษาอยู่ชั้นปีที่ ', 'enrollment wording');
-        xml = replaceFirstMatching(xml, ['สำเนาหลักฐานการศึกษาที่ใช้สมัครเรียน'], ATTACHMENT_TRANSCRIPT, 'attachment 4.3');
+      }
+      // Local Word overrides may still contain the older Transcript wording.
+      const item43 = /(4\.3\s*)(สำเนาหลักฐานการศึกษา(?:ที่ใช้(?:ในการ)?สมัครเรียน|\s*\(Transcript\)))/.exec(allText(xml));
+      if (!item43) throw new Error('Cannot locate attachment 4.3 in the Transfer Word template.');
+      if (item43[2] !== TRANSFER_ATTACHMENT) {
+        xml = replaceFirstMatching(xml, [item43[0]], item43[1] + TRANSFER_ATTACHMENT, 'Transfer attachment 4.3');
       }
     } else if (category === 'non_o') {
       const visaPurpose = text(st.nonOVisaPurpose) || 'ติดตามธุรกิจ';

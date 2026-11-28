@@ -192,11 +192,16 @@ try{
  let memory=await page.evaluate(()=>window.__transferSaves[0].student.extra_data);
  assert.equal(memory.caseCategory,'transfer');
  assert.equal(memory.transferSchool,'QA Transfer Academy');
+ assert.equal(memory.attachment43,'application');
+ const transferAttachment='4.3 สำเนาหลักฐานการศึกษาที่ใช้สมัครเรียน';
+ assert((await page.locator('#drawerContent').innerText()).includes('New student · '+transferAttachment));
  assert.equal(memory.transferProvince,'ภูเก็ต');
  assert.equal(await page.locator('#partnerUniversitySuggestions option[value="QA Transfer Academy"]').count(),1);
  await page.locator('#editStudentBtn').click();
  await page.locator('[data-edit-field="transferProvince"]').fill('เชียงใหม่');
+ await page.locator('[data-edit-field="currentStudent"]').check();
  await page.locator('#saveStudentBtn').click();
+ assert((await page.locator('#drawerContent').innerText()).includes('Current student · '+transferAttachment));
  await page.locator('#printIndividualBtn').click();
  await page.locator('#individualIssueDate').fill('2027-11-05');
  await page.locator('#individualSignatory').selectOption('duangthida');
@@ -211,8 +216,16 @@ try{
  });
  assert(individualXml.includes('QA Transfer Academy'));
  assert(individualXml.includes('จังหวัดเชียงใหม่'));
+ const letterText=await page.evaluate(xml=>Array.from(
+  new DOMParser().parseFromString(xml,'application/xml').getElementsByTagNameNS(
+   'http://schemas.openxmlformats.org/wordprocessingml/2006/main','t'),node=>node.textContent).join(''),individualXml);
+ assert(letterText.includes(transferAttachment));
+ assert(!letterText.includes('(Transcript)'));
  memory=await page.evaluate(()=>window.__transferSaves.at(-1));
  assert.equal(memory.document.template_key,'transfer');
+ assert.equal(memory.student.extra_data.currentStudent,true);
+ assert.equal(memory.student.extra_data.attachment43,'application');
+ assert.equal(memory.snapshot.attachment43,'application');
  assert.equal(memory.document.letter_date,'2027-11-05');
  assert.equal(memory.document.proposed_extension_date,'2028-01-31');
  assert.equal(memory.student.extra_data.transferProvince,'เชียงใหม่');

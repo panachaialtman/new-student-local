@@ -716,10 +716,8 @@
     if (typeof item.currentStudent !== 'boolean') {
       item.currentStudent = inferCurrentStudentFromId(item.studentId);
     }
-    item.attachment43 = item.currentStudent ? 'transcript' : 'application';
-    // The normal workspace includes both new and continuing students.
-    // Preserve the independent checkbox so attachment 4.3 and study wording still differ.
     if (!Object.hasOwn(CASE_TYPES, item.caseCategory)) item.caseCategory = 'normal';
+    item.attachment43 = item.currentStudent && item.caseCategory !== 'transfer' ? 'transcript' : 'application';
     if (item.caseCategory === 'transfer') {
       item.transferSchool = String(item.transferSchool || '').trim();
       item.transferProvince = String(item.transferProvince || '').trim().replace(/^(?:จังหวัด|จ\.)\s*/, '').trim();
@@ -1553,11 +1551,14 @@
       });
     } else {
       const facultyDisplay = program ? facultyLabelForType(item.programType, program) : (item.facultyThai || item.facultyEnglish);
+      const studentType = item.currentStudent ? 'Current student' : 'New student';
+      const attachment = item.caseCategory === 'transfer' ? 'สำเนาหลักฐานการศึกษาที่ใช้สมัครเรียน'
+        : item.attachment43 === 'transcript' ? 'Transcript' : 'Admission education document';
       el('drawerContent').innerHTML = `
         <div class="drawer-section"><div class="drawer-section-head"><h3>Personal information</h3></div>
           <div class="field-grid">
             ${fieldItem('Title', item.title)}${fieldItem('Nationality', item.nationalityThai)}${fieldItem('Passport', item.passportNo, true)}${fieldItem('Passport expiry', formatDate(item.passportExpiry))}
-            ${fieldItem('Student type', item.currentStudent ? 'Current student · 4.3 Transcript' : 'New student · 4.3 Admission education document')}
+            ${fieldItem('Student type', studentType + ' · 4.3 ' + attachment)}
           </div>
         </div>
         <div class="drawer-section"><div class="drawer-section-head"><h3>Academic information</h3></div>
